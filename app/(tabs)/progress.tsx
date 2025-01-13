@@ -1,5 +1,5 @@
 export default function TabTwoScreen() {
   return (
-    <p>Character</p>
+    <p>Progress</p>
   );
 }
