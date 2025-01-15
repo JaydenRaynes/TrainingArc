@@ -31,7 +31,7 @@ export default function Signup() {
             email: user.email,
           });
           Alert.alert("Success", "Account created successfully!");
-          router.push("/login"); // Navigate to Login
+          router.push("/(tabs)"); // Navigate to Login
         })
         .catch((error) => {
           console.error("Signup Error:", error); // Log error for debugging

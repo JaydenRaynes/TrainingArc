@@ -26,7 +26,7 @@ export default function Login() {
             router.push("/biometrics"); // Navigate to Biometrics page
           } else {
             Alert.alert("Success", `Welcome back, ${user.email}!`);
-            router.push("/"); // Navigate to Home
+            router.push("/(tabs)"); // Navigate to Home
           }
         }
       })
