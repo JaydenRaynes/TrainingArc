@@ -1,5 +1,10 @@
-export default function TabTwoScreen() {
-  return (
-    <p>Progress</p>
-  );
+import { View, Text } from 'react-native';
+
+export default function explore() {
+    return(
+    <View>
+        <Text>
+            Welcome to the progress Page
+        </Text>
+    </View>)
 }

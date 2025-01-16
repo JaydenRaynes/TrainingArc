@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import {doc, getDoc} from "firebase/firestore";
 import { auth, db } from "../firebaseConfig"; // Import Firebase Auth
+import { Redirect } from 'expo-router';
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -26,7 +27,7 @@ export default function Login() {
             router.push("/biometrics"); // Navigate to Biometrics page
           } else {
             Alert.alert("Success", `Welcome back, ${user.email}!`);
-            router.push("/(tabs)"); // Navigate to Home
+            router.push("/(tabs)/explore"); // Navigate to Home
           }
         }
       })
