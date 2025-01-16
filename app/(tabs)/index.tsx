@@ -1,6 +1,6 @@
 import { View, Text } from 'react-native';
 
-export default function explore() {
+export default function home() {
     return(
     <View>
         <Text>

@@ -1,6 +1,6 @@
 import { View, Text } from 'react-native';
 
-export default function explore() {
+export default function splits() {
     return(
     <View>
         <Text>
