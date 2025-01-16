@@ -11,16 +11,16 @@ app.use(cors());
 app.use(bodyParser.json()); // Parse JSON requests
 
 // API Ninjas base URL and your API key
-const API_NINJAS_URL = 'https://api.api-ninjas.com/v1/exercises';
+const API_NINJAS_URL = 'https://api.api-ninjas.com/v1/exercises?name=bulgarian';
 const API_KEY = 'F1MrXYbs75rYDmGS8V9GQw==nADb7j66vFLL1qmo';  // Replace this with your actual API key
 
-// Example route
-app.get('/', (req, res) => {
-  res.json({ message: 'Hello from the backend!' });
-});
+// // Example route
+// app.get('/', (req, res) => {
+//   res.json({ message: 'Hello from the backend!' });
+// });
 
 // Route to fetch exercises from API Ninjas
-app.get('/exercises', async (req, res) => {
+app.get('/', async (req, res) => {
   try {
     const response = await axios.get(API_NINJAS_URL, {
       headers: {
