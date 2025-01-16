@@ -1,5 +1,10 @@
-export default function TabTwoScreen() {
-  return (
-    <p>Today's Workout</p>
-  );
+import { View, Text } from 'react-native';
+
+export default function explore() {
+    return(
+    <View>
+        <Text>
+            Welcome to the Home Page
+        </Text>
+    </View>)
 }
