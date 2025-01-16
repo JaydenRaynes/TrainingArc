@@ -1,10 +1,10 @@
 import { View, Text } from 'react-native';
 
-export default function gymfinder() {
+export default function questionare() {
     return(
     <View>
         <Text>
-            Welcome to the gymfinder Page
+            Welcome to the Questionare Page
         </Text>
     </View>)
 }

@@ -56,6 +56,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Feather name="map-pin" size={24} color="black" />,
         }}
       />
+      <Tabs.Screen
+        name="questionare"
+        options={{
+          title: 'Questionare',
+          tabBarIcon: ({ color }) => <FontAwesome6 name="comments" />,
+        }}
+      />
     </Tabs>
   );
 }
