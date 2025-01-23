@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import {doc, setDoc} from "firebase/firestore";
 import { auth, db } from "../firebaseConfig"; // Import Firebase Auth
+import { Redirect } from 'expo-router';
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -31,7 +32,7 @@ export default function Signup() {
             email: user.email,
           });
           Alert.alert("Success", "Account created successfully!");
-          router.push("/login"); // Navigate to Login
+          router.push("/(tabs)/explore"); // Navigate to Login
         })
         .catch((error) => {
           console.error("Signup Error:", error); // Log error for debugging
