@@ -33,7 +33,7 @@ export default function BiometricsForm() {
         preferences,
       });
       Alert.alert("Success", "Your data has been saved!");
-      router.push("/"); // Navigate back to the home screen
+      router.push("/(tabs)/explore"); // Navigate back to the home screen
     } catch (error) {
       console.error("Error saving data:", error);
       Alert.alert("Error", "Failed to save your data. Please try again.");
