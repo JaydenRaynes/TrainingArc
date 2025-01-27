@@ -1,4 +1,4 @@
-export interface Exercise {
+export interface Friends {
     id: string;
     friendId: string;
 }
