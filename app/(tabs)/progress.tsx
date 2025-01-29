@@ -5,8 +5,8 @@ import {
   Text,
   Pressable,
   View,
-  TouchableWithoutFeedback,
-  FlatList
+  ScrollView,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -31,35 +31,23 @@ const App = () => {
     setSelectedExercise(null);
   };
 
-  const ExerciseItem = ({ exercise }) => {
-    return (
-      <View style={styles.exerciseModal}>
-        {/* Info Button in Top Right */}
-        <Pressable style={styles.infoButton} onPress={() => openInfoModal(exercise)}>
-          <Text style={styles.infoButtonText}>i</Text>
-        </Pressable>
-
-        <Text style={styles.titleText}>{exercise.name}</Text>
-        <Text style={styles.subtitleText}>Best Set: {exercise.bestSet}</Text>
-        <Text style={styles.subtitleText}>Estimated Max: {exercise.estimatedMax}</Text>
-      </View>
-    );
-  };
-
   return (
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1 }}>
-        {/* FlatList Displaying Exercises */}
-        <Modal transparent={true} visible={true}>
-          <View style={styles.modalContainer}>
-            <FlatList
-              data={exercises}
-              keyExtractor={item => item.id}
-              renderItem={({ item }) => <ExerciseItem exercise={item} />}
-              contentContainerStyle={{ paddingBottom: 20 }}
-            />
-          </View>
-        </Modal>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {exercises.map((exercise) => (
+            <View key={exercise.id} style={styles.exerciseCard}>
+              {/* Info Button in Top Right */}
+              <Pressable style={styles.infoButton} onPress={() => openInfoModal(exercise)}>
+                <Text style={styles.infoButtonText}>i</Text>
+              </Pressable>
+
+              <Text style={styles.titleText}>{exercise.name}</Text>
+              <Text style={styles.subtitleText}>Best Set: {exercise.bestSet}</Text>
+              <Text style={styles.subtitleText}>Estimated Max: {exercise.estimatedMax}</Text>
+            </View>
+          ))}
+        </ScrollView>
 
         {/* Exercise Info Modal */}
         <Modal transparent={true} visible={infoVisible} animationType="fade">
@@ -88,11 +76,11 @@ const App = () => {
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    marginTop: 75,
-    paddingHorizontal: 15,
+  scrollContainer: {
+    padding: 15,
+    paddingBottom: 20,
   },
-  exerciseModal: {
+  exerciseCard: {
     backgroundColor: 'white',
     borderRadius: 20,
     padding: 20,
@@ -101,7 +89,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    marginBottom: 15, // Adds space between each modal
+    marginBottom: 15, // Adds space between each card
     position: 'relative',
   },
   titleText: {
