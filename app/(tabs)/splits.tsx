@@ -10,15 +10,22 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState<string>(''); // State for search term
   const [expandedInstructions, setExpandedInstructions] = useState<Set<number>>(new Set()); // Track expanded instructions
 
+  const API_NINJAS_URL = 'https://api.api-ninjas.com/v1/exercises';
+  const API_KEY = 'F1MrXYbs75rYDmGS8V9GQw==nADb7j66vFLL1qmo';
+
+  // Function to fetch exercises from the API
   const fetchExercises = async (query: string) => {
     try {
       setLoading(true); // Show loading spinner
-      const response = await axios.get('http://localhost:5000/', {
+      const response = await axios.get(API_NINJAS_URL, {
+        headers: {
+          'X-Api-Key': API_KEY,
+        },
         params: {
-          name: query, // Pass search term to backend
+          name: query, // Send search term to API
         },
       });
-      setExercises(response.data.exercises); // Set exercises from API response
+      setExercises(response.data); // Set exercises from API response
     } catch (error) {
       setError('Failed to fetch exercises');
       console.error(error);
@@ -27,18 +34,21 @@ const Index = () => {
     }
   };
 
+  // Handle search button click
   const handleSearch = () => {
     if (searchTerm.trim() !== '') {
       fetchExercises(searchTerm); // Fetch exercises when user clicks search button
     }
   };
 
+  // Handle pressing the "Enter" key in the search field
   const handleEnterPress = (e: any) => {
     if (e.key === 'Enter' && searchTerm.trim() !== '') {
       fetchExercises(searchTerm); // Fetch exercises when user presses Enter
     }
   };
 
+  // Toggle instructions (expand/collapse)
   const toggleInstructions = (index: number) => {
     setExpandedInstructions((prevState) => {
       const newState = new Set(prevState);
