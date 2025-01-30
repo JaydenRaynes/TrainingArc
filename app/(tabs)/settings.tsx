@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import ProfileSettings from "../settingComponent/profileSetting";
 import AppPreferences from "../settingComponent/appPreferences";
 import NotificationsSettings from "../settingComponent/notificationSetting";
@@ -15,19 +15,26 @@ export default function Settings() {
   const [modalVisible, setModalVisible] = useState(false);
 
   return (
-    <ScrollView style={styles.container}>
-      <ProfileSettings name={name} setName={setName} age={age} setAge={setAge} gender={gender} setGender={setGender} />
-      <AppPreferences isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
-      <NotificationsSettings isNotificationsEnabled={isNotificationsEnabled} setIsNotificationsEnabled={setIsNotificationsEnabled} />
-      <PrivacySecurity setModalVisible={setModalVisible} />
-      <ChangePasswordModal
-        modalVisible={modalVisible}
-        setModalVisible={setModalVisible}
-      />
-    </ScrollView>
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <ProfileSettings name={name} setName={setName} age={age} setAge={setAge} gender={gender} setGender={setGender} />
+        <AppPreferences isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+        <NotificationsSettings isNotificationsEnabled={isNotificationsEnabled} setIsNotificationsEnabled={setIsNotificationsEnabled} />
+        <PrivacySecurity setModalVisible={setModalVisible} />
+      </ScrollView>
+      <ChangePasswordModal modalVisible={modalVisible} setModalVisible={setModalVisible} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  container: {
+    flex: 1,
+    backgroundColor: "#191a2f", // Dark theme background
+    padding: 10,
+  },
+
+  scrollViewContent: {
+    paddingBottom: 50, // Prevents content from getting cut off
+  },
 });
