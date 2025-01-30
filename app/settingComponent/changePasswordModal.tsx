@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import { signOut } from "firebase/auth";
 import {
   View,
   Text,
@@ -22,6 +24,7 @@ export default function ChangePasswordModal({
   modalVisible: boolean;
   setModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const router = useRouter();
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -51,6 +54,8 @@ export default function ChangePasswordModal({
         // Update the password
         await updatePassword(user, newPassword);
         Alert.alert("Success", "Password updated successfully!");
+        signOut(auth);
+        router.replace("/login");
         setModalVisible(false); // Close modal
         setOldPassword("");
         setNewPassword("");

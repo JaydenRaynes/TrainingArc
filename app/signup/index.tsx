@@ -32,7 +32,7 @@ export default function Signup() {
             email: user.email,
           });
           Alert.alert("Success", "Account created successfully!");
-          router.push("/(tabs)/explore");
+          router.push("/login");
         })
         .catch((error) => {
           console.error("Signup Error:", error);
