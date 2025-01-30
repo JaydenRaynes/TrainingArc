@@ -18,21 +18,43 @@ export default function AppPreferences({ isDarkMode, setIsDarkMode }: any) {
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>App Preferences</Text>
       <View style={styles.toggleContainer}>
-        <Text>Dark Mode</Text>
-        <Switch value={isDarkMode} onValueChange={handleDarkModeToggle} />
+        <Text style={styles.text}>Dark Mode</Text>
+        <Switch
+          value={isDarkMode}
+          onValueChange={handleDarkModeToggle}
+          trackColor={{ false: "#767577", true: "#FFA500" }}
+          thumbColor={isDarkMode ? "#FFA500" : "#f4f3f4"}
+        />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  section: { marginBottom: 30 },
-  sectionTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  section: {
+    marginBottom: 30,
+    padding: 20,
+    borderRadius: 10,
+    backgroundColor: "#191a2f", 
+  },
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#FFA500", 
+    backgroundColor: "#000000", 
+    borderRadius: 50,
+    padding: 10,
+  },
+
+  text: {
+    color: "#FFFFFF", 
+  },
+
   toggleContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
 });
-
-

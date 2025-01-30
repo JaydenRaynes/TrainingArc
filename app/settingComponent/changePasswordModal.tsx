@@ -78,6 +78,7 @@ export default function ChangePasswordModal({
           <TextInput
             style={styles.input}
             placeholder="Old Password"
+            placeholderTextColor="#B0B0B0"
             secureTextEntry
             value={oldPassword}
             onChangeText={setOldPassword}
@@ -85,6 +86,7 @@ export default function ChangePasswordModal({
           <TextInput
             style={styles.input}
             placeholder="New Password"
+            placeholderTextColor="#B0B0B0"
             secureTextEntry
             value={newPassword}
             onChangeText={setNewPassword}
@@ -92,6 +94,7 @@ export default function ChangePasswordModal({
           <TextInput
             style={styles.input}
             placeholder="Confirm New Password"
+            placeholderTextColor="#B0B0B0"
             secureTextEntry
             value={confirmNewPassword}
             onChangeText={setConfirmNewPassword}
@@ -102,7 +105,7 @@ export default function ChangePasswordModal({
               style={[styles.button, styles.cancelButton]}
               onPress={() => setModalVisible(false)}
             >
-              <Text style={styles.buttonText}>Cancel</Text>
+              <Text style={[styles.buttonText, styles.cancelButtonText]}>Cancel</Text>
             </Pressable>
             <Pressable
               style={[styles.button, styles.confirmButton]}
@@ -122,39 +125,69 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.7)", // Darker overlay for better focus
   },
+
   modalContent: {
-    width: "80%",
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 10,
+    width: "85%",
+    backgroundColor: "#191a2f",
+    padding: 25,
+    borderRadius: 12,
     alignItems: "center",
     elevation: 10,
   },
-  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 20 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 15,
-    width: "100%",
+
+  modalTitle: { 
+    fontSize: 22, 
+    fontWeight: "bold", 
+    marginBottom: 20, 
+    color: "#FFA500" 
   },
+
+  input: {
+    width: "100%",
+    backgroundColor: "#1E1E2D",
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 10,
+    color: "#FFF",
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#FFA500",
+  },
+
   modalButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
     marginTop: 20,
   },
+
   button: {
     flex: 1,
-    padding: 10,
-    marginHorizontal: 5,
-    borderRadius: 5,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: "center",
+    marginHorizontal: 5,
   },
-  cancelButton: { backgroundColor: "#ccc" },
-  confirmButton: { backgroundColor: "#007BFF" },
-  buttonText: { color: "#fff", fontWeight: "bold" },
+
+  cancelButton: { 
+    backgroundColor: "transparent", 
+    borderWidth: 2, 
+    borderColor: "#FFA500" 
+  },
+
+  cancelButtonText: { 
+    color: "#FFA500" 
+  },
+
+  confirmButton: { 
+    backgroundColor: "#FFA500" 
+  },
+
+  buttonText: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#0D0D0D" 
+  },
 });

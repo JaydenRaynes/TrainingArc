@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import {doc, getDoc} from "firebase/firestore";
-import { auth, db } from "../firebaseConfig"; // Import Firebase Auth
-import { Redirect } from 'expo-router';
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebaseConfig";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -13,24 +14,23 @@ export default function Login() {
 
   const handleLogin = () => {
     if (email && password) {
-      // Firebase Authentication
       signInWithEmailAndPassword(auth, email, password)
-        .then(async(userCredential) => {
+        .then(async (userCredential) => {
           const user = userCredential.user;
 
           const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
+          const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          if (userData.isFirstLogin) {
-            router.push("/biometrics"); // Navigate to Biometrics page
-          } else {
-            Alert.alert("Success", `Welcome back, ${user.email}!`);
-            router.push("/(tabs)/explore"); // Navigate to Home
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            if (userData.isFirstLogin) {
+              router.push("/biometrics");
+            } else {
+              Alert.alert("Success", `Welcome back, ${user.email}!`);
+              router.push("/(tabs)/explore");
+            }
           }
-        }
-      })
+        })
         .catch((error) => {
           Alert.alert("Error", error.message);
         });
@@ -40,34 +40,103 @@ export default function Login() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none" // Disable auto-capitalization for email
-        keyboardType="email-address" // Use email keyboard
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      <Button title="Login" onPress={handleLogin} />
-      <Text style={styles.link} onPress={() => router.push("/signup")}>
-        Don't have an account? Sign up
-      </Text>
-    </View>
+    <LinearGradient colors={["#0D0D0D", "#191a2f"]} style={styles.background}>
+      <View style={styles.container}>
+        {/* Animated Logo */}
+        <Animated.Image
+          source={require("../../assets/images/Training_arc.jpg")}
+          style={styles.logo}
+          entering={FadeIn.duration(1200)}
+        />
+
+        {/* Animated Title */}
+        <Animated.Text style={styles.title} entering={FadeIn.duration(1000)}>
+          Login
+        </Animated.Text>
+
+        {/* Input Fields */}
+        <Animated.View style={styles.inputContainer} entering={FadeInDown.duration(1000).delay(200)}>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#B0B0B0"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#B0B0B0"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+        </Animated.View>
+
+        {/* Login Button */}
+        <Animated.View entering={FadeInDown.duration(1000).delay(400)}>
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            <Text style={styles.buttonText}>Login</Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Signup Link */}
+        <Animated.Text
+          style={styles.link}
+          onPress={() => router.push("/signup")}
+          entering={FadeInDown.duration(1000).delay(600)}
+        >
+          Don't have an account? <Text style={{ color: "#FFA500" }}>Sign up</Text>
+        </Animated.Text>
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 20 },
-  title: { fontSize: 24, marginBottom: 20, textAlign: "center" },
-  input: { borderWidth: 1, padding: 10, marginVertical: 10, borderRadius: 5 },
-  link: { color: "blue", textAlign: "center", marginTop: 20 },
+  background: { flex: 1 },
+  container: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20 },
+
+  logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+    resizeMode: "contain",
+    borderRadius: 20,
+  },
+
+  title: { fontSize: 28, fontWeight: "bold", color: "#FFA500", marginBottom: 20, textAlign: "center" },
+
+  inputContainer: { width: "100%", alignItems: "center" },
+
+  input: {
+    width: "85%",
+    backgroundColor: "#1E1E2D",
+    padding: 12,
+    marginVertical: 10,
+    borderRadius: 10,
+    color: "#FFF",
+    fontSize: 16,
+  },
+
+  button: {
+    backgroundColor: "#FFA500",
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderRadius: 25,
+    marginVertical: 10,
+    width: "85%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+  buttonText: { fontSize: 18, fontWeight: "bold", color: "#0D0D0D" },
+
+  link: { color: "#FFFFFF", textAlign: "center", marginTop: 20, fontSize: 16 },
 });
