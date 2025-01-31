@@ -52,6 +52,7 @@ const GymMapScreen: React.FC = () => {
     return (
       <View style={styles.center}>
         <Text>No gyms found nearby</Text>
+        <Text>{location.latitude}</Text>
       </View>
     );
   }
