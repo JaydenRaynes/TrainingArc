@@ -17,18 +17,20 @@ export default function Login() {
       signInWithEmailAndPassword(auth, email, password)
         .then(async (userCredential) => {
           const user = userCredential.user;
-
           const docRef = doc(db, "users", user.uid);
           const docSnap = await getDoc(docRef);
-
+  
           if (docSnap.exists()) {
             const userData = docSnap.data();
-            if (userData.isFirstLogin) {
-              router.push("/biometrics");
-            } else {
-              Alert.alert("Success", `Welcome back, ${user.email}!`);
-              router.push("/(tabs)/explore");
-            }
+  
+            // Store the next destination based on whether it's the first login
+            const nextScreen = userData.isFirstLogin ? "/biometrics" : "/(tabs)/explore";
+  
+            // Navigate to animation screen with the nextScreen as a parameter
+            router.push({
+              pathname: "/Animation/animation",
+              params: { nextScreen }, // Pass the next screen destination
+            });
           }
         })
         .catch((error) => {
@@ -38,6 +40,7 @@ export default function Login() {
       Alert.alert("Error", "Please enter valid credentials.");
     }
   };
+  
 
   return (
     <LinearGradient colors={["#0D0D0D", "#191a2f"]} style={styles.background}>
@@ -90,6 +93,7 @@ export default function Login() {
         >
           Don't have an account? <Text style={{ color: "#FFA500" }}>Sign up</Text>
         </Animated.Text>
+
       </View>
     </LinearGradient>
   );
