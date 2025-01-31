@@ -1,39 +1,38 @@
 import { useEffect, useState } from 'react';
-import Geolocation from '@react-native-community/geolocation';
+import * as Location from 'expo-location';  // Import expo-location
 
-interface Location {
+interface LocationType {
   latitude: number;
   longitude: number;
 }
 
 interface UseUserLocationResult {
-    location: Location | null;
-    error: string | null;
-  }
+  location: LocationType | null;
+  error: string | null;
+}
 
 export const useUserLocation = (): UseUserLocationResult => {
-    const [location, setLocation] = useState<Location | null>(null);
-    const [error, setError] = useState<string | null>(null);
-  
-    useEffect(() => {
-      const getLocation = () => {
-        Geolocation.getCurrentPosition(
-          (position) => {
-            setLocation({
-            //   latitude: position.coords.latitude,
-            //   longitude: position.coords.longitude,
-            latitude: 32.5232,
-            longitude: 92.6379,
-            });
-          },
-          (err) => {
-            setError(err.message);
-          }
-        );
-      };
+  const [location, setLocation] = useState<LocationType | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-      getLocation();
-    }, []);
+  useEffect(() => {
+    const getLocation = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync(); // Request permission
+      if (status !== 'granted') {
+        setError('Permission to access location was denied');
+        return;
+      }
+      try {
+        const userLocation = await Location.getCurrentPositionAsync({});  // Get current position
+        setLocation(userLocation.coords);
+      } catch (err) {
+        setError('Failed to fetch location');
+        console.error(err);
+      }
+    };
+
+    getLocation();
+  }, []);
 
   return { location, error };
 };
