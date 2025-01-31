@@ -12,7 +12,7 @@ export default function Index() {
       <View style={styles.container}>
 
       <Animated.Image
-          source={require("../assets/images/Training_arc.jpg")} // ✅ Ensure the image is in the assets folder
+          source={require("../assets/images/Training_arc.jpg")} 
           style={styles.logo}
           entering={FadeIn.duration(1200)}
         /> 
