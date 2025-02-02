@@ -11,7 +11,7 @@ interface Location {
 }
 
 const GymMapScreen: React.FC = () => {
-  const [gyms, setGyms] = useState<Gym[]>([]);
+  const [gyms, setGyms] = useState<Gym[]>([]); // Array of gyms
   const [error, setError] = useState<string | null>(null);
   
   // Use your custom hook to get the user's location
@@ -47,39 +47,48 @@ const GymMapScreen: React.FC = () => {
     );
   }
 
-  // Handle case where no gyms are found
-  if (gyms.length === 0) {
-    return (
-      <View style={styles.center}>
-        <Text>No gyms found nearby</Text>
-        <Text>{location.latitude}</Text>
-      </View>
-    );
-  }
-
+  // Render the map regardless of whether there are gyms
   return (
     <MapView
       style={styles.map}
       region={{
         latitude: location.latitude,
         longitude: location.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
+        latitudeDelta: 0.0922, // Adjust zoom level
+        longitudeDelta: 0.0421, // Adjust zoom level
       }}
     >
-      {gyms.map((gym, index) => (
-        <Marker
-          key={index}
-          coordinate={{
-            latitude: gym.geometry.location.lat,
-            longitude: gym.geometry.location.lng,
-          }}
-        >
-          <View style={styles.marker}>
-            <Text style={styles.markerText}>{gym.name}</Text>
-          </View>
-        </Marker>
-      ))}
+      {/* Marker for user's location */}
+      <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }}>
+        <View style={styles.marker}>
+          <Text style={styles.markerText}>You are here</Text>
+        </View>
+      </Marker>
+
+      {/* Loop through gyms and display markers for each */}
+      {gyms.length > 0 &&
+        gyms.map((gym, index) => (
+          <Marker
+            key={index}
+            coordinate={{
+              latitude: gym.geometry.location.lat,
+              longitude: gym.geometry.location.lng,
+            }}
+            title={gym.name}
+            description={gym.vicinity} // or use any other property you want to show
+          >
+            <View style={styles.marker}>
+              <Text style={styles.markerText}>{gym.name}</Text>
+            </View>
+          </Marker>
+        ))}
+
+      {/* Optionally, you can add a message if no gyms are found */}
+      {gyms.length === 0 && (
+        <View style={styles.center}>
+          <Text>No gyms found nearby</Text>
+        </View>
+      )}
     </MapView>
   );
 };
