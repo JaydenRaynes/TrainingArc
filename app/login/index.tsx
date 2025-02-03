@@ -19,7 +19,7 @@ export default function Login() {
           const user = userCredential.user;
 
           const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
+          const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
           const userData = docSnap.data();
@@ -27,7 +27,7 @@ export default function Login() {
             router.push("/biometrics"); // Navigate to Biometrics page
           } else {
             Alert.alert("Success", `Welcome back, ${user.email}!`);
-            router.push("/(tabs)/explore"); // Navigate to Home
+            router.push("/(tabs)"); // Navigate to Home
           }
         }
       })
