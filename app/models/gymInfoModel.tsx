@@ -8,4 +8,5 @@ export interface Gym {
     };
     types: string[];
     vicinity: string;
+    place_id: string;
   }
