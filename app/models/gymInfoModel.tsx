@@ -6,5 +6,6 @@ export interface Gym {
         lng: number;
       };
     };
+    types: string[];
     vicinity: string;
   }

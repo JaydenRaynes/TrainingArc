@@ -1,4 +1,4 @@
-import { Platform, View, Text, StyleSheet } from 'react-native';
+import { Platform, View, Text, Button, StyleSheet } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import useUserLocation from '../mapFunctions/userLocation'; // Custom hook for location fetching
 import fetchNearbyGyms from '../mapFunctions/nearbyGyms'; // Function to fetch nearby gyms
@@ -13,6 +13,7 @@ interface Location {
 const GymMapScreen: React.FC = () => {
   const [gyms, setGyms] = useState<Gym[]>([]); // Array of gyms
   const [error, setError] = useState<string | null>(null);
+  const [currentGym, setCurrentGym] = useState<Gym | null>(null); // Store the selected gym
   
   // Use your custom hook to get the user's location
   const { location, error: locationError } = useUserLocation();
@@ -47,7 +48,11 @@ const GymMapScreen: React.FC = () => {
     );
   }
 
-  // Render the map regardless of whether there are gyms
+  // Handle setting the current gym
+  const handleSetCurrentGym = (gym: Gym) => {
+    setCurrentGym(gym); // Set the selected gym as current gym
+  };
+
   return (
     <MapView
       style={styles.map}
@@ -68,25 +73,38 @@ const GymMapScreen: React.FC = () => {
       {/* Loop through gyms and display markers for each */}
       {gyms.length > 0 &&
         gyms.map((gym, index) => (
-          <Marker
-            key={index}
-            coordinate={{
-              latitude: gym.geometry.location.lat,
-              longitude: gym.geometry.location.lng,
-            }}
-            title={gym.name}
-            description={gym.vicinity} // or use any other property you want to show
-          >
-            <View style={styles.marker}>
-              <Text style={styles.markerText}>{gym.name}</Text>
-            </View>
-          </Marker>
+        <Marker
+        key={index}
+        coordinate={{
+            latitude: gym.geometry.location.lat,
+            longitude: gym.geometry.location.lng,
+        }}
+        title={gym.name}
+        description={gym.vicinity}
+        >
+        <View style={styles.marker}>
+            <Text style={styles.markerText}>{gym.name}</Text> 
+            <Text style={styles.markerText}>Type: {gym.types ? gym.types.join(', ') : 'N/A'}</Text> 
+            <Text style={styles.markerText}>Address: {gym.vicinity}</Text>
+            <Button title="Set as Current Gym" onPress={() => handleSetCurrentGym(gym)} />
+        </View>
+        </Marker>
+
         ))}
 
       {/* Optionally, you can add a message if no gyms are found */}
       {gyms.length === 0 && (
         <View style={styles.center}>
-          <Text>No gyms found nearby</Text>
+          <Text>No gyms found nearby</Text> {/* Wrapped text in <Text> */}
+        </View>
+      )}
+
+      {/* Display the current gym details if one is selected */}
+      {currentGym && (
+        <View style={styles.currentGymInfo}>
+          <Text style={styles.currentGymText}>Current Gym:</Text> {/* Wrapped text in <Text> */}
+          <Text style={styles.currentGymText}>Name: {currentGym.name}</Text> {/* Wrapped text in <Text> */}
+          <Text style={styles.currentGymText}>Address: {currentGym.vicinity}</Text> {/* Wrapped text in <Text> */}
         </View>
       )}
     </MapView>
@@ -110,12 +128,27 @@ const styles = StyleSheet.create({
   },
   marker: {
     backgroundColor: 'white',
-    padding: 5,
+    padding: 10,
     borderRadius: 5,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)', // Add a shadow for better visibility
+    width: 150,
   },
   markerText: {
     fontSize: 12,
+    color: '#333',
+    marginBottom: 5,
+  },
+  currentGymInfo: {
+    position: 'absolute',
+    bottom: 20,
+    left: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 10,
+    borderRadius: 10,
+  },
+  currentGymText: {
+    fontSize: 14,
+    fontWeight: 'bold',
     color: '#333',
   },
 });

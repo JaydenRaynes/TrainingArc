@@ -11,7 +11,7 @@ export const fetchNearbyGyms = async (latitude: number, longitude: number): Prom
   
     try {
       const response = await axios.get(url);
-      console.log(response);
+      //console.log(response);
       const gyms = response.data.results.filter((place: any) => place.name.toLowerCase().includes('gym'));
       return gyms as Gym[]; // Cast response to Gym type
     } catch (error) {
