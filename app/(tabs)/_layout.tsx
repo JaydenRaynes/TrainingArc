@@ -63,6 +63,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <FontAwesome6 name="comments" />,
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <Feather name="settings" size={24} color="black" />,
+        }}
+      />   
     </Tabs>
   );
 }
