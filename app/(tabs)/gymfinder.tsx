@@ -38,7 +38,7 @@ const GymMapScreen: React.FC = () => {
     }
     console.log(user);
     try {
-      const gymRef = doc(db, 'gyms', user.uid); // Reference to the gym document
+      const gymRef = doc(db, 'users', user.uid); // Reference to the gym document
       await setDoc(gymRef, {
         name: gym.name,
         address: gym.vicinity,
@@ -126,8 +126,8 @@ const GymMapScreen: React.FC = () => {
               {/* Always show the button if gym info is visible */}
               {showInfo[index] && (
               <View style={styles.buttonContainer}>
-                <TouchableOpacity onPress={() => handleSetCurrentGym(gym)}>
-                    <Button title="Set as Current Gym" color="green" />
+                <TouchableOpacity style={styles.customButton} onPress={() => handleSetCurrentGym(gym)}>
+                    <Text style={styles.buttonText}>Set as Current Gym</Text>
                 </TouchableOpacity>
               </View>
               )}
@@ -156,70 +156,83 @@ const GymMapScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  map: {
-    flex: 1,
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 1,
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  userMarker: {
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderRadius: 25,
-  },
-  gymMarker: {
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderRadius: 25,
-  },
-  gymInfo: {
-    backgroundColor: 'white',
-    padding: 8,
-    borderRadius: 10,
-    width: 120,
-    alignItems: 'center',
-    position: 'absolute',
-    top: 60,
-  },
-  gymMarkerText: {
-    fontSize: 12,
-    color: 'black',
-  },
-  currentGymInfo: {
-    position: 'absolute',
-    bottom: 20,
-    left: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    padding: 10,
-    borderRadius: 10,
-  },
-  currentGymText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  buttonContainer: {
-    backgroundColor: 'white', // Solid white background for the button container
-    padding: 10,              // Add some padding to give space around the button
-    borderRadius: 8,          // Optional: round the corners
-    width: 150,               // Control button width
-    marginTop: 10,            // Add space between gym info and the button
-    alignItems: 'center',     // Center the button horizontally
-    color: 'black',
-  },
-});
+    map: {
+      flex: 1,
+    },
+    center: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      flex: 1,
+    },
+    errorText: {
+      color: 'red',
+      fontSize: 16,
+      textAlign: 'center',
+    },
+    userMarker: {
+      width: 50,
+      height: 50,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'transparent',
+      borderRadius: 25,
+    },
+    gymMarker: {
+      width: 50,
+      height: 50,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'transparent',
+      borderRadius: 25,
+    },
+    gymInfo: {
+      backgroundColor: 'white',
+      padding: 8,
+      borderRadius: 10,
+      width: 120,
+      alignItems: 'center',
+      position: 'absolute',
+      top: 60,
+    },
+    gymMarkerText: {
+      fontSize: 12,
+      color: 'black',
+    },
+    currentGymInfo: {
+      position: 'absolute',
+      bottom: 20,
+      left: 10,
+      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      padding: 10,
+      borderRadius: 10,
+    },
+    currentGymText: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: '#333',
+    },
+    buttonContainer: {
+      backgroundColor: 'white', // Solid white background for the button container
+      padding: 10,              // Add some padding to give space around the button
+      borderRadius: 8,          // Optional: round the corners
+      width: 150,               // Control button width
+      marginTop: 10,            // Add space between gym info and the button
+      alignItems: 'center',     // Center the button horizontally
+    },
+    customButton: {
+      backgroundColor: 'green', // Green background for the button
+      paddingVertical: 10,      // Vertical padding for the button
+      paddingHorizontal: 20,    // Horizontal padding for the button
+      borderRadius: 8,          // Round corners for the button
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    buttonText: {
+      color: 'white',           // Text color white
+      fontSize: 16,             // Font size for the text
+      fontWeight: 'bold',       // Make the text bold
+    },
+  });
+  
 
 export default GymMapScreen;
