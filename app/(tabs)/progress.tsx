@@ -1,25 +1,55 @@
-import React, { useState } from 'react';
-import {
-  Modal,
-  StyleSheet,
-  Text,
-  Pressable,
-  View,
-  ScrollView,
-  TouchableWithoutFeedback
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Modal, StyleSheet, Text, Pressable, View, ScrollView, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { db, auth } from '../firebaseConfig'; // Import your Firestore configuration
 
-const exercises = [
-  { id: '1', name: 'Bench Press', bestSet: '225 x 5', estimatedMax: '255 lbs' },
-  { id: '2', name: 'Squat', bestSet: '315 x 3', estimatedMax: '345 lbs' },
-  { id: '3', name: 'Deadlift', bestSet: '405 x 2', estimatedMax: '435 lbs' },
-  { id: '4', name: 'Overhead Press', bestSet: '135 x 5', estimatedMax: '155 lbs' },
-];
-
-const App = () => {
+const ProgressPage = () => {
   const [infoVisible, setInfoVisible] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
+  const [workouts, setWorkouts] = useState([]); // Store all workouts
+
+  // Fetch all workout data from Firestore
+  useEffect(() => {
+    const userID = auth.currentUser?.uid; // Get the current user's ID
+    if (!userID) return;
+
+    const progressRef = collection(db, "users", userID, "progress");
+
+    // Query to get all workouts (sorted by date)
+    const q = query(progressRef, orderBy("date", "desc"));
+
+    // Real-time listener using onSnapshot
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      if (!querySnapshot.empty) {
+        // Get all workout data
+        const workoutData = querySnapshot.docs.map(doc => doc.data());
+        
+        // Group workouts by exercise name and only keep the most recent one
+        const groupedWorkouts = {};
+        
+        workoutData.forEach(workout => {
+          const { workoutName, date } = workout;
+          
+          // If the workoutName already exists in the groupedWorkouts object, check if the current one is more recent
+          if (!groupedWorkouts[workoutName] || new Date(date) > new Date(groupedWorkouts[workoutName].date)) {
+            groupedWorkouts[workoutName] = workout;
+          }
+        });
+
+        // Convert the grouped workouts object back to an array
+        setWorkouts(Object.values(groupedWorkouts));
+      } else {
+        console.log("No workout data found");
+        setWorkouts([]);
+      }
+    }, (error) => {
+      console.error("Error fetching workout data:", error);
+    });
+
+    // Clean up the listener when the component is unmounted
+    return () => unsubscribe();
+  }, []);
 
   const openInfoModal = (exercise) => {
     setSelectedExercise(exercise);
@@ -35,18 +65,24 @@ const App = () => {
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {exercises.map((exercise) => (
-            <View key={exercise.id} style={styles.exerciseCard}>
-              {/* Info Button in Top Right */}
-              <Pressable style={styles.infoButton} onPress={() => openInfoModal(exercise)}>
-                <Text style={styles.infoButtonText}>i</Text>
-              </Pressable>
+          <Text style={styles.header}>Workout Progress</Text>
+          {workouts.length > 0 ? (
+            workouts.map((workout, index) => (
+              <View key={index} style={styles.exerciseCard}>
+                <Pressable style={styles.infoButton} onPress={() => openInfoModal(workout)}>
+                  <Text style={styles.infoButtonText}>i</Text>
+                </Pressable>
 
-              <Text style={styles.titleText}>{exercise.name}</Text>
-              <Text style={styles.subtitleText}>Best Set: {exercise.bestSet}</Text>
-              <Text style={styles.subtitleText}>Estimated Max: {exercise.estimatedMax}</Text>
-            </View>
-          ))}
+                <Text style={styles.titleText}>{workout.workoutName}</Text>
+                <Text style={styles.subtitleText}>Sets: {workout.sets}</Text>
+                <Text style={styles.subtitleText}>Reps: {workout.reps}</Text>
+                <Text style={styles.subtitleText}>Weight: {workout.weight}</Text>
+                <Text style={styles.subtitleText}>Completed: {workout.completed ? 'Yes' : 'No'}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noWorkoutText}>No workout data available.</Text>
+          )}
         </ScrollView>
 
         {/* Exercise Info Modal */}
@@ -54,15 +90,11 @@ const App = () => {
           <TouchableWithoutFeedback onPress={closeInfoModal}>
             <View style={styles.infoModalBackground}>
               <View style={styles.infoModalView}>
-                <Text style={styles.infoTitle}>
-                  {selectedExercise?.name} Info
-                </Text>
-                <Text style={styles.infoContent}>
-                  Best Set: {selectedExercise?.bestSet}
-                </Text>
-                <Text style={styles.infoContent}>
-                  Estimated Max: {selectedExercise?.estimatedMax}
-                </Text>
+                <Text style={styles.infoTitle}>{selectedExercise?.workoutName} Info</Text>
+                <Text style={styles.infoContent}>Sets: {selectedExercise?.sets}</Text>
+                <Text style={styles.infoContent}>Reps: {selectedExercise?.reps}</Text>
+                <Text style={styles.infoContent}>Weight: {selectedExercise?.weight}</Text>
+                <Text style={styles.infoContent}>Completed: {selectedExercise?.completed ? 'Yes' : 'No'}</Text>
                 <Pressable style={styles.closeButton} onPress={closeInfoModal}>
                   <Text style={styles.closeButtonText}>Close</Text>
                 </Pressable>
@@ -80,6 +112,12 @@ const styles = StyleSheet.create({
     padding: 15,
     paddingBottom: 20,
   },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
   exerciseCard: {
     backgroundColor: 'white',
     borderRadius: 20,
@@ -89,7 +127,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    marginBottom: 15, // Adds space between each card
+    marginBottom: 15,
     position: 'relative',
   },
   titleText: {
@@ -101,7 +139,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: 'black',
   },
-  // Info Button Styling
+  noWorkoutText: {
+    fontSize: 18,
+    color: 'gray',
+    textAlign: 'center',
+    marginTop: 20,
+  },
   infoButton: {
     position: 'absolute',
     top: 10,
@@ -118,7 +161,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  // Info Modal Styles
   infoModalBackground: {
     flex: 1,
     justifyContent: 'center',
@@ -161,4 +203,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default App;
+export default ProgressPage;
