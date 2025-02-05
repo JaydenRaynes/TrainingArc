@@ -1,8 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TextInput, Button, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import axios from 'axios';
-import { Exercise } from '../models/exerciseModel';
+// Splits Page (WorkoutPlanScreen.js)
+import React, { useState, useEffect } from "react";
+import { View, Text, TextInput, Button, FlatList, ScrollView, TouchableOpacity } from "react-native";
+import BouncyCheckbox from "react-native-bouncy-checkbox";
+import { db, auth } from "../firebaseConfig";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
+const WorkoutPlanScreen = () => {
+  const userID = auth.currentUser?.uid;
+  const [workoutPlan, setWorkoutPlan] = useState({});
+  const [newWorkout, setNewWorkout] = useState({});
+
+  useEffect(() => {
+    const fetchWorkoutPlan = async () => {
+      if (!userID) return;
+      const userRef = doc(db, "users", userID);
+      const docSnap = await getDoc(userRef);
+      if (docSnap.exists()) {
+        setWorkoutPlan(docSnap.data()?.workoutPlans || {});
+      }
+    };
+    fetchWorkoutPlan();
+  }, [userID]);
+
+  const saveWorkoutPlan = async () => {
+    if (!userID) return;
+    try {
+      const userRef = doc(db, "users", userID);
+      await setDoc(userRef, { workoutPlans: workoutPlan }, { merge: true });
+      console.log("Workout plan saved!");
 const Index = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,13 +52,12 @@ const Index = () => {
       });
       setExercises(response.data); // Set exercises from API response
     } catch (error) {
-      setError('Failed to fetch exercises');
-      console.error(error);
-    } finally {
-      setLoading(false); // Hide loading spinner
+      console.error("Error saving workout plan:", error);
     }
   };
 
+  const updateSplit = (day, split) => {
+    setWorkoutPlan((prev) => ({ ...prev, [day]: { ...prev[day], split, workouts: prev[day]?.workouts || [] } }));
   // Handle search button click
   const handleSearch = () => {
     if (searchTerm.trim() !== '') {
@@ -41,6 +65,16 @@ const Index = () => {
     }
   };
 
+  const addWorkout = (day) => {
+    if (!newWorkout[day]?.name) return;
+    setWorkoutPlan((prev) => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        workouts: [...(prev[day]?.workouts || []), { ...newWorkout[day], completed: false }],
+      },
+    }));
+    setNewWorkout((prev) => ({ ...prev, [day]: { name: "", sets: "", reps: "", weight: "" } }));
   // Handle pressing the "Enter" key in the search field
   const handleEnterPress = (e: any) => {
     if (e.key === 'Enter' && searchTerm.trim() !== '') {
@@ -48,6 +82,10 @@ const Index = () => {
     }
   };
 
+  const deleteWorkout = (day, index) => {
+    setWorkoutPlan((prev) => {
+      const updatedWorkouts = prev[day].workouts.filter((_, i) => i !== index);
+      return { ...prev, [day]: { ...prev[day], workouts: updatedWorkouts } };
   // Toggle instructions (expand/collapse)
   const toggleInstructions = (index: number) => {
     setExpandedInstructions((prevState) => {
@@ -61,156 +99,33 @@ const Index = () => {
     });
   };
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
-    );
-  }
-
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Exercises:</Text>
-
-      {/* Search Bar */}
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Search exercises..."
-        value={searchTerm}
-        onChangeText={setSearchTerm}
-        onSubmitEditing={handleEnterPress} // Trigger search when pressing "Enter"
-      />
-
-      {/* Search Button */}
-      <Button title="Search" onPress={handleSearch} />
-
-      {/* Display Exercises */}
-      {exercises.length > 0 && (
-        <FlatList
-          data={exercises}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item, index }) => (
-            <View style={styles.exerciseContainer}>
-              <Text style={styles.exerciseName}>{item.name}</Text>
-              <Text style={styles.exerciseDetails}>Target Muscle: {item.muscle}</Text>
-              <Text style={styles.exerciseDetails}>Type: {item.type}</Text>
-              <Text style={styles.exerciseDetails}>Equipment: {item.equipment}</Text>
-              <Text style={styles.exerciseDetails}>Difficulty: {item.difficulty}</Text>
-
-              {/* Instructions: Show a truncated version initially, with a "..." button to expand */}
-              <View>
-                <Text
-                  style={styles.instructions}
-                  numberOfLines={expandedInstructions.has(index) ? undefined : 2}
-                >
-                  {item.instructions || 'No instructions available'}
-                </Text>
-                {item.instructions && (
-                  <TouchableOpacity onPress={() => toggleInstructions(index)}>
-                    <Text style={styles.expandText}>
-                      {expandedInstructions.has(index) ? 'Show Less' : '...'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+    <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20 }}>
+      {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+        <View key={day} style={{ marginBottom: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: "bold" }}>{day}</Text>
+          <TextInput placeholder="Enter split (e.g., Push, Pull)" value={workoutPlan[day]?.split || ""} onChangeText={(text) => updateSplit(day, text)} style={{ borderBottomWidth: 1, marginBottom: 10 }} />
+          <FlatList
+            data={workoutPlan[day]?.workouts || []}
+            keyExtractor={(item, index) => `${item.name}-${index}`}
+            renderItem={({ item, index }) => (
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 5 }}>
+                <Text>{item.name} - {item.sets} sets x {item.reps} reps @ {item.weight} lbs</Text>
+                <TouchableOpacity onPress={() => deleteWorkout(day, index)}>
+                  <Text style={{ color: "red", marginLeft: 10 }}>Delete</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-          )}
-        />
-      )}
-
-      {/* Show "No exercises found" message only if search term is not empty and no exercises are found */}
-      {exercises.length === 0 && searchTerm.trim() !== '' && (
-        <Text style={styles.noResultsText}>No exercises found for "{searchTerm}"</Text>
-      )}
+            )}
+          />
+          <TextInput placeholder="Workout Name" value={newWorkout[day]?.name || ""} onChangeText={(text) => setNewWorkout((prev) => ({ ...prev, [day]: { ...prev[day], name: text } }))} style={{ borderBottomWidth: 1, marginBottom: 5 }} />
+          <TextInput placeholder="Sets" value={newWorkout[day]?.sets || ""} onChangeText={(text) => setNewWorkout((prev) => ({ ...prev, [day]: { ...prev[day], sets: text } }))} style={{ borderBottomWidth: 1, marginBottom: 5 }} />
+          <TextInput placeholder="Reps" value={newWorkout[day]?.reps || ""} onChangeText={(text) => setNewWorkout((prev) => ({ ...prev, [day]: { ...prev[day], reps: text } }))} style={{ borderBottomWidth: 1, marginBottom: 5 }} />
+          <TextInput placeholder="Weight" value={newWorkout[day]?.weight || ""} onChangeText={(text) => setNewWorkout((prev) => ({ ...prev, [day]: { ...prev[day], weight: text } }))} style={{ borderBottomWidth: 1, marginBottom: 5 }} />
+          <Button title="Add Workout" onPress={() => addWorkout(day)} />
+        </View>
+      ))}
+      <Button title="Save Plan" onPress={saveWorkoutPlan} />
     </ScrollView>
   );
 };
-
-// Styles for the layout
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  searchBar: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 20,
-    paddingHorizontal: 10,
-    fontSize: 16,
-  },
-  exerciseContainer: {
-    backgroundColor: '#fff',
-    padding: 15,
-    marginBottom: 15,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  exerciseName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  exerciseDetails: {
-    fontSize: 16,
-    color: '#555',
-    marginVertical: 2,
-  },
-  instructions: {
-    fontSize: 14,
-    color: '#777',
-    marginTop: 10,
-    fontStyle: 'italic',
-  },
-  expandText: {
-    fontSize: 14,
-    color: '#007BFF',
-    marginTop: 5,
-    fontStyle: 'italic',
-  },
-  loadingText: {
-    fontSize: 20,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  errorText: {
-    fontSize: 20,
-    color: 'red',
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  noResultsText: {
-    fontSize: 18,
-    textAlign: 'center',
-    color: 'gray',
-    marginTop: 20,
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 1,
-  },
-});
-
-export default Index;
+export default WorkoutPlanScreen;
