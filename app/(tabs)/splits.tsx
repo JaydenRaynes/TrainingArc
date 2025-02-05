@@ -28,29 +28,6 @@ const WorkoutPlanScreen = () => {
       const userRef = doc(db, "users", userID);
       await setDoc(userRef, { workoutPlans: workoutPlan }, { merge: true });
       console.log("Workout plan saved!");
-const Index = () => {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState<string>(''); // State for search term
-  const [expandedInstructions, setExpandedInstructions] = useState<Set<number>>(new Set()); // Track expanded instructions
-
-  const API_NINJAS_URL = 'https://api.api-ninjas.com/v1/exercises';
-  const API_KEY = 'F1MrXYbs75rYDmGS8V9GQw==nADb7j66vFLL1qmo';
-
-  // Function to fetch exercises from the API
-  const fetchExercises = async (query: string) => {
-    try {
-      setLoading(true); // Show loading spinner
-      const response = await axios.get(API_NINJAS_URL, {
-        headers: {
-          'X-Api-Key': API_KEY,
-        },
-        params: {
-          name: query, // Send search term to API
-        },
-      });
-      setExercises(response.data); // Set exercises from API response
     } catch (error) {
       console.error("Error saving workout plan:", error);
     }
@@ -58,11 +35,6 @@ const Index = () => {
 
   const updateSplit = (day, split) => {
     setWorkoutPlan((prev) => ({ ...prev, [day]: { ...prev[day], split, workouts: prev[day]?.workouts || [] } }));
-  // Handle search button click
-  const handleSearch = () => {
-    if (searchTerm.trim() !== '') {
-      fetchExercises(searchTerm); // Fetch exercises when user clicks search button
-    }
   };
 
   const addWorkout = (day) => {
@@ -75,29 +47,14 @@ const Index = () => {
       },
     }));
     setNewWorkout((prev) => ({ ...prev, [day]: { name: "", sets: "", reps: "", weight: "" } }));
-  // Handle pressing the "Enter" key in the search field
-  const handleEnterPress = (e: any) => {
-    if (e.key === 'Enter' && searchTerm.trim() !== '') {
-      fetchExercises(searchTerm); // Fetch exercises when user presses Enter
-    }
-  };
+    };
 
   const deleteWorkout = (day, index) => {
     setWorkoutPlan((prev) => {
       const updatedWorkouts = prev[day].workouts.filter((_, i) => i !== index);
       return { ...prev, [day]: { ...prev[day], workouts: updatedWorkouts } };
-  // Toggle instructions (expand/collapse)
-  const toggleInstructions = (index: number) => {
-    setExpandedInstructions((prevState) => {
-      const newState = new Set(prevState);
-      if (newState.has(index)) {
-        newState.delete(index); // Collapse
-      } else {
-        newState.add(index); // Expand
-      }
-      return newState;
-    });
-  };
+      });
+    };
 
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20 }}>
