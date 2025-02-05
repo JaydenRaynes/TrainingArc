@@ -29,9 +29,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="splits"
+        name="exercises"
         options={{
-          title: 'Splits',
+          title: 'Exercises',
           tabBarIcon: ({ color }) => <MaterialIcons name="format-list-numbered" size={24} color="black" />,
         }}
       />
@@ -50,9 +50,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="gymfinder"
+        name="splits"
         options={{
-          title: 'Gym Finder',
+          title: 'Splits',
           tabBarIcon: ({ color }) => <Feather name="map-pin" size={24} color="black" />,
         }}
       />
@@ -63,6 +63,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <FontAwesome6 name="comments" />,
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <Feather name="settings" size={24} color="black" />,
+        }}
+      />   
     </Tabs>
   );
 }
