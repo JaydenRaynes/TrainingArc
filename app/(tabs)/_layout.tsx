@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
-
+import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -35,6 +35,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <MaterialIcons name="format-list-numbered" size={24} color="black" />,
         }}
       />
+      
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color }) => <Feather name="map-pin" size={24} color="black" />,
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{
@@ -43,17 +51,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Character',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="face-man-profile" size={24} color="black" />,
-        }}
-      />
-      <Tabs.Screen
         name="splits"
         options={{
           title: 'Splits',
-          tabBarIcon: ({ color }) => <Feather name="map-pin" size={24} color="black" />,
+          tabBarIcon: ({ color }) => <AntDesign name="calendar" size={24} color="black" />,
         }}
       />
       <Tabs.Screen
