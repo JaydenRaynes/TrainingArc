@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, Alert, Button } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { db, auth } from "../firebaseConfig";
-import { doc, onSnapshot, updateDoc, collection, addDoc, writeBatch } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase/firestore";
 import { format } from "date-fns";
 
 const WorkoutsPage = () => {
@@ -40,27 +40,38 @@ const WorkoutsPage = () => {
     const userID = auth.currentUser?.uid;
     if (!userID) return;
   
-    const progressRef = collection(db, "users", userID, "progress");
+    const progressRef = doc(db, "users", userID, "progress", format(new Date(), "yyyy-MM-dd"));
   
-    completedWorkouts.forEach(async (workout) => {
-      const newProgressDoc = {
-        date: format(new Date(), "yyyy-MM-dd"),
+    // Construct the progress data for that day
+    const progressData = {
+      date: format(new Date(), "yyyy-MM-dd"),
+      workouts: completedWorkouts.map(workout => ({
         workoutName: workout.name,
         sets: workout.sets,
         reps: workout.reps,
         weight: workout.weight,
         completed: workout.completed,
-      };
+      }))
+    };
   
-      console.log("Saving document:", newProgressDoc);
+    try {
+      // Check if the document already exists
+      const docSnap = await getDoc(progressRef);
   
-      try {
-        await addDoc(progressRef, newProgressDoc);
+      if (docSnap.exists()) {
+        // If the document exists, update the workouts array with the new completed workouts
+        await updateDoc(progressRef, {
+          workouts: arrayUnion(...progressData.workouts),
+        });
+        console.log("Progress updated successfully!");
+      } else {
+        // If the document doesn't exist, create a new one
+        await setDoc(progressRef, progressData);
         console.log("Progress saved successfully!");
-      } catch (error) {
-        console.error("Error saving progress:", error);
       }
-    });
+    } catch (error) {
+      console.error("Error saving progress:", error);
+    }
   };
 
   // Toggle workout completion and update Firestore
@@ -82,15 +93,14 @@ const WorkoutsPage = () => {
   // Handle save button click to store completed workouts
   const handleSaveCompletedWorkouts = () => {
     if (!workoutPlan) return;
-
+  
     const completedWorkouts = workoutPlan.workouts.filter((workout) => workout.completed);
     if (completedWorkouts.length === 0) {
       Alert.alert("No Completed Workouts", "Please check off some workouts before saving.");
     } else {
-      saveToProgress(completedWorkouts); // Corrected function call to saveToProgress
+      saveToProgress(completedWorkouts); // Now saves all completed workouts for the day under one document
     }
   };
-
   return (
     <View style={{ padding: 20 }}>
       <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 10 }}>{today}'s Workout</Text>
