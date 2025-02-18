@@ -2,8 +2,8 @@ export interface Gym {
     name: string;
     geometry: {
       location: {
-        lat: number;
-        lng: number;
+        latitude: number;
+        longitude: number;
       };
     };
     types: string[];

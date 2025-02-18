@@ -1,31 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
-import { db, auth } from '../firebaseConfig'; // Assuming db is your Firestore instance
+import { db, auth } from '../firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 import useUserLocation from '../mapFunctions/userLocation';
 import fetchNearbyGyms from '../mapFunctions/nearbyGyms';
 import { Gym } from '../models/gymInfoModel';
 
-interface Location {
-  latitude: number;
-  longitude: number;
-}
-
 const GymMapScreen: React.FC = () => {
   const [gyms, setGyms] = useState<Gym[]>([]);
   const [currentGym, setCurrentGym] = useState<Gym | null>(null);
-  const [showInfo, setShowInfo] = useState<{ [key: number]: boolean }>({});
+  const [selectedGym, setSelectedGym] = useState<Gym | null>(null);
   const [region, setRegion] = useState<any>(null);
   const { location, error: locationError } = useUserLocation();
 
   useEffect(() => {
     if (location) {
+      console.log("Fetching gyms at location:", location);
       fetchNearbyGyms(location.latitude, location.longitude)
-        .then(setGyms)
+        .then((data) => {
+          console.log("Gyms received:", data); // Debugging log
+          setGyms(data);
+        })
         .catch((err) => {
-          console.error('Error fetching gyms:', err);
+          console.error("Error fetching gyms:", err);
         });
     }
   }, [location]);
@@ -36,20 +35,16 @@ const GymMapScreen: React.FC = () => {
       Alert.alert("Error", "You must be logged in to save your data.");
       return;
     }
-    console.log(user);
     try {
-      const gymRef = doc(db, 'users', user.uid); // Reference to the gym document
+      const gymRef = doc(db, 'users', user.uid);
       await setDoc(gymRef, {
         name: gym.name,
         address: gym.vicinity,
-        location: {
-          latitude: gym.geometry.location.lat,
-          longitude: gym.geometry.location.lng,
-        },
+        location: gym.geometry.location,
         types: gym.types,
         place_id: gym.place_id,
       });
-      setCurrentGym(gym); // Update the current gym state
+      setCurrentGym(gym);
       Alert.alert('Success', 'Gym saved as current gym!');
     } catch (error) {
       console.error('Error saving gym to Firestore:', error);
@@ -57,11 +52,11 @@ const GymMapScreen: React.FC = () => {
     }
   };
 
-  const toggleGymInfo = (index: number, gym: Gym) => {
-    setShowInfo((prev) => ({ ...prev, [index]: !prev[index] }));
+  const handleMarkerPress = (gym: Gym) => {
+    setSelectedGym(gym);
     setRegion({
-      latitude: gym.geometry.location.lat,
-      longitude: gym.geometry.location.lng,
+      latitude: gym.geometry.location.latitude,
+      longitude: gym.geometry.location.longitude,
       latitudeDelta: 0.01,
       longitudeDelta: 0.01,
     });
@@ -69,170 +64,123 @@ const GymMapScreen: React.FC = () => {
 
   if (locationError) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Error fetching location: {locationError}</Text>
-      </View>
+      <View style={styles.center}><Text style={styles.errorText}>Error fetching location: {locationError}</Text></View>
     );
   }
 
   if (!location) {
     return (
-      <View style={styles.center}>
-        <Text>Loading location...</Text>
-      </View>
+      <View style={styles.center}><Text>Loading location...</Text></View>
     );
   }
 
   return (
-    <MapView
-      style={styles.map}
-      region={region || {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      }}
-    >
-      {/* Marker for user's location */}
-      <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }}>
-        <View style={styles.userMarker}>
-          <MaterialCommunityIcons name="account-circle" size={40} color="white" />
-        </View>
-      </Marker>
-
-      {/* Gym markers */}
-      {gyms.length > 0 &&
-        gyms.map((gym, index) => (
-          <Marker
-            key={index}
-            coordinate={{
-              latitude: gym.geometry.location.lat,
-              longitude: gym.geometry.location.lng,
-            }}
-            title={gym.name}
-            description={gym.vicinity}
-          >
-            <View style={styles.gymMarker}>
-              <TouchableOpacity onPress={() => toggleGymInfo(index, gym)}>
-                <MaterialCommunityIcons name="exclamation-thick" size={30} color="red" />
-              </TouchableOpacity>
-              {showInfo[index] && (
-                <View style={styles.gymInfo}>
-                  <Text style={styles.gymMarkerText}>{gym.name}</Text>
-                  <Text style={styles.gymMarkerText}>Address: {gym.vicinity}</Text>
-                </View>
-              )}
-
-              {/* Always show the button if gym info is visible */}
-              {showInfo[index] && (
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.customButton} onPress={() => handleSetCurrentGym(gym)}>
-                    <Text style={styles.buttonText}>Set as Current Gym</Text>
-                </TouchableOpacity>
-              </View>
-              )}
-              
-            </View>
-          </Marker>
-        ))}
-
-      {gyms.length === 0 && (
-        <View style={styles.center}>
-          <Text>No gyms found nearby</Text>
-        </View>
-      )}
-
-      {/* Displaying the current gym info at the bottom of the map */}
+    <View style={{ flex: 1 }}>
       {currentGym && (
         <View style={styles.currentGymInfo}>
           <Text style={styles.currentGymText}>Current Gym:</Text>
-          <Text style={styles.currentGymText}>Name: {currentGym.name}</Text>
-          <Text style={styles.currentGymText}>Address: {currentGym.vicinity}</Text>
-          <Text style={styles.currentGymText}>Type: {currentGym.types.join(', ')}</Text>
+          <Text style={styles.currentGymText}>{currentGym.name}</Text>
+          <Text style={styles.currentGymText}>{currentGym.vicinity}</Text>
         </View>
       )}
-    </MapView>
+      <MapView
+        style={styles.map}
+        region={region || {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+      >
+        <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }}>
+          <MaterialCommunityIcons name="map-marker" size={40} color="white" />
+        </Marker>
+
+        {gyms.map((gym, index) => (
+          <Marker
+            key={index}
+            coordinate={gym.geometry.location}
+            onPress={() => handleMarkerPress(gym)}
+          >
+            <MaterialCommunityIcons name="map-marker" size={30} color="red" />
+          </Marker>
+        ))}
+      </MapView>
+      {selectedGym && (
+        <View style={styles.gymPopup}>
+          <Text style={styles.gymName}>{selectedGym.name}</Text>
+          <Text style={styles.gymDetails}>{selectedGym.vicinity}</Text>
+          <Text style={styles.gymDetails}>Type: {selectedGym.types.join(', ')}</Text>
+          <TouchableOpacity style={styles.customButton} onPress={() => handleSetCurrentGym(selectedGym)}>
+            <Text style={styles.buttonText}>Set as Current Gym</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-    map: {
-      flex: 1,
-    },
-    center: {
-      justifyContent: 'center',
-      alignItems: 'center',
-      flex: 1,
-    },
-    errorText: {
-      color: 'red',
-      fontSize: 16,
-      textAlign: 'center',
-    },
-    userMarker: {
-      width: 50,
-      height: 50,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'transparent',
-      borderRadius: 25,
-    },
-    gymMarker: {
-      width: 50,
-      height: 50,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'transparent',
-      borderRadius: 25,
-    },
-    gymInfo: {
-      backgroundColor: 'white',
-      padding: 8,
-      borderRadius: 10,
-      width: 120,
-      alignItems: 'center',
-      position: 'absolute',
-      top: 60,
-    },
-    gymMarkerText: {
-      fontSize: 12,
-      color: 'black',
-    },
-    currentGymInfo: {
-      position: 'absolute',
-      bottom: 20,
-      left: 10,
-      backgroundColor: 'rgba(255, 255, 255, 0.8)',
-      padding: 10,
-      borderRadius: 10,
-    },
-    currentGymText: {
-      fontSize: 14,
-      fontWeight: 'bold',
-      color: '#333',
-    },
-    buttonContainer: {
-      backgroundColor: 'white', // Solid white background for the button container
-      padding: 10,              // Add some padding to give space around the button
-      borderRadius: 8,          // Optional: round the corners
-      width: 150,               // Control button width
-      marginTop: 10,            // Add space between gym info and the button
-      alignItems: 'center',     // Center the button horizontally
-    },
-    customButton: {
-      backgroundColor: 'green', // Green background for the button
-      paddingVertical: 10,      // Vertical padding for the button
-      paddingHorizontal: 20,    // Horizontal padding for the button
-      borderRadius: 8,          // Round corners for the button
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    buttonText: {
-      color: 'white',           // Text color white
-      fontSize: 16,             // Font size for the text
-      fontWeight: 'bold',       // Make the text bold
-    },
-  });
-  
+  map: {
+    flex: 1,
+  },
+  center: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  currentGymInfo: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    padding: 10,
+    borderRadius: 10,
+    zIndex: 10,
+  },
+  currentGymText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  gymPopup: {
+    position: 'absolute',
+    bottom: 20,
+    left: 10,
+    right: 10,
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    elevation: 5,
+  },
+  gymName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  gymDetails: {
+    fontSize: 14,
+    color: '#555',
+    marginVertical: 2,
+  },
+  customButton: {
+    backgroundColor: 'green',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
 
 export default GymMapScreen;
