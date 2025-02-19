@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
+import { useFocusEffect } from '@react-navigation/native';
 import { db, auth } from '../firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 import useUserLocation from '../mapFunctions/userLocation';
@@ -15,19 +16,20 @@ const GymMapScreen: React.FC = () => {
   const [region, setRegion] = useState<any>(null);
   const { location, error: locationError } = useUserLocation();
 
-  useEffect(() => {
-    if (location) {
-      console.log("Fetching gyms at location:", location);
-      fetchNearbyGyms(location.latitude, location.longitude)
-        .then((data) => {
-          console.log("Gyms received:", data); // Debugging log
-          setGyms(data);
-        })
-        .catch((err) => {
-          console.error("Error fetching gyms:", err);
-        });
-    }
-  }, [location]);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (location) {
+        console.log("Fetching gyms at location:", location);
+        fetchNearbyGyms(location.latitude, location.longitude)
+          .then((data) => {
+            const validGyms = data.filter(gym => gym.geometry?.location?.latitude && gym.geometry?.location?.longitude);
+            console.log("Valid gyms:", validGyms);
+            setGyms(validGyms);
+          })
+          .catch((err) => console.error("Error fetching gyms:", err));
+      }
+    }, [location])
+  );
 
   const handleSetCurrentGym = async (gym: Gym) => {
     const user = auth.currentUser;
@@ -84,6 +86,7 @@ const GymMapScreen: React.FC = () => {
         </View>
       )}
       <MapView
+        key={gyms.length} 
         style={styles.map}
         region={region || {
           latitude: location.latitude,
@@ -99,7 +102,10 @@ const GymMapScreen: React.FC = () => {
         {gyms.map((gym, index) => (
           <Marker
             key={index}
-            coordinate={gym.geometry.location}
+            coordinate={{
+              latitude: gym.geometry.location.latitude || 0,
+              longitude: gym.geometry.location.longitude || 0,
+            }}
             onPress={() => handleMarkerPress(gym)}
           >
             <MaterialCommunityIcons name="map-marker" size={30} color="red" />
