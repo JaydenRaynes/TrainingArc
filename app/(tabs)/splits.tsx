@@ -47,14 +47,14 @@ const WorkoutPlanScreen = () => {
       },
     }));
     setNewWorkout((prev) => ({ ...prev, [day]: { name: "", sets: "", reps: "", weight: "" } }));
-  };
+    };
 
   const deleteWorkout = (day, index) => {
     setWorkoutPlan((prev) => {
       const updatedWorkouts = prev[day].workouts.filter((_, i) => i !== index);
       return { ...prev, [day]: { ...prev[day], workouts: updatedWorkouts } };
-    });
-  };
+      });
+    };
 
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20 }}>

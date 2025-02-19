@@ -24,7 +24,7 @@ export default function Login() {
             const userData = docSnap.data();
   
             // Store the next destination based on whether it's the first login
-            const nextScreen = userData.isFirstLogin ? "/biometrics" : "/(tabs)/explore";
+            const nextScreen = userData.isFirstLogin ? "/biometrics" : "/(tabs)";
   
             // Navigate to animation screen with the nextScreen as a parameter
             router.push({
