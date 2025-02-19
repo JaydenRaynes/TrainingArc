@@ -1,64 +1,75 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, StyleSheet, Text, Pressable, View, ScrollView, TouchableWithoutFeedback } from 'react-native';
+import { Modal, StyleSheet, Text, Pressable, View, ScrollView, TouchableWithoutFeedback, Dimensions } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { db, auth } from '../firebaseConfig'; // Import your Firestore configuration
+import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { db, auth } from '../firebaseConfig';
+import { LineChart } from 'react-native-chart-kit';
 
 const ProgressPage = () => {
   const [infoVisible, setInfoVisible] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
-  const [workouts, setWorkouts] = useState([]); // Store all workouts
+  const [workouts, setWorkouts] = useState([]);
+  const [exerciseHistory, setExerciseHistory] = useState([]);
 
-  // Fetch all workout data from Firestore
   useEffect(() => {
-    const userID = auth.currentUser?.uid; // Get the current user's ID
+    const userID = auth.currentUser?.uid;
     if (!userID) return;
 
     const progressRef = collection(db, "users", userID, "progress");
-
-    // Query to get all workouts (sorted by date)
     const q = query(progressRef, orderBy("date", "desc"));
 
-    // Real-time listener using onSnapshot
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       if (!querySnapshot.empty) {
-        // Get all workout data
         const workoutData = querySnapshot.docs.map(doc => doc.data());
-        
-        // Group workouts by exercise name and only keep the most recent one
         const groupedWorkouts = {};
-        
+
         workoutData.forEach(workout => {
           const { workoutName, date } = workout;
-          
-          // If the workoutName already exists in the groupedWorkouts object, check if the current one is more recent
           if (!groupedWorkouts[workoutName] || new Date(date) > new Date(groupedWorkouts[workoutName].date)) {
             groupedWorkouts[workoutName] = workout;
           }
         });
 
-        // Convert the grouped workouts object back to an array
         setWorkouts(Object.values(groupedWorkouts));
       } else {
-        console.log("No workout data found");
         setWorkouts([]);
       }
     }, (error) => {
       console.error("Error fetching workout data:", error);
     });
 
-    // Clean up the listener when the component is unmounted
     return () => unsubscribe();
   }, []);
 
   const openInfoModal = (exercise) => {
     setSelectedExercise(exercise);
+    fetchExerciseHistory(exercise.workoutName);
     setInfoVisible(true);
   };
 
   const closeInfoModal = () => {
     setInfoVisible(false);
     setSelectedExercise(null);
+    setExerciseHistory([]);
+  };
+
+  const fetchExerciseHistory = (exerciseName) => {
+    const userID = auth.currentUser?.uid;
+    if (!userID) return;
+
+    const progressRef = collection(db, "users", userID, "progress");
+    const q = query(progressRef, where("workoutName", "==", exerciseName), orderBy("date", "asc"));
+
+    onSnapshot(q, (querySnapshot) => {
+      const history = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          date: data.date,
+          maxRep: Math.round(data.weight * (1 + data.reps / 30)),
+        };
+      });
+      setExerciseHistory(history);
+    });
   };
 
   return (
@@ -67,19 +78,21 @@ const ProgressPage = () => {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Text style={styles.header}>Workout Progress</Text>
           {workouts.length > 0 ? (
-            workouts.map((workout, index) => (
-              <View key={index} style={styles.exerciseCard}>
-                <Pressable style={styles.infoButton} onPress={() => openInfoModal(workout)}>
-                  <Text style={styles.infoButtonText}>i</Text>
-                </Pressable>
+            workouts.map((workout, index) => {
+              const bestSet = `${workout.reps} reps of ${workout.weight} lbs`;
+              const estimatedMax = `1 rep of ${Math.round(workout.weight * (1 + workout.reps / 30))} lbs`;
 
-                <Text style={styles.titleText}>{workout.workoutName}</Text>
-                <Text style={styles.subtitleText}>Sets: {workout.sets}</Text>
-                <Text style={styles.subtitleText}>Reps: {workout.reps}</Text>
-                <Text style={styles.subtitleText}>Weight: {workout.weight}</Text>
-                <Text style={styles.subtitleText}>Completed: {workout.completed ? 'Yes' : 'No'}</Text>
-              </View>
-            ))
+              return (
+                <View key={index} style={styles.exerciseCard}>
+                  <Pressable style={styles.infoButton} onPress={() => openInfoModal(workout)}>
+                    <Text style={styles.infoButtonText}>i</Text>
+                  </Pressable>
+                  <Text style={styles.titleText}>{workout.workoutName}</Text>
+                  <Text style={styles.subtitleText}>Best Set of Reps: {bestSet}</Text>
+                  <Text style={styles.subtitleText}>Est. Max Rep: {estimatedMax}</Text>
+                </View>
+              );
+            })
           ) : (
             <Text style={styles.noWorkoutText}>No workout data available.</Text>
           )}
@@ -90,11 +103,32 @@ const ProgressPage = () => {
           <TouchableWithoutFeedback onPress={closeInfoModal}>
             <View style={styles.infoModalBackground}>
               <View style={styles.infoModalView}>
-                <Text style={styles.infoTitle}>{selectedExercise?.workoutName} Info</Text>
-                <Text style={styles.infoContent}>Sets: {selectedExercise?.sets}</Text>
-                <Text style={styles.infoContent}>Reps: {selectedExercise?.reps}</Text>
-                <Text style={styles.infoContent}>Weight: {selectedExercise?.weight}</Text>
-                <Text style={styles.infoContent}>Completed: {selectedExercise?.completed ? 'Yes' : 'No'}</Text>
+                <Text style={styles.infoTitle}>{selectedExercise?.workoutName} Progress</Text>
+                {exerciseHistory.length > 0 ? (
+                  <LineChart
+                    data={{
+                      labels: exerciseHistory.map((_, index) => index + 1),
+                      datasets: [{
+                        data: exerciseHistory.map(entry => entry.maxRep),
+                      }],
+                    }}
+                    width={Dimensions.get("window").width * 0.75}
+                    height={220}
+                    yAxisLabel=""
+                    yAxisSuffix=" lbs"
+                    chartConfig={{
+                      backgroundGradientFrom: "#fff",
+                      backgroundGradientTo: "#fff",
+                      color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                      strokeWidth: 2,
+                      decimalPlaces: 0,
+                    }}
+                    bezier
+                    style={{ marginVertical: 10, borderRadius: 10 }}
+                  />
+                ) : (
+                  <Text style={styles.infoContent}>No data available.</Text>
+                )}
                 <Pressable style={styles.closeButton} onPress={closeInfoModal}>
                   <Text style={styles.closeButtonText}>Close</Text>
                 </Pressable>
