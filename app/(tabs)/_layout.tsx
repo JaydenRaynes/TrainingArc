@@ -35,7 +35,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <MaterialIcons name="format-list-numbered" size={24} color="black" />,
         }}
       />
-      
+      <Tabs.Screen
+        name="generateWorkout" 
+        options={{
+          title: 'AI Workout',
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="dumbbell" size={24} color="black" />,
+        }}
+      />
       <Tabs.Screen
         name="explore"
         options={{
