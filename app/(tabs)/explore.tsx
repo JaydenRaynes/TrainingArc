@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Alert, StyleSheet, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import { useFocusEffect } from '@react-navigation/native';
 import { db, auth } from '../firebaseConfig';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import useUserLocation from '../mapFunctions/userLocation';
 import fetchNearbyGyms from '../mapFunctions/nearbyGyms';
 import { Gym } from '../models/gymInfoModel';
@@ -14,19 +14,47 @@ const GymMapScreen: React.FC = () => {
   const [currentGym, setCurrentGym] = useState<Gym | null>(null);
   const [selectedGym, setSelectedGym] = useState<Gym | null>(null);
   const [region, setRegion] = useState<any>(null);
+  const [popupVisible, setPopupVisible] = useState(false); // Manage visibility of the popup
   const { location, error: locationError } = useUserLocation();
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       if (location) {
-        console.log("Fetching gyms at location:", location);
-        fetchNearbyGyms(location.latitude, location.longitude)
-          .then((data) => {
-            const validGyms = data.filter(gym => gym.geometry?.location?.latitude && gym.geometry?.location?.longitude);
-            console.log("Valid gyms:", validGyms);
-            setGyms(validGyms);
-          })
-          .catch((err) => console.error("Error fetching gyms:", err));
+        // Your test gym data here
+        const testGym: Gym[] = [{
+          "name": ["Planet Fitness"],
+          "geometry": {
+            "location": {
+              "latitude": 32.543000,
+              "longitude": -92.637500
+            }
+          },
+          "types": ["gym", "health", "fitness", "point_of_interest"],
+          "vicinity": "123 Example St, Ruston, LA 10001",
+          "place_id": "testGym",
+          "equipment": [
+            "Treadmills",
+            "Ellipticals",
+            "Stationary Bikes",
+            "Free Weights",
+            "Dumbbells",
+            "Barbells",
+            "Weight Machines",
+            "Cable Machines",
+            "Smith Machines",
+            "Leg Press Machines",
+            "Chest Press Machines",
+            "Lat Pulldown Machines",
+            "Ab Crunch Machines",
+            "Seated Row Machines",
+            "Resistance Bands",
+            "Kettlebells",
+            "Medicine Balls",
+            "Battle Ropes",
+            "Exercise Balls",
+            "Stretching Mats"]
+        }];
+        setGyms(testGym);
       }
     }, [location])
   );
@@ -38,14 +66,24 @@ const GymMapScreen: React.FC = () => {
       return;
     }
     try {
-      const gymRef = doc(db, 'users', user.uid);
-      await setDoc(gymRef, {
+      const userRef = doc(db, 'users', user.uid, 'gyms', gym.place_id);
+      const docSnap = await getDoc(userRef);
+
+      if (!docSnap.exists()) {
+        console.log("Gym does not exist, creating...");
+      } else {
+        console.log("Gym already exists, updating...");
+      }
+
+      await setDoc(userRef, {
         name: gym.name,
         address: gym.vicinity,
         location: gym.geometry.location,
         types: gym.types,
         place_id: gym.place_id,
+        equipment: gym.equipment,
       });
+
       setCurrentGym(gym);
       Alert.alert('Success', 'Gym saved as current gym!');
     } catch (error) {
@@ -62,6 +100,11 @@ const GymMapScreen: React.FC = () => {
       latitudeDelta: 0.01,
       longitudeDelta: 0.01,
     });
+    setPopupVisible(true); // Show the popup when a gym marker is pressed
+  };
+
+  const handleClosePopup = () => {
+    setPopupVisible(false); // Close the popup when clicking outside
   };
 
   if (locationError) {
@@ -75,6 +118,9 @@ const GymMapScreen: React.FC = () => {
       <View style={styles.center}><Text>Loading location...</Text></View>
     );
   }
+
+  // Log selectedGym to make sure it gets updated
+  console.log("Selected Gym: ", selectedGym);
 
   return (
     <View style={{ flex: 1 }}>
@@ -108,17 +154,37 @@ const GymMapScreen: React.FC = () => {
             }}
             onPress={() => handleMarkerPress(gym)}
           >
-            <MaterialCommunityIcons name="map-marker" size={30} color="red" />
+            <MaterialCommunityIcons name="map-marker" size={50} color="red" />
           </Marker>
         ))}
       </MapView>
-      {selectedGym && (
+
+      {/* TouchableWithoutFeedback to close popup when clicking outside */}
+      {popupVisible && (
+        <TouchableWithoutFeedback onPress={handleClosePopup}>
+          <View style={styles.gymPopupOverlay} />
+        </TouchableWithoutFeedback>
+      )}
+
+      {popupVisible && selectedGym && (
         <View style={styles.gymPopup}>
           <Text style={styles.gymName}>{selectedGym.name}</Text>
           <Text style={styles.gymDetails}>{selectedGym.vicinity}</Text>
           <Text style={styles.gymDetails}>Type: {selectedGym.types.join(', ')}</Text>
+          
+          {/* Display the gym's equipment */}
+          <View style={styles.equipmentContainer}>
+            <Text style={styles.equipmentTitle}>Equipment:</Text>
+            <ScrollView style={styles.equipmentList}>
+              {selectedGym.equipment.map((item, index) => (
+                <Text key={index} style={styles.equipmentItem}>{item}</Text>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Save gym button */}
           <TouchableOpacity style={styles.customButton} onPress={() => handleSetCurrentGym(selectedGym)}>
-            <Text style={styles.buttonText}>Set as Current Gym</Text>
+            <Text style={styles.buttonText}>Save Gym</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -154,9 +220,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
+  gymPopupOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', // Transparent overlay
+  },
   gymPopup: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 80, // Added gap between the popup and tab bar
     left: 10,
     right: 10,
     backgroundColor: 'white',
@@ -164,6 +238,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     elevation: 5,
+    zIndex: 10,
   },
   gymName: {
     fontSize: 18,
@@ -174,6 +249,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
     marginVertical: 2,
+  },
+  equipmentContainer: {
+    marginVertical: 10,
+    width: '100%',
+  },
+  equipmentTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  equipmentList: {
+    maxHeight: 100,
+  },
+  equipmentItem: {
+    fontSize: 14,
+    color: '#555',
   },
   customButton: {
     backgroundColor: 'green',
