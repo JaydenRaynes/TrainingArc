@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet} from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import { doc, setDoc } from "firebase/firestore";
 import { db, auth } from "../firebaseConfig";
@@ -10,6 +11,9 @@ export default function BiometricsForm() {
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
   const [goal, setGoal] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("Male"); // Default gender selection
+  const [activityLevel, setActivityLevel] = useState("Moderately Active"); // Default activity level
   const [preferences, setPreferences] = useState("");
   const router = useRouter();
 
@@ -20,7 +24,7 @@ export default function BiometricsForm() {
       return;
     }
 
-    if (!height || !weight || !goal || !preferences) {
+    if (!height || !weight || !goal || !preferences || !gender || !activityLevel) {
       Alert.alert("Error", "Please fill out all fields.");
       return;
     }
@@ -28,12 +32,21 @@ export default function BiometricsForm() {
     try {
       const docRef = doc(db, "users", user.uid);
       await setDoc(docRef, {
-        height,
-        weight,
+        age: parseInt(age),
+        gender,
         goal,
-        preferences,
+        height: parseInt(height),
+        weight: parseInt(weight),
+        activityLevel,
+        preferences: {
+          trainingType: "Strength",
+          cardioPreference: "Low",
+          gymEquipment: true,
+          focusAreas: preferences.split(",").map((p) => p.trim()), // Convert to array
+        },
       });
-      Alert.alert("Success", "Your data has been saved!");
+
+      Alert.alert("Success", "Your data has been updated!");
       router.push("/(tabs)/explore");
     } catch (error) {
       console.error("Error saving data:", error);
@@ -44,13 +57,6 @@ export default function BiometricsForm() {
   return (
     <LinearGradient colors={["#0D0D0D", "#191a2f"]} style={styles.background}>
       <View style={styles.container}>
-        {/* Animated Logo */}
-        {/* <Animated.Image
-          source={require("../assets/images/Training_arc.jpg")} // Ensure the image is in assets
-          style={styles.logo}
-          entering={FadeIn.duration(1200)}
-        /> */}
-
         {/* Animated Title */}
         <Animated.Text style={styles.title} entering={FadeIn.duration(1000)}>
           Enter Your Biometrics
@@ -58,6 +64,14 @@ export default function BiometricsForm() {
 
         {/* Input Fields */}
         <Animated.View style={styles.inputContainer} entering={FadeInDown.duration(1000).delay(200)}>
+          <TextInput
+            style={styles.input}
+            placeholder="Age"
+            placeholderTextColor="#B0B0B0"
+            value={age}
+            onChangeText={setAge}
+            keyboardType="numeric"
+          />
           <TextInput
             style={styles.input}
             placeholder="Height (cm)"
@@ -76,14 +90,38 @@ export default function BiometricsForm() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Your Goal"
+            placeholder="Your Goal (e.g., Muscle Gain, Weight Loss)"
             placeholderTextColor="#B0B0B0"
             value={goal}
             onChangeText={setGoal}
           />
+
+          {/* Gender Dropdown */}
+          <Picker
+            selectedValue={gender}
+            style={styles.picker}
+            onValueChange={(itemValue) => setGender(itemValue)}
+          >
+            <Picker.Item label="Male" value="Male" />
+            <Picker.Item label="Female" value="Female" />
+            <Picker.Item label="Other" value="Other" />
+          </Picker>
+
+          {/* Activity Level Dropdown */}
+          <Picker
+            selectedValue={activityLevel}
+            style={styles.picker}
+            onValueChange={(itemValue) => setActivityLevel(itemValue)}
+          >
+            <Picker.Item label="Sedentary (Little to no exercise)" value="Sedentary" />
+            <Picker.Item label="Lightly Active (1-3 days per week)" value="Lightly Active" />
+            <Picker.Item label="Moderately Active (3-5 days per week)" value="Moderately Active" />
+            <Picker.Item label="Very Active (6-7 days per week)" value="Very Active" />
+          </Picker>
+
           <TextInput
             style={styles.input}
-            placeholder="Training Preferences"
+            placeholder="Training Preferences (e.g., Strength, Cardio, Full Body)"
             placeholderTextColor="#B0B0B0"
             value={preferences}
             onChangeText={setPreferences}
@@ -105,14 +143,6 @@ const styles = StyleSheet.create({
   background: { flex: 1 },
   container: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20 },
 
-  logo: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
-    resizeMode: "contain",
-    borderRadius: 20,
-  },
-
   title: { fontSize: 28, fontWeight: "bold", color: "#FFA500", marginBottom: 20, textAlign: "center" },
 
   inputContainer: { width: "100%", alignItems: "center" },
@@ -125,6 +155,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     color: "#FFF",
     fontSize: 16,
+  },
+
+  picker: {
+    width: "85%",
+    backgroundColor: "#1E1E2D",
+    color: "#FFF",
+    marginVertical: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
   },
 
   button: {
@@ -144,3 +183,4 @@ const styles = StyleSheet.create({
 
   buttonText: { fontSize: 18, fontWeight: "bold", color: "#0D0D0D" },
 });
+
