@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TextInput, Button, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { Exercise } from '../models/exerciseModel';
-import { theme } from '../utils/theme';
-
-const API_KEY = 'F1MrXYbs75rYDmGS8V9GQw==nADb7j66vFLL1qmo';
+import { theme } from '../utils/theme'; // Import theme
 
 const Index = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -15,49 +13,35 @@ const Index = () => {
 
   const fetchExercises = async (query: string) => {
     try {
-      setLoading(true); // Show loading spinner
+      setLoading(true);
       const response = await axios.get('http://10.0.0.247:5000/', {
-      const response = await axios.get('https://api.api-ninjas.com/v1/exercises', {
-        headers: {
-          'X-Api-Key': API_KEY,
-        },
-        params: {
-          name: query,
-        },
+        params: { name: query },
       });
-      if (Array.isArray(response.data)) {
-        setExercises(response.data);
-      } else {
-        setExercises([]);
-      }
+      setExercises(response.data.exercises);
     } catch (error) {
       setError('Failed to fetch exercises');
       console.error(error);
     } finally {
-      setLoading(false); // Hide loading spinner
+      setLoading(false);
     }
   };
 
   const handleSearch = () => {
     if (searchTerm.trim() !== '') {
-      fetchExercises(searchTerm); // Fetch exercises when user clicks search button
+      fetchExercises(searchTerm);
     }
   };
 
   const handleEnterPress = (e: any) => {
     if (e.key === 'Enter' && searchTerm.trim() !== '') {
-      fetchExercises(searchTerm); // Fetch exercises when user presses Enter
+      fetchExercises(searchTerm);
     }
   };
 
   const toggleInstructions = (index: number) => {
     setExpandedInstructions((prevState) => {
       const newState = new Set(prevState);
-      if (newState.has(index)) {
-        newState.delete(index); // Collapse
-      } else {
-        newState.add(index); // Expand
-      }
+      newState.has(index) ? newState.delete(index) : newState.add(index);
       return newState;
     });
   };
@@ -90,14 +74,13 @@ const Index = () => {
         value={searchTerm}
         onChangeText={setSearchTerm}
         onSubmitEditing={handleEnterPress}
-        onSubmitEditing={handleSearch} // Trigger search when pressing "Enter"
       />
 
       {/* Search Button */}
       <Button title="Search" onPress={handleSearch} color={theme.colors.primary} />
 
       {/* Display Exercises */}
-      {exercises && exercises.length > 0 && (
+      {exercises.length > 0 && (
         <FlatList
           data={exercises}
           keyExtractor={(item, index) => index.toString()}
