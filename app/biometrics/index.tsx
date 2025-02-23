@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet} from "react-native";
+import { 
+  View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ScrollView, KeyboardAvoidingView, Platform 
+} from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import { doc, setDoc } from "firebase/firestore";
@@ -12,8 +14,8 @@ export default function BiometricsForm() {
   const [weight, setWeight] = useState("");
   const [goal, setGoal] = useState("");
   const [age, setAge] = useState("");
-  const [gender, setGender] = useState("Male"); // Default gender selection
-  const [activityLevel, setActivityLevel] = useState("Moderately Active"); // Default activity level
+  const [gender, setGender] = useState("Male");
+  const [activityLevel, setActivityLevel] = useState("Moderately Active");
   const [preferences, setPreferences] = useState("");
   const router = useRouter();
 
@@ -42,7 +44,7 @@ export default function BiometricsForm() {
           trainingType: "Strength",
           cardioPreference: "Low",
           gymEquipment: true,
-          focusAreas: preferences.split(",").map((p) => p.trim()), // Convert to array
+          focusAreas: preferences.split(",").map((p) => p.trim()),
         },
       });
 
@@ -56,92 +58,101 @@ export default function BiometricsForm() {
 
   return (
     <LinearGradient colors={["#0D0D0D", "#191a2f"]} style={styles.background}>
-      <View style={styles.container}>
-        {/* Animated Title */}
-        <Animated.Text style={styles.title} entering={FadeIn.duration(1000)}>
-          Enter Your Biometrics
-        </Animated.Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.container}>
+            <Animated.Text style={styles.title} entering={FadeIn.duration(1000)}>
+              Enter Your Biometrics
+            </Animated.Text>
 
-        {/* Input Fields */}
-        <Animated.View style={styles.inputContainer} entering={FadeInDown.duration(1000).delay(200)}>
-          <TextInput
-            style={styles.input}
-            placeholder="Age"
-            placeholderTextColor="#B0B0B0"
-            value={age}
-            onChangeText={setAge}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Height (cm)"
-            placeholderTextColor="#B0B0B0"
-            value={height}
-            onChangeText={setHeight}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Weight (kg)"
-            placeholderTextColor="#B0B0B0"
-            value={weight}
-            onChangeText={setWeight}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Your Goal (e.g., Muscle Gain, Weight Loss)"
-            placeholderTextColor="#B0B0B0"
-            value={goal}
-            onChangeText={setGoal}
-          />
+            <Animated.View style={styles.inputContainer} entering={FadeInDown.duration(1000).delay(200)}>
+              <TextInput
+                style={styles.input}
+                placeholder="Age"
+                placeholderTextColor="#B0B0B0"
+                value={age}
+                onChangeText={setAge}
+                keyboardType="numeric"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Height (cm)"
+                placeholderTextColor="#B0B0B0"
+                value={height}
+                onChangeText={setHeight}
+                keyboardType="numeric"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Weight (kg)"
+                placeholderTextColor="#B0B0B0"
+                value={weight}
+                onChangeText={setWeight}
+                keyboardType="numeric"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Your Goal (e.g., Muscle Gain, Weight Loss)"
+                placeholderTextColor="#B0B0B0"
+                value={goal}
+                onChangeText={setGoal}
+              />
 
-          {/* Gender Dropdown */}
-          <Picker
-            selectedValue={gender}
-            style={styles.picker}
-            onValueChange={(itemValue) => setGender(itemValue)}
-          >
-            <Picker.Item label="Male" value="Male" />
-            <Picker.Item label="Female" value="Female" />
-            <Picker.Item label="Other" value="Other" />
-          </Picker>
+              {/* Gender Dropdown */}
+              <Picker
+                selectedValue={gender}
+                style={styles.picker}
+                onValueChange={(itemValue) => setGender(itemValue)}
+              >
+                <Picker.Item label="Male" value="Male" />
+                <Picker.Item label="Female" value="Female" />
+                <Picker.Item label="Other" value="Other" />
+              </Picker>
 
-          {/* Activity Level Dropdown */}
-          <Picker
-            selectedValue={activityLevel}
-            style={styles.picker}
-            onValueChange={(itemValue) => setActivityLevel(itemValue)}
-          >
-            <Picker.Item label="Sedentary (Little to no exercise)" value="Sedentary" />
-            <Picker.Item label="Lightly Active (1-3 days per week)" value="Lightly Active" />
-            <Picker.Item label="Moderately Active (3-5 days per week)" value="Moderately Active" />
-            <Picker.Item label="Very Active (6-7 days per week)" value="Very Active" />
-          </Picker>
+              {/* Activity Level Dropdown */}
+              <Picker
+                selectedValue={activityLevel}
+                style={styles.picker}
+                onValueChange={(itemValue) => setActivityLevel(itemValue)}
+              >
+                <Picker.Item label="Sedentary (Little to no exercise)" value="Sedentary" />
+                <Picker.Item label="Lightly Active (1-3 days per week)" value="Lightly Active" />
+                <Picker.Item label="Moderately Active (3-5 days per week)" value="Moderately Active" />
+                <Picker.Item label="Very Active (6-7 days per week)" value="Very Active" />
+              </Picker>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Training Preferences (e.g., Strength, Cardio, Full Body)"
-            placeholderTextColor="#B0B0B0"
-            value={preferences}
-            onChangeText={setPreferences}
-          />
-        </Animated.View>
+              <TextInput
+                style={styles.input}
+                placeholder="Training Preferences (e.g., Strength, Cardio, Full Body)"
+                placeholderTextColor="#B0B0B0"
+                value={preferences}
+                onChangeText={setPreferences}
+              />
+            </Animated.View>
 
-        {/* Save Button */}
-        <Animated.View entering={FadeInDown.duration(1000).delay(400)}>
-          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>Save</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
+            {/* Save Button */}
+            <Animated.View entering={FadeInDown.duration(1000).delay(400)}>
+              <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+                <Text style={styles.buttonText}>Save</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   background: { flex: 1 },
-  container: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20 },
+  scrollContainer: { flexGrow: 1, justifyContent: "center" },
+  container: { flex: 1, alignItems: "center", paddingHorizontal: 20, paddingBottom: 40 },
 
   title: { fontSize: 28, fontWeight: "bold", color: "#FFA500", marginBottom: 20, textAlign: "center" },
 
@@ -183,4 +194,3 @@ const styles = StyleSheet.create({
 
   buttonText: { fontSize: 18, fontWeight: "bold", color: "#0D0D0D" },
 });
-
