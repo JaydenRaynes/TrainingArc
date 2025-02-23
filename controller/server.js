@@ -9,11 +9,11 @@ const PORT = 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
-const API_NINJAS_URL = 'https://api.api-ninjas.com/v1/exercises';
-const API_KEY = 'F1MrXYbs75rYDmGS8V9GQw==nADb7j66vFLL1qmo';
+// const API_NINJAS_URL = 'https://api.api-ninjas.com/v1/exercises';
+// //const API_KEY = ''; // Add your API-Ninjas API key here
 
-const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const OPENAI_API_KEY = ""; // Add your OpenAI API key here
+// const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+// //const OPENAI_API_KEY = ""; // Add your OpenAI API key here
 
 app.get('/', async (req, res) => {
   const searchTerm = req.query.name || ''; // Get search term from query params
