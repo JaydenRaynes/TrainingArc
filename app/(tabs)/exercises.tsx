@@ -4,6 +4,8 @@ import axios from 'axios';
 import { Exercise } from '../models/exerciseModel';
 import { theme } from '../utils/theme';
 
+const API_KEY = 'F1MrXYbs75rYDmGS8V9GQw==nADb7j66vFLL1qmo';
+
 const Index = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(false);
@@ -15,11 +17,19 @@ const Index = () => {
     try {
       setLoading(true); // Show loading spinner
       const response = await axios.get('http://10.0.0.247:5000/', {
+      const response = await axios.get('https://api.api-ninjas.com/v1/exercises', {
+        headers: {
+          'X-Api-Key': API_KEY,
+        },
         params: {
-          name: query, // Pass search term to backend
+          name: query,
         },
       });
-      setExercises(response.data.exercises); // Set exercises from API response
+      if (Array.isArray(response.data)) {
+        setExercises(response.data);
+      } else {
+        setExercises([]);
+      }
     } catch (error) {
       setError('Failed to fetch exercises');
       console.error(error);
@@ -80,13 +90,14 @@ const Index = () => {
         value={searchTerm}
         onChangeText={setSearchTerm}
         onSubmitEditing={handleEnterPress}
+        onSubmitEditing={handleSearch} // Trigger search when pressing "Enter"
       />
 
       {/* Search Button */}
       <Button title="Search" onPress={handleSearch} color={theme.colors.primary} />
 
       {/* Display Exercises */}
-      {exercises.length > 0 && (
+      {exercises && exercises.length > 0 && (
         <FlatList
           data={exercises}
           keyExtractor={(item, index) => index.toString()}
