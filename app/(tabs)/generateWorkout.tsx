@@ -1,6 +1,60 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
-import { fetchUserBiometrics } from "../services/fetchUserBiometrics";
+import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../Services/fetchUserData";
+import { Preferences } from "../models/preferenceModel";
+import { Gym } from "../models/gymInfoModel";
+import { Biometric } from "../models/biometricModel";
+
+type UserData = Preferences & Biometric & Gym;
+
+const normalizePreferences = (preferences: Preferences): Preferences => {
+  return {
+    ...preferences,
+    activityLevel: {
+      active: preferences.activityLevel?.active || false,
+      notActive: preferences.activityLevel?.notActive || false,
+      slightlyActive: preferences.activityLevel?.slightlyActive || false,
+    },
+    cardioPreferences: {
+      cycling: preferences.cardioPreferences?.cycling || false,
+      rowing: preferences.cardioPreferences?.rowing || false,
+      running: preferences.cardioPreferences?.running || false,
+      swimming: preferences.cardioPreferences?.swimming || false,
+      walking: preferences.cardioPreferences?.walking || false,
+    },
+    equipmentPreference: {
+      barbells: preferences.equipmentPreference?.barbells || false,
+      dumbbells: preferences.equipmentPreference?.dumbbells || false,
+      kettlebells: preferences.equipmentPreference?.kettlebells || false,
+      none: preferences.equipmentPreference?.none || false,
+      resistanceBands: preferences.equipmentPreference?.resistanceBands || false,
+    },
+    preferredWorkoutType: {
+      bodyweight: preferences.preferredWorkoutType?.bodyweight || false,
+      cardio: preferences.preferredWorkoutType?.cardio || false,
+      hiit: preferences.preferredWorkoutType?.hiit || false,
+      strength: preferences.preferredWorkoutType?.strength || false,
+      yoga: preferences.preferredWorkoutType?.yoga || false,
+    },
+    timeOfDayPreference: {
+      morning: preferences.timeOfDayPreference?.morning || false,
+      afternoon: preferences.timeOfDayPreference?.afternoon || false,
+      evening: preferences.timeOfDayPreference?.evening || false,
+      night: preferences.timeOfDayPreference?.night || false,
+      any: preferences.timeOfDayPreference?.any || false,
+    },
+    workoutEnvironment: {
+      gym: preferences.workoutEnvironment?.gym || false,
+      home: preferences.workoutEnvironment?.home || false,
+      outdoor: preferences.workoutEnvironment?.outdoor || false,
+    },
+    workoutSplit: {
+      fullBody: preferences.workoutSplit?.fullBody || false,
+      targeted: preferences.workoutSplit?.targeted || false,
+      weeklySplit: preferences.workoutSplit?.weeklySplit || false,
+    },
+  };
+};
 
 const GenerateWorkoutScreen: React.FC = () => {
   const [workout, setWorkout] = useState<string>("");
@@ -9,18 +63,44 @@ const GenerateWorkoutScreen: React.FC = () => {
   const generateWorkout = async () => {
     setLoading(true);
     const biometrics = await fetchUserBiometrics();
+    const tempPreferences = await fetchUserPreferences();
+    const gym = await fetchUserGym();
 
     if (!biometrics) {
       setWorkout("No biometric data found. Please fill in your biometrics first.");
       setLoading(false);
       return;
     }
+    if (!tempPreferences) {
+      setWorkout("No preferences data found. Please fill in your preferences first.");
+      setLoading(false);
+      return;
+    }
+
+
+    // Normalize preferences to ensure all expected fields exist
+    const preferences = normalizePreferences(tempPreferences);
+
+    const defaultGym: Gym = {
+      name: ["none"],
+      geometry: { location: { latitude: 0, longitude: 0 } },
+      types: ["none"],
+      vicinity: "none",
+      place_id: "",
+      equipment: [],
+    };
+
+    const userInfo: UserData = {
+      ...preferences,
+      ...biometrics,
+      ...(gym || defaultGym),
+    };
 
     try {
-      const response = await fetch("http://192.168.1.207:5000/generate-workout", {
+      const response = await fetch("http://192.168.1.84:5000/generate-workout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(biometrics),
+        body: JSON.stringify(userInfo),
       });
 
       const data = await response.json();
