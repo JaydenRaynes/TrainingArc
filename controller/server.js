@@ -66,8 +66,8 @@ app.post("/generate-workout", async (req, res) => {
 
        **IMPORTANT NOTES (Please make sure that any movements/exercises don't interfere with the following):**
     - **Medical Conditions:** ${formatConditions(userData.conditions)} 
-    - **Disabilities:** ${userData.disabilities?.length ? userData.disabilities.join(", ") : "None"}
-    - **Injuries:** ${userData.injuries?.length ? userData.injuries.join(", ") : "None"}
+    - **Disabilities:** ${userData.disabilities?.length ? userData.disabilities : "None"}
+    - **Injuries:** ${userData.injuries?.length ? userData.injuries.join : "None"}
 
     📌 **Gym Preferences (if applicable):**
     ${userData.gym ? `- **Nearby Gyms:** ${userData.gym.name?.join(", ")}\n- **Equipment Available:** ${userData.gym.equipment?.join(", ")}` : "User has no gym preferences."}
