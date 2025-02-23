@@ -17,7 +17,7 @@ const GenerateWorkoutScreen: React.FC = () => {
     }
 
     try {
-      const response = await fetch("http://192.168.1.207:5000/generate-workout", {
+      const response = await fetch("http://192.168.1.207:5000/generate-workout", {  // Change to your local IP address
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(biometrics),
