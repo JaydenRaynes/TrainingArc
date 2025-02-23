@@ -55,21 +55,21 @@ const WorkoutQuestionnaire = () => {
     walking: false
   });
   const [activityLevel, setActivityLevel] = useState({
-    Active: false, 
-    Slightly_Active: false, 
-    Not_Active: false 
+    active: false, 
+    slightlyActive: false, 
+    notActive: false 
   });
   const [timeOfDayPreference, setTimeOfDayPreference] = useState({
-    Morning: false, 
-    Afternoon: false, 
-    Evening: false, 
-    Night: false, 
-    Any: false
+    morning: false, 
+    afternoon: false, 
+    evening: false, 
+    night: false, 
+    any: false
   });
   const [workoutSplit, setWorkoutSplit] = useState({
-    Full_Body: false,
-    Weekly_Splits: false, 
-    Single_Area_Focus: false
+    fullBody: false,
+    weeklySplits: false, 
+    targeted: false
   });
 
 
@@ -145,7 +145,7 @@ const WorkoutQuestionnaire = () => {
 
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 80}]}>
       <Text style={styles.title}>Workout Questionnaire</Text>
 
       <Text style={styles.label}>Age:</Text>
