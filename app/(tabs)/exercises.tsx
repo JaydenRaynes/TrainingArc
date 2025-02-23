@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TextInput, Button, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { Exercise } from '../models/exerciseModel';
+import { theme } from '../utils/theme';
 
 const Index = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -13,7 +14,7 @@ const Index = () => {
   const fetchExercises = async (query: string) => {
     try {
       setLoading(true); // Show loading spinner
-      const response = await axios.get('http://localhost:5000/', {
+      const response = await axios.get('http://10.0.0.247:5000/', {
         params: {
           name: query, // Pass search term to backend
         },
@@ -75,13 +76,14 @@ const Index = () => {
       <TextInput
         style={styles.searchBar}
         placeholder="Search exercises..."
+        placeholderTextColor={theme.colors.placeholder}
         value={searchTerm}
         onChangeText={setSearchTerm}
-        onSubmitEditing={handleEnterPress} // Trigger search when pressing "Enter"
+        onSubmitEditing={handleEnterPress}
       />
 
       {/* Search Button */}
-      <Button title="Search" onPress={handleSearch} />
+      <Button title="Search" onPress={handleSearch} color={theme.colors.primary} />
 
       {/* Display Exercises */}
       {exercises.length > 0 && (
@@ -96,7 +98,7 @@ const Index = () => {
               <Text style={styles.exerciseDetails}>Equipment: {item.equipment}</Text>
               <Text style={styles.exerciseDetails}>Difficulty: {item.difficulty}</Text>
 
-              {/* Instructions: Show a truncated version initially, with a "..." button to expand */}
+              {/* Instructions Section */}
               <View>
                 <Text
                   style={styles.instructions}
@@ -117,7 +119,7 @@ const Index = () => {
         />
       )}
 
-      {/* Show "No exercises found" message only if search term is not empty and no exercises are found */}
+      {/* No exercises found message */}
       {exercises.length === 0 && searchTerm.trim() !== '' && (
         <Text style={styles.noResultsText}>No exercises found for "{searchTerm}"</Text>
       )}
@@ -125,76 +127,80 @@ const Index = () => {
   );
 };
 
-// Styles for the layout
+// Styles with theme applied
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: '#f5f5f5',
+    padding: theme.spacing.medium,
+    backgroundColor: theme.colors.background,
   },
   title: {
-    fontSize: 24,
+    fontSize: theme.fontSize.extraLarge,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: theme.spacing.medium,
     textAlign: 'center',
+    color: theme.colors.primary,
   },
   searchBar: {
     height: 40,
-    borderColor: '#ccc',
+    borderColor: theme.colors.border,
     borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 20,
-    paddingHorizontal: 10,
-    fontSize: 16,
+    borderRadius: theme.borderRadius.small,
+    marginBottom: theme.spacing.medium,
+    paddingHorizontal: theme.spacing.small,
+    fontSize: theme.fontSize.medium,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.inputBackground,
   },
   exerciseContainer: {
-    backgroundColor: '#fff',
-    padding: 15,
-    marginBottom: 15,
-    borderRadius: 8,
-    shadowColor: '#000',
+    backgroundColor: theme.colors.cardBackground,
+    padding: theme.spacing.medium,
+    marginBottom: theme.spacing.medium,
+    borderRadius: theme.borderRadius.medium,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
   },
   exerciseName: {
-    fontSize: 18,
+    fontSize: theme.fontSize.large,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.primary,
   },
   exerciseDetails: {
-    fontSize: 16,
-    color: '#555',
+    fontSize: theme.fontSize.medium,
+    color: theme.colors.text,
     marginVertical: 2,
   },
   instructions: {
-    fontSize: 14,
-    color: '#777',
-    marginTop: 10,
+    fontSize: theme.fontSize.small,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.small,
     fontStyle: 'italic',
   },
   expandText: {
-    fontSize: 14,
-    color: '#007BFF',
-    marginTop: 5,
+    fontSize: theme.fontSize.small,
+    color: theme.colors.primary,
+    marginTop: theme.spacing.extraSmall,
     fontStyle: 'italic',
   },
   loadingText: {
-    fontSize: 20,
+    fontSize: theme.fontSize.large,
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: theme.spacing.large,
+    color: theme.colors.primary,
   },
   errorText: {
-    fontSize: 20,
-    color: 'red',
+    fontSize: theme.fontSize.large,
+    color: theme.colors.danger,
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: theme.spacing.large,
   },
   noResultsText: {
-    fontSize: 18,
+    fontSize: theme.fontSize.large,
     textAlign: 'center',
-    color: 'gray',
-    marginTop: 20,
+    color: theme.colors.warning,
+    marginTop: theme.spacing.large,
   },
   center: {
     justifyContent: 'center',

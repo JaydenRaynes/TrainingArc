@@ -3,6 +3,7 @@ import { Modal, StyleSheet, Text, Pressable, View, ScrollView, TouchableWithoutF
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig'; // Import your Firestore configuration
+import { theme } from '../utils/theme';
 
 const ProgressPage = () => {
   const [infoVisible, setInfoVisible] = useState(false);
@@ -13,32 +14,26 @@ const ProgressPage = () => {
   useEffect(() => {
     const userID = auth.currentUser?.uid; // Get the current user's ID
     if (!userID) return;
-
+  
     const progressRef = collection(db, "users", userID, "progress");
-
+  
     // Query to get all workouts (sorted by date)
     const q = query(progressRef, orderBy("date", "desc"));
-
-    // Real-time listener using onSnapshot
+  
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       if (!querySnapshot.empty) {
         // Get all workout data
-        const workoutData = querySnapshot.docs.map(doc => doc.data());
-        
-        // Group workouts by exercise name and only keep the most recent one
-        const groupedWorkouts = {};
-        
-        workoutData.forEach(workout => {
-          const { workoutName, date } = workout;
-          
-          // If the workoutName already exists in the groupedWorkouts object, check if the current one is more recent
-          if (!groupedWorkouts[workoutName] || new Date(date) > new Date(groupedWorkouts[workoutName].date)) {
-            groupedWorkouts[workoutName] = workout;
-          }
+        const workoutData = querySnapshot.docs.map(doc => {
+          console.log("Fetched Workout Data:", doc.data()); // Debugging log
+          return doc.data();
         });
-
-        // Convert the grouped workouts object back to an array
-        setWorkouts(Object.values(groupedWorkouts));
+  
+        // Flatten all workouts inside different dates
+        const allWorkouts = workoutData.flatMap((entry) => entry.workouts || []);
+  
+        console.log("Processed Workouts:", allWorkouts); // Debugging log
+  
+        setWorkouts(allWorkouts);
       } else {
         console.log("No workout data found");
         setWorkouts([]);
@@ -46,8 +41,7 @@ const ProgressPage = () => {
     }, (error) => {
       console.error("Error fetching workout data:", error);
     });
-
-    // Clean up the listener when the component is unmounted
+  
     return () => unsubscribe();
   }, []);
 
@@ -63,7 +57,7 @@ const ProgressPage = () => {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Text style={styles.header}>Workout Progress</Text>
           {workouts.length > 0 ? (
@@ -108,58 +102,62 @@ const ProgressPage = () => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background, // Background color from theme
+  },
   scrollContainer: {
-    padding: 15,
-    paddingBottom: 20,
+    padding: theme.spacing.medium,
+    paddingBottom: theme.spacing.large,
   },
   header: {
-    fontSize: 24,
+    fontSize: theme.fontSize.extraLarge,
     fontWeight: 'bold',
-    marginBottom: 10,
+    color: theme.colors.primary, // Primary color
     textAlign: 'center',
+    marginBottom: theme.spacing.medium,
   },
   exerciseCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
+    backgroundColor: theme.colors.cardBackground || "#1E1E2D", // Ensure card background exists in theme
+    borderRadius: theme.borderRadius.medium,
+    padding: theme.spacing.medium,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    marginBottom: 15,
-    position: 'relative',
+    marginBottom: theme.spacing.medium,
   },
   titleText: {
-    fontSize: 22,
+    fontSize: theme.fontSize.large,
     fontWeight: 'bold',
-    color: 'black',
+    color: theme.colors.text,
   },
   subtitleText: {
-    fontSize: 18,
-    color: 'black',
+    fontSize: theme.fontSize.medium,
+    color: theme.colors.textSecondary || "#B0B0B0", // Ensure textSecondary exists in theme
   },
   noWorkoutText: {
-    fontSize: 18,
-    color: 'gray',
+    fontSize: theme.fontSize.large,
+    color: theme.colors.placeholder,
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: theme.spacing.large,
   },
   infoButton: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: theme.spacing.small,
+    right: theme.spacing.small,
     width: 30,
     height: 30,
-    borderRadius: 15,
-    backgroundColor: 'black',
+    borderRadius: theme.borderRadius.small,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   infoButtonText: {
-    color: 'white',
+    color: theme.colors.buttonText,
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: theme.fontSize.medium,
   },
   infoModalBackground: {
     flex: 1,
@@ -169,36 +167,31 @@ const styles = StyleSheet.create({
   },
   infoModalView: {
     width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    backgroundColor: theme.colors.cardBackground || "#1E1E2D",
+    borderRadius: theme.borderRadius.large,
+    padding: theme.spacing.large,
     alignItems: 'center',
   },
   infoTitle: {
-    fontSize: 24,
+    fontSize: theme.fontSize.large,
     fontWeight: 'bold',
-    marginBottom: 15,
-    color: 'black',
+    marginBottom: theme.spacing.medium,
+    color: theme.colors.text,
   },
   infoContent: {
-    fontSize: 16,
+    fontSize: theme.fontSize.medium,
     textAlign: 'center',
-    marginBottom: 20,
-    color: 'black',
+    marginBottom: theme.spacing.small,
+    color: theme.colors.textSecondary || "#B0B0B0",
   },
   closeButton: {
-    backgroundColor: '#f44336',
-    borderRadius: 5,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    backgroundColor: theme.colors.danger,
+    borderRadius: theme.borderRadius.small,
+    paddingHorizontal: theme.spacing.medium,
+    paddingVertical: theme.spacing.small,
   },
   closeButtonText: {
-    color: 'white',
+    color: theme.colors.text,
     fontWeight: 'bold',
   },
 });

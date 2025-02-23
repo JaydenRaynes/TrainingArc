@@ -2,6 +2,7 @@ import React, { act, useState } from "react";
 import { View, Text, TextInput, Button, ScrollView, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { theme } from "../utils/theme";
 
 const Checkbox = ({ label, value, onChange }) => (
   <TouchableOpacity style={styles.checkboxContainer} onPress={() => onChange(!value)}>
@@ -29,30 +30,30 @@ const WorkoutQuestionnaire = () => {
   const [intensityPreference, setIntensityPreference] = useState("");
   //const [recoveryNeeds, setRecoveryNeeds] = useState("");
   const [equipmentPreference, setEquipmentPreference] = useState({
-    dumbbells: false, 
-    barbells: false,
-    kettlebells: false, 
-    resistanceBands: false, 
-    none: false
+    Dumbbells: false, 
+    Barbells: false,
+    Kettlebells: false, 
+    ResistanceBands: false, 
+    None: false
   });
   const [preferredWorkoutType, setPreferredWorkoutType] = useState({
-    cardio: false, 
-    strength: false, 
-    yoga: false, 
-    hiit: false, 
-    bodyweight: false
+    Cardio: false, 
+    Strength: false, 
+    Yoga: false, 
+    Hit: false, 
+    Bodyweight: false
   });
   const [workoutEnvironment, setWorkoutEnvironment] = useState({
-    home: false, 
-    gym: false, 
-    outdoor: false
+    Home: false, 
+    Gym: false, 
+    Outdoor: false
   });
   const [cardioPreference, setCardioPreference] = useState({
-    running: false, 
-    cycling: false, 
-    swimming: false, 
-    rowing: false, 
-    walking: false
+    Running: false, 
+    Cycling: false, 
+    Swimming: false, 
+    Rowing: false, 
+    Walking: false
   });
   const [activityLevel, setActivityLevel] = useState({
     Active: false, 
@@ -219,19 +220,80 @@ const WorkoutQuestionnaire = () => {
         <Checkbox key={key} label={key} value={workoutSplit[key]} onChange={() => handleCheckboxChange("workoutSplit", key)} />
       ))}
 
-      <Button title="Submit" onPress={handleSubmit} />
+      <Button title="Submit" onPress={handleSubmit} color={theme.colors.primary}/>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: "#fff" },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
-  label: { fontSize: 16, marginVertical: 10 },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 5, padding: 10, marginBottom: 20, fontSize: 16 },
-  checkboxContainer: { flexDirection: "row", alignItems: "center", marginBottom: 5,},
-  checkbox: { width: 20, height: 20, borderWidth: 1, borderColor: "#000", marginRight: 10, },
-  checkboxChecked: { backgroundColor: "#000", },
+  container: {
+    padding: theme.spacing.medium,
+    backgroundColor: theme.colors.background,
+    flexGrow: 1,
+  },
+  title: {
+    fontSize: theme.fontSize.extraLarge,
+    fontWeight: "bold",
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.large,
+    textAlign: "center",
+  },
+  label: {
+    fontSize: theme.fontSize.medium,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.extraSmall,
+    fontWeight: "600",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.inputBackground,
+    borderRadius: theme.borderRadius.small,
+    paddingVertical: theme.spacing.small,
+    paddingHorizontal: theme.spacing.medium,
+    color: theme.colors.text,
+    fontSize: theme.fontSize.medium,
+    marginBottom: theme.spacing.medium,
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "grey",
+    borderRadius: theme.borderRadius.small,
+    paddingVertical: theme.spacing.small,
+    paddingHorizontal: theme.spacing.medium,
+    marginBottom: theme.spacing.small,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: theme.colors.text,
+    borderRadius: 5,
+    marginRight: theme.spacing.small,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: theme.colors.primary,
+  },
+  checkboxText: {
+    fontSize: theme.fontSize.medium,
+    color: theme.colors.text,
+    fontWeight: "500",
+  },
+  buttonContainer: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.medium,
+    paddingVertical: theme.spacing.medium,
+    alignItems: "center",
+    marginTop: theme.spacing.large,
+  },
+  buttonText: {
+    color: theme.colors.buttonText,
+    fontSize: theme.fontSize.large,
+    fontWeight: "bold",
+  },
 });
 
 
