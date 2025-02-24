@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, StyleSheet, Text, Pressable, View, ScrollView, TouchableWithoutFeedback, Dimensions } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { LineChart } from 'react-native-chart-kit';
 
@@ -14,32 +14,53 @@ const ProgressPage = () => {
   useEffect(() => {
     const userID = auth.currentUser?.uid;
     if (!userID) return;
-
+  
     const progressRef = collection(db, "users", userID, "progress");
     const q = query(progressRef, orderBy("date", "desc"));
-
+  
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       if (!querySnapshot.empty) {
-        const workoutData = querySnapshot.docs.map(doc => doc.data());
-        const groupedWorkouts = {};
-
-        workoutData.forEach(workout => {
-          const { workoutName, date } = workout;
-          if (!groupedWorkouts[workoutName] || new Date(date) > new Date(groupedWorkouts[workoutName].date)) {
-            groupedWorkouts[workoutName] = workout;
-          }
+        const groupedWorkouts = [];
+  
+        querySnapshot.forEach(docSnap => {
+          const docData = docSnap.data();
+          console.log('Document Data:', docData); // Log to inspect the document
+  
+          // Flatten exercises from the "workouts" array and map them
+          docData.workouts.forEach(exercise => {
+            console.log('Exercise:', exercise); // Log to inspect individual exercises
+  
+            const { workoutName, sets, reps, weight, date } = exercise;
+  
+            // Safely handle missing or malformed data
+            const safeSets = sets ? sets : 0;
+            const safeReps = reps ? reps : 0;
+            const safeWeight = weight ? weight : 0;
+            const safeDate = date ? date : 'Unknown Date';
+  
+            groupedWorkouts.push({
+              workoutName: workoutName || 'Unnamed Exercise',
+              sets: safeSets,
+              reps: safeReps,
+              weight: safeWeight,
+              date: safeDate,
+            });
+          });
         });
-
-        setWorkouts(Object.values(groupedWorkouts));
+  
+        setWorkouts(groupedWorkouts); // Update workouts for display
       } else {
         setWorkouts([]);
       }
     }, (error) => {
       console.error("Error fetching workout data:", error);
     });
-
+  
     return () => unsubscribe();
   }, []);
+  
+  
+  
 
   const openInfoModal = (exercise) => {
     setSelectedExercise(exercise);
@@ -53,24 +74,47 @@ const ProgressPage = () => {
     setExerciseHistory([]);
   };
 
-  const fetchExerciseHistory = (exerciseName) => {
+  const fetchExerciseHistory = async (exerciseName) => {
     const userID = auth.currentUser?.uid;
     if (!userID) return;
-
+  
     const progressRef = collection(db, "users", userID, "progress");
-    const q = query(progressRef, where("workoutName", "==", exerciseName), orderBy("date", "asc"));
-
-    onSnapshot(q, (querySnapshot) => {
-      const history = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          date: data.date,
-          maxRep: Math.round(data.weight * (1 + data.reps / 30)),
-        };
+    const querySnapshot = await getDocs(progressRef);
+  
+    const history = [];
+    querySnapshot.forEach(docSnap => {
+      const docData = docSnap.data();
+      console.log('Document Data:', docData); // Log the full document data
+  
+      // Iterate over the "workouts" array to access each workout object
+      docData.workouts.forEach(exercise => {
+        console.log('Exercise Data:', exercise); // Log each exercise data
+  
+        const { workoutName, weight, reps, date } = exercise;
+  
+        // Only proceed if this exercise matches the selected exercise name
+        if (workoutName === exerciseName) {
+          // Convert reps and weight to numbers before using them
+          const numWeight = parseFloat(weight) || 0;
+          const numReps = parseInt(reps) || 0;
+  
+          history.push({
+            date: date, // Add date if needed
+            maxRep: numWeight && numReps ? Math.round(numWeight * (1 + numReps / 30)) : 0, // Safely calculate maxRep
+          });
+        }
       });
-      setExerciseHistory(history);
     });
+  
+    if (history.length === 0) {
+      console.log("No data found for this exercise.");
+    }
+  
+    setExerciseHistory(history); // Update state with filtered history
   };
+  
+  
+  
 
   return (
     <SafeAreaProvider>
@@ -79,7 +123,7 @@ const ProgressPage = () => {
           <Text style={styles.header}>Workout Progress</Text>
           {workouts.length > 0 ? (
             workouts.map((workout, index) => {
-              const bestSet = `${workout.reps} reps of ${workout.weight} lbs`;
+              const bestSet = `${workout.sets}x${workout.reps} @ ${workout.weight} lbs`;
               const estimatedMax = `1 rep of ${Math.round(workout.weight * (1 + workout.reps / 30))} lbs`;
 
               return (
@@ -88,7 +132,7 @@ const ProgressPage = () => {
                     <Text style={styles.infoButtonText}>i</Text>
                   </Pressable>
                   <Text style={styles.titleText}>{workout.workoutName}</Text>
-                  <Text style={styles.subtitleText}>Best Set of Reps: {bestSet}</Text>
+                  <Text style={styles.subtitleText}>Best Set: {bestSet}</Text>
                   <Text style={styles.subtitleText}>Est. Max Rep: {estimatedMax}</Text>
                 </View>
               );
@@ -122,6 +166,8 @@ const ProgressPage = () => {
                       color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                       strokeWidth: 2,
                       decimalPlaces: 0,
+                      yAxisMin: 0, // Set the minimum value of the y-axis to 0
+                      yAxisInterval: 20, // Set the interval between y-axis values to 50
                     }}
                     bezier
                     style={{ marginVertical: 10, borderRadius: 10 }}
