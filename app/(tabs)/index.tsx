@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 
-const API_KEY = "YOUR_API_KEY_HERE"; // Replace with your API Key
+const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
 const WorkoutsPage = () => {
   const router = useRouter();
@@ -100,6 +100,84 @@ const WorkoutsPage = () => {
     }
   };
 
+  const openTimerModal = (workoutName: string) => {
+    setActiveWorkout(workoutName);
+    setTimer(0);
+    setTimerRunning(false);
+    setTimerModalVisible(true);
+  };
+
+  const startTimer = () => {
+    setTimerRunning(true);
+  };
+
+  const stopTimer = () => {
+    setTimerRunning(false);
+    if (activeWorkout) {
+      setWorkoutDurations((prev) => {
+        const updatedDurations = { ...prev, [activeWorkout]: timer };
+        console.log("Saved duration:", updatedDurations); // DEBUG: Check saved times
+        return updatedDurations;
+      });
+    }
+  };
+
+  const resetTimer = () => {
+    setTimer(0);
+    setTimerRunning(false);
+  };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (timerRunning) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev + 1);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [timerRunning]);
+
+  // Fetch Calories Burned
+  const fetchCaloriesBurned = async (exercise: string) => {
+    let durationInMinutes = Math.max(Math.ceil((workoutDurations[exercise] || 0) / 60), 1); // Ensure at least 1 min
+    console.log(`Fetching calories for ${exercise} - Duration: ${durationInMinutes} min`);
+  
+    setLoadingCalories((prev) => ({ ...prev, [exercise]: true }));
+  
+    try {
+      const response = await fetch(
+        `https://api.api-ninjas.com/v1/caloriesburned?activity=${encodeURIComponent(
+          exercise
+        )}&duration=${durationInMinutes}`,
+        {
+          method: "GET",
+          headers: { "X-Api-Key": API_KEY },
+        }
+      );
+  
+      const data = await response.json();
+      console.log("API Response:", data); // DEBUG: Check API response
+  
+      if (data.length > 0) {
+        setCaloriesBurned((prev) => ({
+          ...prev,
+          [exercise]: data[0].calories_per_hour * (durationInMinutes / 60),
+        }));
+      } else {
+        Alert.alert("Error", "No data found for this exercise.");
+      }
+    } catch (error) {
+      console.error("API Fetch Error:", error);
+      Alert.alert("Error", "Failed to fetch calories burned.");
+    }
+  
+    setLoadingCalories((prev) => ({ ...prev, [exercise]: false }));
+  };
+  
+
+
   return (
     <View style={styles.container}>
       <Text style={styles.headerText}>{today}'s Workout</Text>
@@ -135,29 +213,47 @@ const WorkoutsPage = () => {
         </View>
       </Modal>
 
-      {workoutPlan ? (
-        <>
-          <Text style={styles.splitText}>Split: {workoutPlan.split}</Text>
-          <FlatList
-            data={workoutPlan.workouts}
-            keyExtractor={(item, index) => `${item.name}-${index}`}
-            renderItem={({ item, index }) => (
-              <View style={styles.workoutItem}>
-                <BouncyCheckbox
-                  isChecked={item.completed}
-                  text={`${item.name} - ${item.sets}x${item.reps} @ ${item.weight} lbs`}
-                  textStyle={styles.checkboxText}
-                  fillColor={theme.colors.primary}
-                  onPress={() => toggleWorkoutCompletion(index)}
-                />
+      <FlatList
+        data={workoutPlan?.workouts || []}
+        keyExtractor={(item, index) => `${item.name}-${index}`}
+        renderItem={({ item, index }) => (
+          <View style={styles.workoutItem}>
+            <BouncyCheckbox
+              isChecked={item.completed}
+              text={`${item.name} - ${item.sets}x${item.reps} @ ${item.weight} lbs`}
+              onPress={() => toggleWorkoutCompletion(index)}
+            />
+            <View style={styles.buttonsContainer}>
+              <View style={{ flex: 1, marginRight: 5 }}>
+                  <Button title="⏱ Timer" onPress={() => openTimerModal(item.name)} />
               </View>
+              <View style={{ flex: 1, marginLeft: 5 }}>
+                <Button title="🔥 Calories" onPress={() => fetchCaloriesBurned(item.name)} />
+              </View>
+            </View>
+            {loadingCalories[item.name] ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              caloriesBurned[item.name] && <Text>🔥 {caloriesBurned[item.name].toFixed(2)} kcal</Text>
             )}
-          />
-          <Button title="Save Completed Workouts" onPress={() => saveToProgress(workoutPlan.workouts)} color={theme.colors.primary} />
-        </>
-      ) : (
-        <Text style={styles.noWorkoutText}>No workout planned for today.</Text>
-      )}
+          </View>
+        )}
+      />
+
+      {/* Timer Modal */}
+      <Modal visible={timerModalVisible} animationType="slide" transparent>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text>{activeWorkout} Timer: {timer}s</Text>
+            <Button title="Start" onPress={startTimer} />
+            <Button title="Stop" onPress={stopTimer} />
+            <Button title="Reset" onPress={resetTimer} />
+            <Button title="Close" onPress={() => setTimerModalVisible(false)} />
+          </View>
+        </View>
+      </Modal>
+      <Button title="Save Completed Workouts" onPress={saveToProgress} color={theme.colors.secondary}/>
+      <Button title="Edit Splits page" onPress={() => router.push("/component/splits")} color={theme.colors.secondary} />
     </View>
   );
 };
@@ -168,6 +264,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     padding: theme.spacing.medium,
   },
+  buttonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-evenly", // Ensures even spacing
+    alignItems: "center",
+    marginTop: theme.spacing.small,
+    width: "100%", // Ensures buttons span full width
+    flexWrap: "wrap", // Allows wrapping in case of space issues
+  },  
   headerText: {
     fontSize: theme.fontSize.extraLarge,
     fontWeight: "bold",
@@ -194,10 +298,19 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.small,
   },
   workoutItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "column",
+    backgroundColor: theme.colors.cardBackground || "#fff",
+    padding: theme.spacing.medium,
+    borderRadius: theme.borderRadius.small,
     marginBottom: theme.spacing.small,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+    flexShrink: 1, // Prevents hidden content
+    minHeight: 100, // Ensures item doesn't collapse
   },
+    
   checkboxText: {
     fontSize: theme.fontSize.medium,
     color: theme.colors.text,
