@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, Alert, Button, StyleSheet, Modal, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, Alert, Button, StyleSheet, Modal, TouchableOpacity, ActivityIndicator } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { Calendar } from "react-native-calendars"; // Import Calendar
 import { db, auth } from "../firebaseConfig";
@@ -8,70 +8,55 @@ import { format } from "date-fns";
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 
+const API_KEY = "YOUR_API_KEY_HERE"; // Replace with your API Key
+
 const WorkoutsPage = () => {
   const router = useRouter();
   const userID = auth.currentUser?.uid;
-  const [workoutPlan, setWorkoutPlan] = useState(null);
-  const [today, setToday] = useState("");
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd")); // Stores selected date
-  const [calendarVisible, setCalendarVisible] = useState(false); // Controls calendar visibility
+  const [workoutPlan, setWorkoutPlan] = useState<{
+    split: string;
+    workouts: { name: string; sets: number; reps: number; weight: number; completed: boolean }[];
+  } | null>(null);
+
+  const [today, setToday] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [calendarVisible, setCalendarVisible] = useState(false);
+  const [timerModalVisible, setTimerModalVisible] = useState(false);
+  const [activeWorkout, setActiveWorkout] = useState<string | null>(null);
+  const [timer, setTimer] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [caloriesBurned, setCaloriesBurned] = useState<{ [key: string]: number }>({});
+  const [loadingCalories, setLoadingCalories] = useState<{ [key: string]: boolean }>({});
+  const [workoutDurations, setWorkoutDurations] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
-    const currentDay = format(new Date(), "EEEE"); // Get the current day (e.g., "Monday")
+    const currentDay = format(new Date(), "EEEE");
     setToday(currentDay);
     fetchWorkoutData(selectedDate);
   }, [userID, selectedDate]);
 
-  const fetchWorkoutData = (date) => {
+  const fetchWorkoutData = (date: string) => {
     if (!userID) return;
+
     const userRef = doc(db, "users", userID);
-    
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const formattedDay = format(new Date(date), "EEEE"); // Convert date to weekday name
+        const formattedDay = format(new Date(date), "EEEE");
         if (data.workoutPlans && data.workoutPlans[formattedDay]) {
-          setWorkoutPlan(data.workoutPlans[formattedDay]); // Load workouts for selected date
+          setWorkoutPlan(data.workoutPlans[formattedDay]);
         } else {
           setWorkoutPlan(null);
         }
+      } else {
+        setWorkoutPlan(null);
       }
     });
 
     return () => unsubscribe();
   };
 
-  const saveToProgress = async (completedWorkouts) => {
-    if (!completedWorkouts || completedWorkouts.length === 0) return;
-    if (!userID) return;
-
-    const progressRef = doc(db, "users", userID, "progress", selectedDate);
-
-    const progressData = {
-      date: selectedDate,
-      workouts: completedWorkouts.map(workout => ({
-        workoutName: workout.name,
-        sets: workout.sets,
-        reps: workout.reps,
-        weight: workout.weight,
-        completed: workout.completed,
-      }))
-    };
-
-    try {
-      const docSnap = await getDoc(progressRef);
-      if (docSnap.exists()) {
-        await updateDoc(progressRef, { workouts: arrayUnion(...progressData.workouts) });
-      } else {
-        await setDoc(progressRef, progressData);
-      }
-      console.log("Progress saved!");
-    } catch (error) {
-      console.error("Error saving progress:", error);
-    }
-  };
-
-  const toggleWorkoutCompletion = async (index) => {
+  const toggleWorkoutCompletion = async (index: number) => {
     if (!userID || !workoutPlan) return;
 
     const updatedWorkouts = [...workoutPlan.workouts];
@@ -85,13 +70,33 @@ const WorkoutsPage = () => {
     setWorkoutPlan({ ...workoutPlan, workouts: updatedWorkouts });
   };
 
-  const handleSaveCompletedWorkouts = () => {
-    if (!workoutPlan) return;
-    const completedWorkouts = workoutPlan.workouts.filter((workout) => workout.completed);
-    if (completedWorkouts.length === 0) {
-      Alert.alert("No Completed Workouts", "Please check off some workouts before saving.");
-    } else {
-      saveToProgress(completedWorkouts);
+  const saveToProgress = async (completedWorkouts: any) => {
+    if (!completedWorkouts || completedWorkouts.length === 0) return;
+    if (!userID) return;
+
+    const progressRef = doc(db, "users", userID, "progress", selectedDate);
+
+    const progressData = {
+      date: selectedDate,
+      workouts: completedWorkouts.map((workout: any) => ({
+        workoutName: workout.name,
+        sets: workout.sets,
+        reps: workout.reps,
+        weight: workout.weight,
+        completed: workout.completed,
+      })),
+    };
+
+    try {
+      const docSnap = await getDoc(progressRef);
+      if (docSnap.exists()) {
+        await updateDoc(progressRef, { workouts: arrayUnion(...progressData.workouts) });
+      } else {
+        await setDoc(progressRef, progressData);
+      }
+      Alert.alert("Success", "Workouts saved successfully!");
+    } catch (error) {
+      console.error("Error saving progress:", error);
     }
   };
 
@@ -148,13 +153,11 @@ const WorkoutsPage = () => {
               </View>
             )}
           />
-          <Button title="Save Completed Workouts" onPress={handleSaveCompletedWorkouts} color={theme.colors.primary} />
+          <Button title="Save Completed Workouts" onPress={() => saveToProgress(workoutPlan.workouts)} color={theme.colors.primary} />
         </>
       ) : (
         <Text style={styles.noWorkoutText}>No workout planned for today.</Text>
       )}
-
-      <Button title="Edit Splits Plans" onPress={() => router.push("/component/splits")} color={theme.colors.secondary} />
     </View>
   );
 };
@@ -183,18 +186,6 @@ const styles = StyleSheet.create({
     color: theme.colors.buttonText,
     fontWeight: "bold",
     fontSize: theme.fontSize.medium,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    backgroundColor: "#FFF",
-    padding: theme.spacing.large,
-    borderRadius: theme.borderRadius.medium,
-    width: "90%",
   },
   splitText: {
     fontSize: theme.fontSize.large,
