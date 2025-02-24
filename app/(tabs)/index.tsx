@@ -1,50 +1,54 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, Alert, Button } from "react-native";
+import { View, Text, FlatList, Alert, Button, StyleSheet, Modal, TouchableOpacity } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
+import { Calendar } from "react-native-calendars"; // Import Calendar
 import { db, auth } from "../firebaseConfig";
 import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase/firestore";
 import { format } from "date-fns";
+import { useRouter } from "expo-router";
+import { theme } from "../utils/theme";
 
 const WorkoutsPage = () => {
+  const router = useRouter();
   const userID = auth.currentUser?.uid;
-  const [workoutPlan, setWorkoutPlan] = useState<{
-    split: string;
-    workouts: { name: string; sets: number; reps: number; weight: number; completed: boolean }[];
-  } | null>(null);
-  const [today, setToday] = useState<string>("");
+  const [workoutPlan, setWorkoutPlan] = useState(null);
+  const [today, setToday] = useState("");
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd")); // Stores selected date
+  const [calendarVisible, setCalendarVisible] = useState(false); // Controls calendar visibility
 
   useEffect(() => {
     const currentDay = format(new Date(), "EEEE"); // Get the current day (e.g., "Monday")
     setToday(currentDay);
+    fetchWorkoutData(selectedDate);
+  }, [userID, selectedDate]);
 
+  const fetchWorkoutData = (date) => {
     if (!userID) return;
-
-    // Listen for real-time updates on the workout plan
     const userRef = doc(db, "users", userID);
+    
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        if (data.workoutPlans && data.workoutPlans[currentDay]) {
-          setWorkoutPlan(data.workoutPlans[currentDay]); // Load today's workout
+        const formattedDay = format(new Date(date), "EEEE"); // Convert date to weekday name
+        if (data.workoutPlans && data.workoutPlans[formattedDay]) {
+          setWorkoutPlan(data.workoutPlans[formattedDay]); // Load workouts for selected date
+        } else {
+          setWorkoutPlan(null);
         }
       }
     });
 
-    return () => unsubscribe(); // Cleanup listener on unmount
-  }, [userID]);
+    return () => unsubscribe();
+  };
 
-  // Function to save completed workouts to the "progress" collection
   const saveToProgress = async (completedWorkouts) => {
     if (!completedWorkouts || completedWorkouts.length === 0) return;
-  
-    const userID = auth.currentUser?.uid;
     if (!userID) return;
-  
-    const progressRef = doc(db, "users", userID, "progress", format(new Date(), "yyyy-MM-dd"));
-  
-    // Construct the progress data for that day
+
+    const progressRef = doc(db, "users", userID, "progress", selectedDate);
+
     const progressData = {
-      date: format(new Date(), "yyyy-MM-dd"),
+      date: selectedDate,
       workouts: completedWorkouts.map(workout => ({
         workoutName: workout.name,
         sets: workout.sets,
@@ -53,35 +57,26 @@ const WorkoutsPage = () => {
         completed: workout.completed,
       }))
     };
-  
+
     try {
-      // Check if the document already exists
       const docSnap = await getDoc(progressRef);
-  
       if (docSnap.exists()) {
-        // If the document exists, update the workouts array with the new completed workouts
-        await updateDoc(progressRef, {
-          workouts: arrayUnion(...progressData.workouts),
-        });
-        console.log("Progress updated successfully!");
+        await updateDoc(progressRef, { workouts: arrayUnion(...progressData.workouts) });
       } else {
-        // If the document doesn't exist, create a new one
         await setDoc(progressRef, progressData);
-        console.log("Progress saved successfully!");
       }
+      console.log("Progress saved!");
     } catch (error) {
       console.error("Error saving progress:", error);
     }
   };
 
-  // Toggle workout completion and update Firestore
-  const toggleWorkoutCompletion = async (index: number) => {
+  const toggleWorkoutCompletion = async (index) => {
     if (!userID || !workoutPlan) return;
 
     const updatedWorkouts = [...workoutPlan.workouts];
     updatedWorkouts[index].completed = !updatedWorkouts[index].completed;
 
-    // Update Firestore workout plan with completion status
     const userRef = doc(db, "users", userID);
     await updateDoc(userRef, {
       [`workoutPlans.${today}.workouts`]: updatedWorkouts,
@@ -90,43 +85,138 @@ const WorkoutsPage = () => {
     setWorkoutPlan({ ...workoutPlan, workouts: updatedWorkouts });
   };
 
-  // Handle save button click to store completed workouts
   const handleSaveCompletedWorkouts = () => {
     if (!workoutPlan) return;
-  
     const completedWorkouts = workoutPlan.workouts.filter((workout) => workout.completed);
     if (completedWorkouts.length === 0) {
       Alert.alert("No Completed Workouts", "Please check off some workouts before saving.");
     } else {
-      saveToProgress(completedWorkouts); // Now saves all completed workouts for the day under one document
+      saveToProgress(completedWorkouts);
     }
   };
+
   return (
-    <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 10 }}>{today}'s Workout</Text>
+    <View style={styles.container}>
+      <Text style={styles.headerText}>{today}'s Workout</Text>
+
+      {/* Button to open calendar */}
+      <TouchableOpacity style={styles.calendarButton} onPress={() => setCalendarVisible(true)}>
+        <Text style={styles.calendarButtonText}>Pick a Date</Text>
+      </TouchableOpacity>
+
+      {/* Calendar Modal */}
+      <Modal visible={calendarVisible} transparent={true} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Calendar
+              onDayPress={(day) => {
+                setSelectedDate(day.dateString);
+                setCalendarVisible(false);
+                fetchWorkoutData(day.dateString);
+              }}
+              markedDates={{
+                [selectedDate]: { selected: true, selectedColor: theme.colors.primary },
+              }}
+              theme={{
+                todayTextColor: theme.colors.primary,
+                arrowColor: theme.colors.primary,
+                textDayFontSize: theme.fontSize.medium,
+                textMonthFontSize: theme.fontSize.large,
+                textDayHeaderFontSize: theme.fontSize.small,
+              }}
+            />
+            <Button title="Close" onPress={() => setCalendarVisible(false)} color={theme.colors.secondary} />
+          </View>
+        </View>
+      </Modal>
+
       {workoutPlan ? (
         <>
-          <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 5 }}>Split: {workoutPlan.split}</Text>
+          <Text style={styles.splitText}>Split: {workoutPlan.split}</Text>
           <FlatList
             data={workoutPlan.workouts}
             keyExtractor={(item, index) => `${item.name}-${index}`}
             renderItem={({ item, index }) => (
-              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 5 }}>
+              <View style={styles.workoutItem}>
                 <BouncyCheckbox
                   isChecked={item.completed}
                   text={`${item.name} - ${item.sets}x${item.reps} @ ${item.weight} lbs`}
+                  textStyle={styles.checkboxText}
+                  fillColor={theme.colors.primary}
                   onPress={() => toggleWorkoutCompletion(index)}
                 />
               </View>
             )}
           />
-          <Button title="Save Completed Workouts" onPress={handleSaveCompletedWorkouts} />
+          <Button title="Save Completed Workouts" onPress={handleSaveCompletedWorkouts} color={theme.colors.primary} />
         </>
       ) : (
-        <Text>No workout planned for today.</Text>
+        <Text style={styles.noWorkoutText}>No workout planned for today.</Text>
       )}
+
+      <Button title="Edit Splits Plans" onPress={() => router.push("/component/splits")} color={theme.colors.secondary} />
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.medium,
+  },
+  headerText: {
+    fontSize: theme.fontSize.extraLarge,
+    fontWeight: "bold",
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.medium,
+    textAlign: "center",
+  },
+  calendarButton: {
+    backgroundColor: theme.colors.primary,
+    padding: theme.spacing.medium,
+    borderRadius: theme.borderRadius.medium,
+    alignItems: "center",
+    marginBottom: theme.spacing.medium,
+  },
+  calendarButtonText: {
+    color: theme.colors.buttonText,
+    fontWeight: "bold",
+    fontSize: theme.fontSize.medium,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContent: {
+    backgroundColor: "#FFF",
+    padding: theme.spacing.large,
+    borderRadius: theme.borderRadius.medium,
+    width: "90%",
+  },
+  splitText: {
+    fontSize: theme.fontSize.large,
+    fontWeight: "bold",
+    color: theme.colors.text,
+    marginBottom: theme.spacing.small,
+  },
+  workoutItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: theme.spacing.small,
+  },
+  checkboxText: {
+    fontSize: theme.fontSize.medium,
+    color: theme.colors.text,
+  },
+  noWorkoutText: {
+    fontSize: theme.fontSize.medium,
+    color: theme.colors.danger,
+    textAlign: "center",
+    marginTop: theme.spacing.large,
+  },
+});
 
 export default WorkoutsPage;

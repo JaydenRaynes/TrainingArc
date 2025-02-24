@@ -12,12 +12,10 @@ import { fetchProfileData, saveProfileData } from "../utils/authHelper";
 import { useRouter } from "expo-router";
 
 export default function ProfileSettings({
-  name,
+  name = "",
   setName,
-  age,
-  setAge,
-  gender,
-  setGender,
+  username = "",
+  setUsername,
 }: any) {
   const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
@@ -25,7 +23,7 @@ export default function ProfileSettings({
 
   const handleSaveProfile = async () => {
     try {
-      await saveProfileData({ name, age, gender });
+      await saveProfileData({ name, username });
       Alert.alert("Success", "Profile updated successfully!");
     } catch (error) {
       console.error("Error saving profile data:", error);
@@ -72,20 +70,20 @@ export default function ProfileSettings({
               value={name}
               onChangeText={setName}
             />
-            <TextInput
+            {/* <TextInput
               style={styles.input}
               placeholder="Age"
               placeholderTextColor="#B0B0B0"
               value={age}
               onChangeText={setAge}
               keyboardType="numeric"
-            />
+            /> */}
             <TextInput
               style={styles.input}
-              placeholder="Gender"
+              placeholder="Username"
               placeholderTextColor="#B0B0B0"
-              value={gender}
-              onChangeText={setGender}
+              value={username}
+              onChangeText={setUsername}
             />
 
             {/* Save Profile Button */}
