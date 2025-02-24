@@ -9,31 +9,8 @@ const PORT = 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// const API_NINJAS_URL = 'https://api.api-ninjas.com/v1/exercises';
-// //const API_KEY = ''; // Add your API-Ninjas API key here
-
-// const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-// //const OPENAI_API_KEY = ""; // Add your OpenAI API key here
-
-app.get('/', async (req, res) => {
-  const searchTerm = req.query.name || ''; // Get search term from query params
-
-  try {
-    const response = await axios.get(API_NINJAS_URL, {
-      headers: {
-        'X-Api-Key': API_KEY,
-      },
-      params: {
-        name: searchTerm, // Send search term to API
-      },
-    });
-
-    res.json({ exercises: response.data });
-  } catch (error) {
-    console.error('Error fetching exercises:', error);
-    res.status(500).json({ error: 'Failed to fetch exercises' });
-  }
-});
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_API_KEY = ""; // Remember to keep your API key safe!
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
