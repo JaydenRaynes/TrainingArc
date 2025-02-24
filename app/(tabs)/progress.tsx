@@ -4,6 +4,7 @@ import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { LineChart } from 'react-native-chart-kit';
+import { theme } from "../utils/theme"
 
 const ProgressPage = () => {
   const [infoVisible, setInfoVisible] = useState(false);
