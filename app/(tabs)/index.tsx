@@ -8,6 +8,7 @@ import {
   Modal,
   TouchableOpacity,
   ActivityIndicator,
+  
 } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { db, auth } from "../firebaseConfig";
