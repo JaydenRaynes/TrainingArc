@@ -1,34 +1,160 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Alert, StyleSheet, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
-import { db, auth } from '../firebaseConfig'; // Assuming db is your Firestore instance
-import { doc, setDoc } from 'firebase/firestore';
+import { useFocusEffect } from '@react-navigation/native';
+import { db, auth } from '../firebaseConfig';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import useUserLocation from '../mapFunctions/userLocation';
 import fetchNearbyGyms from '../mapFunctions/nearbyGyms';
 import { Gym } from '../models/gymInfoModel';
 
-interface Location {
-  latitude: number;
-  longitude: number;
-}
-
 const GymMapScreen: React.FC = () => {
   const [gyms, setGyms] = useState<Gym[]>([]);
   const [currentGym, setCurrentGym] = useState<Gym | null>(null);
-  const [showInfo, setShowInfo] = useState<{ [key: number]: boolean }>({});
+  const [selectedGym, setSelectedGym] = useState<Gym | null>(null);
   const [region, setRegion] = useState<any>(null);
+  const [popupVisible, setPopupVisible] = useState(false); // Manage visibility of the popup
   const { location, error: locationError } = useUserLocation();
 
-  useEffect(() => {
-    if (location) {
-      fetchNearbyGyms(location.latitude, location.longitude)
-        .then(setGyms)
-        .catch((err) => {
-          console.error('Error fetching gyms:', err);
-        });
-    }
-  }, [location]);
+  useFocusEffect(
+    useCallback(() => {
+      if (location) {
+        // Your test gym data here
+        const testGym: Gym[] = [{
+          "name": ["Planet Fitness"],
+          "geometry": {
+            "location": {
+              "latitude": 32.543000,
+              "longitude": -92.637500
+            }
+          },
+          "types": ["gym", "health", "fitness", "point_of_interest"],
+          "vicinity": "123 Example St, Ruston, LA 10001",
+          "place_id": "testGym",
+          "equipment": [
+            "Treadmills",
+            "Ellipticals",
+            "Stationary Bikes",
+            "Free Weights",
+            "Dumbbells",
+            "Barbells",
+            "Weight Machines",
+            "Cable Machines",
+            "Smith Machines",
+            "Leg Press Machines",
+            "Chest Press Machines",
+            "Lat Pulldown Machines",
+            "Ab Crunch Machines",
+            "Seated Row Machines",
+            "Resistance Bands",
+            "Kettlebells",
+            "Medicine Balls",
+            "Battle Ropes",
+            "Exercise Balls",
+            "Stretching Mats"]
+        },
+        {
+          "name": ["Iron Haven Gym"],
+          "geometry": {
+            "location": {
+              "latitude": 32.530200,
+              "longitude": -92.635800
+            }
+          },
+          "types": ["gym", "fitness", "point_of_interest"],
+          "vicinity": "456 Fitness Blvd, Ruston, LA 10002",
+          "place_id": "ironHavenGym",
+          "equipment": [
+            "Treadmills",
+            "Ellipticals",
+            "Stationary Bikes",
+            "Free Weights",
+            "Dumbbells",
+            "Barbells",
+            "Power Racks",
+            "Deadlift Platforms",
+            "Leg Press Machines",
+            "Bench Press Stations",
+            "Rowing Machines",
+            "Sled Push Tracks",
+            "Kettlebells",
+            "Medicine Balls",
+            "Battle Ropes",
+            "TRX Suspension Trainers",
+            "Plyometric Boxes",
+            "Resistance Bands"
+          ]
+        },
+        {
+          "name": ["Ruston Athletic Club"],
+          "geometry": {
+            "location": {
+              "latitude": 32.541500,
+              "longitude": -92.668900
+            }
+          },
+          "types": ["gym", "sports_club", "point_of_interest"],
+          "vicinity": "789 Strength St, Ruston, LA 10003",
+          "place_id": "rustonAthleticClub",
+          "equipment": [
+            "Treadmills",
+            "Ellipticals",
+            "Rowing Machines",
+            "Dumbbells",
+            "Barbells",
+            "Weight Machines",
+            "Resistance Bands",
+            "Squat Racks",
+            "Deadlift Platforms",
+            "Battle Ropes",
+            "Spin Bikes",
+            "Plyometric Boxes",
+            "Sled Push Tracks",
+            "Stretching Mats",
+            "Jump Ropes",
+            "Foam Rollers",
+            "Cable Machines"
+          ]
+        },
+        {
+          "name": ["Elite Performance Center"],
+          "geometry": {
+            "location": {
+              "latitude": 32.548800,
+              "longitude": -92.640300
+            }
+          },
+          "types": ["gym", "personal_training", "point_of_interest"],
+          "vicinity": "321 Powerhouse Ln, Ruston, LA 10004",
+          "place_id": "elitePerformanceCenter",
+          "equipment": [
+            "Treadmills",
+            "Ellipticals",
+            "Assault Bikes",
+            "Free Weights",
+            "Dumbbells",
+            "Barbells",
+            "Weight Machines",
+            "Cable Machines",
+            "Squat Racks",
+            "Plyometric Boxes",
+            "Sled Push Tracks",
+            "TRX Suspension Trainers",
+            "Battle Ropes",
+            "Kettlebells",
+            "Medicine Balls",
+            "Foam Rollers",
+            "Stretching Mats",
+            "Gymnastics Rings",
+            "Pull-Up Bars"
+            ]
+          }
+        ];
+        setGyms(testGym);
+      }
+    }, [location])
+  );
 
   const handleSetCurrentGym = async (gym: Gym) => {
     const user = auth.currentUser;
@@ -36,20 +162,26 @@ const GymMapScreen: React.FC = () => {
       Alert.alert("Error", "You must be logged in to save your data.");
       return;
     }
-    console.log(user);
     try {
-      const gymRef = doc(db, 'users', user.uid); // Reference to the gym document
-      await setDoc(gymRef, {
+      const userRef = doc(db, 'users', user.uid, 'gym', gym.place_id);
+      const docSnap = await getDoc(userRef);
+
+      if (!docSnap.exists()) {
+        console.log("Gym does not exist, creating...");
+      } else {
+        console.log("Gym already exists, updating...");
+      }
+
+      await setDoc(userRef, {
         name: gym.name,
         address: gym.vicinity,
-        location: {
-          latitude: gym.geometry.location.lat,
-          longitude: gym.geometry.location.lng,
-        },
+        location: gym.geometry.location,
         types: gym.types,
         place_id: gym.place_id,
+        equipment: gym.equipment,
       });
-      setCurrentGym(gym); // Update the current gym state
+
+      setCurrentGym(gym);
       Alert.alert('Success', 'Gym saved as current gym!');
     } catch (error) {
       console.error('Error saving gym to Firestore:', error);
@@ -57,182 +189,193 @@ const GymMapScreen: React.FC = () => {
     }
   };
 
-  const toggleGymInfo = (index: number, gym: Gym) => {
-    setShowInfo((prev) => ({ ...prev, [index]: !prev[index] }));
+  const handleMarkerPress = (gym: Gym) => {
+    setSelectedGym(gym);
     setRegion({
-      latitude: gym.geometry.location.lat,
-      longitude: gym.geometry.location.lng,
+      latitude: gym.geometry.location.latitude,
+      longitude: gym.geometry.location.longitude,
       latitudeDelta: 0.01,
       longitudeDelta: 0.01,
     });
+    setPopupVisible(true); // Show the popup when a gym marker is pressed
+  };
+
+  const handleClosePopup = () => {
+    setPopupVisible(false); // Close the popup when clicking outside
   };
 
   if (locationError) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Error fetching location: {locationError}</Text>
-      </View>
+      <View style={styles.center}><Text style={styles.errorText}>Error fetching location: {locationError}</Text></View>
     );
   }
 
   if (!location) {
     return (
-      <View style={styles.center}>
-        <Text>Loading location...</Text>
-      </View>
+      <View style={styles.center}><Text>Loading location...</Text></View>
     );
   }
 
+  // Log selectedGym to make sure it gets updated
+  console.log("Selected Gym: ", selectedGym);
+
   return (
-    <MapView
-      style={styles.map}
-      region={region || {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      }}
-    >
-      {/* Marker for user's location */}
-      <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }}>
-        <View style={styles.userMarker}>
-          <MaterialCommunityIcons name="account-circle" size={40} color="white" />
-        </View>
-      </Marker>
-
-      {/* Gym markers */}
-      {gyms.length > 0 &&
-        gyms.map((gym, index) => (
-          <Marker
-            key={index}
-            coordinate={{
-              latitude: gym.geometry.location.lat,
-              longitude: gym.geometry.location.lng,
-            }}
-            title={gym.name}
-            description={gym.vicinity}
-          >
-            <View style={styles.gymMarker}>
-              <TouchableOpacity onPress={() => toggleGymInfo(index, gym)}>
-                <MaterialCommunityIcons name="exclamation-thick" size={30} color="red" />
-              </TouchableOpacity>
-              {showInfo[index] && (
-                <View style={styles.gymInfo}>
-                  <Text style={styles.gymMarkerText}>{gym.name}</Text>
-                  <Text style={styles.gymMarkerText}>Address: {gym.vicinity}</Text>
-                </View>
-              )}
-
-              {/* Always show the button if gym info is visible */}
-              {showInfo[index] && (
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.customButton} onPress={() => handleSetCurrentGym(gym)}>
-                    <Text style={styles.buttonText}>Set as Current Gym</Text>
-                </TouchableOpacity>
-              </View>
-              )}
-              
-            </View>
-          </Marker>
-        ))}
-
-      {gyms.length === 0 && (
-        <View style={styles.center}>
-          <Text>No gyms found nearby</Text>
-        </View>
-      )}
-
-      {/* Displaying the current gym info at the bottom of the map */}
+    <View style={{ flex: 1 }}>
       {currentGym && (
         <View style={styles.currentGymInfo}>
           <Text style={styles.currentGymText}>Current Gym:</Text>
-          <Text style={styles.currentGymText}>Name: {currentGym.name}</Text>
-          <Text style={styles.currentGymText}>Address: {currentGym.vicinity}</Text>
-          <Text style={styles.currentGymText}>Type: {currentGym.types.join(', ')}</Text>
+          <Text style={styles.currentGymText}>{currentGym.name}</Text>
+          <Text style={styles.currentGymText}>{currentGym.vicinity}</Text>
         </View>
       )}
-    </MapView>
+      <MapView
+        key={gyms.length} 
+        style={styles.map}
+        region={region || {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+      >
+        <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }}>
+          <MaterialCommunityIcons name="map-marker" size={40} color="white" />
+        </Marker>
+
+        {gyms.map((gym, index) => (
+          <Marker
+            key={index}
+            coordinate={{
+              latitude: gym.geometry.location.latitude || 0,
+              longitude: gym.geometry.location.longitude || 0,
+            }}
+            onPress={() => handleMarkerPress(gym)}
+          >
+            <MaterialCommunityIcons name="map-marker" size={50} color="red" />
+          </Marker>
+        ))}
+      </MapView>
+
+      {/* TouchableWithoutFeedback to close popup when clicking outside */}
+      {popupVisible && (
+        <TouchableWithoutFeedback onPress={handleClosePopup}>
+          <View style={styles.gymPopupOverlay} />
+        </TouchableWithoutFeedback>
+      )}
+
+      {popupVisible && selectedGym && (
+        <View style={styles.gymPopup}>
+          <Text style={styles.gymName}>{selectedGym.name}</Text>
+          <Text style={styles.gymDetails}>{selectedGym.vicinity}</Text>
+          <Text style={styles.gymDetails}>Type: {selectedGym.types.join(', ')}</Text>
+          
+          {/* Display the gym's equipment */}
+          <View style={styles.equipmentContainer}>
+            <Text style={styles.equipmentTitle}>Equipment:</Text>
+            <ScrollView style={styles.equipmentList}>
+              {selectedGym.equipment.map((item, index) => (
+                <Text key={index} style={styles.equipmentItem}>{item}</Text>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Save gym button */}
+          <TouchableOpacity style={styles.customButton} onPress={() => handleSetCurrentGym(selectedGym)}>
+            <Text style={styles.buttonText}>Save Gym</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-    map: {
-      flex: 1,
-    },
-    center: {
-      justifyContent: 'center',
-      alignItems: 'center',
-      flex: 1,
-    },
-    errorText: {
-      color: 'red',
-      fontSize: 16,
-      textAlign: 'center',
-    },
-    userMarker: {
-      width: 50,
-      height: 50,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'transparent',
-      borderRadius: 25,
-    },
-    gymMarker: {
-      width: 50,
-      height: 50,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'transparent',
-      borderRadius: 25,
-    },
-    gymInfo: {
-      backgroundColor: 'white',
-      padding: 8,
-      borderRadius: 10,
-      width: 120,
-      alignItems: 'center',
-      position: 'absolute',
-      top: 60,
-    },
-    gymMarkerText: {
-      fontSize: 12,
-      color: 'black',
-    },
-    currentGymInfo: {
-      position: 'absolute',
-      bottom: 20,
-      left: 10,
-      backgroundColor: 'rgba(255, 255, 255, 0.8)',
-      padding: 10,
-      borderRadius: 10,
-    },
-    currentGymText: {
-      fontSize: 14,
-      fontWeight: 'bold',
-      color: '#333',
-    },
-    buttonContainer: {
-      backgroundColor: 'white', // Solid white background for the button container
-      padding: 10,              // Add some padding to give space around the button
-      borderRadius: 8,          // Optional: round the corners
-      width: 150,               // Control button width
-      marginTop: 10,            // Add space between gym info and the button
-      alignItems: 'center',     // Center the button horizontally
-    },
-    customButton: {
-      backgroundColor: 'green', // Green background for the button
-      paddingVertical: 10,      // Vertical padding for the button
-      paddingHorizontal: 20,    // Horizontal padding for the button
-      borderRadius: 8,          // Round corners for the button
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    buttonText: {
-      color: 'white',           // Text color white
-      fontSize: 16,             // Font size for the text
-      fontWeight: 'bold',       // Make the text bold
-    },
-  });
-  
+  map: {
+    flex: 1,
+  },
+  center: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  currentGymInfo: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    padding: 10,
+    borderRadius: 10,
+    zIndex: 10,
+  },
+  currentGymText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  gymPopupOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', // Transparent overlay
+  },
+  gymPopup: {
+    position: 'absolute',
+    bottom: 80, // Added gap between the popup and tab bar
+    left: 10,
+    right: 10,
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    elevation: 5,
+    zIndex: 10,
+  },
+  gymName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  gymDetails: {
+    fontSize: 14,
+    color: '#555',
+    marginVertical: 2,
+  },
+  equipmentContainer: {
+    marginVertical: 10,
+    width: '100%',
+  },
+  equipmentTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  equipmentList: {
+    maxHeight: 100,
+  },
+  equipmentItem: {
+    fontSize: 14,
+    color: '#555',
+  },
+  customButton: {
+    backgroundColor: 'green',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
 
 export default GymMapScreen;
