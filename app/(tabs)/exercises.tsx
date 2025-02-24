@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TextInput, Button, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { Exercise } from '../models/exerciseModel';
-import { theme } from '../utils/theme'; // Import theme
+import { theme } from '../utils/theme';
+
+const API_KEY = 'F1MrXYbs75rYDmGS8V9GQw==nADb7j66vFLL1qmo';
 
 const Index = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -13,35 +15,48 @@ const Index = () => {
 
   const fetchExercises = async (query: string) => {
     try {
-      setLoading(true);
-      const response = await axios.get('http://10.0.0.247:5000/', {
-        params: { name: query },
+      setLoading(true); // Show loading spinner
+      const response = await axios.get('https://api.api-ninjas.com/v1/exercises', {
+        headers: {
+          'X-Api-Key': API_KEY,
+        },
+        params: {
+          name: query,
+        },
       });
-      setExercises(response.data.exercises);
+      if (Array.isArray(response.data)) {
+        setExercises(response.data);
+      } else {
+        setExercises([]);
+      }
     } catch (error) {
       setError('Failed to fetch exercises');
       console.error(error);
     } finally {
-      setLoading(false);
+      setLoading(false); // Hide loading spinner
     }
   };
 
   const handleSearch = () => {
     if (searchTerm.trim() !== '') {
-      fetchExercises(searchTerm);
+      fetchExercises(searchTerm); // Fetch exercises when user clicks search button
     }
   };
 
   const handleEnterPress = (e: any) => {
     if (e.key === 'Enter' && searchTerm.trim() !== '') {
-      fetchExercises(searchTerm);
+      fetchExercises(searchTerm); // Fetch exercises when user presses Enter
     }
   };
 
   const toggleInstructions = (index: number) => {
     setExpandedInstructions((prevState) => {
       const newState = new Set(prevState);
-      newState.has(index) ? newState.delete(index) : newState.add(index);
+      if (newState.has(index)) {
+        newState.delete(index); // Collapse
+      } else {
+        newState.add(index); // Expand
+      }
       return newState;
     });
   };
@@ -70,17 +85,16 @@ const Index = () => {
       <TextInput
         style={styles.searchBar}
         placeholder="Search exercises..."
-        placeholderTextColor={theme.colors.placeholder}
         value={searchTerm}
         onChangeText={setSearchTerm}
-        onSubmitEditing={handleEnterPress}
+        onSubmitEditing={handleSearch} // Trigger search when pressing "Enter"
       />
 
       {/* Search Button */}
       <Button title="Search" onPress={handleSearch} color={theme.colors.primary} />
 
       {/* Display Exercises */}
-      {exercises.length > 0 && (
+      {exercises && exercises.length > 0 && (
         <FlatList
           data={exercises}
           keyExtractor={(item, index) => index.toString()}
@@ -92,7 +106,7 @@ const Index = () => {
               <Text style={styles.exerciseDetails}>Equipment: {item.equipment}</Text>
               <Text style={styles.exerciseDetails}>Difficulty: {item.difficulty}</Text>
 
-              {/* Instructions Section */}
+              {/* Instructions: Show a truncated version initially, with a "..." button to expand */}
               <View>
                 <Text
                   style={styles.instructions}
@@ -113,7 +127,7 @@ const Index = () => {
         />
       )}
 
-      {/* No exercises found message */}
+      {/* Show "No exercises found" message only if search term is not empty and no exercises are found */}
       {exercises.length === 0 && searchTerm.trim() !== '' && (
         <Text style={styles.noResultsText}>No exercises found for "{searchTerm}"</Text>
       )}
@@ -121,7 +135,7 @@ const Index = () => {
   );
 };
 
-// Styles with theme applied
+// Styles for the layout
 const styles = StyleSheet.create({
   container: {
     padding: theme.spacing.medium,
