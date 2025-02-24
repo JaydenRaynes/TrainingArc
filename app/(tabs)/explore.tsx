@@ -53,7 +53,104 @@ const GymMapScreen: React.FC = () => {
             "Battle Ropes",
             "Exercise Balls",
             "Stretching Mats"]
-        }];
+        },
+        {
+          "name": ["Iron Haven Gym"],
+          "geometry": {
+            "location": {
+              "latitude": 32.530200,
+              "longitude": -92.635800
+            }
+          },
+          "types": ["gym", "fitness", "point_of_interest"],
+          "vicinity": "456 Fitness Blvd, Ruston, LA 10002",
+          "place_id": "ironHavenGym",
+          "equipment": [
+            "Treadmills",
+            "Ellipticals",
+            "Stationary Bikes",
+            "Free Weights",
+            "Dumbbells",
+            "Barbells",
+            "Power Racks",
+            "Deadlift Platforms",
+            "Leg Press Machines",
+            "Bench Press Stations",
+            "Rowing Machines",
+            "Sled Push Tracks",
+            "Kettlebells",
+            "Medicine Balls",
+            "Battle Ropes",
+            "TRX Suspension Trainers",
+            "Plyometric Boxes",
+            "Resistance Bands"
+          ]
+        },
+        {
+          "name": ["Ruston Athletic Club"],
+          "geometry": {
+            "location": {
+              "latitude": 32.541500,
+              "longitude": -92.668900
+            }
+          },
+          "types": ["gym", "sports_club", "point_of_interest"],
+          "vicinity": "789 Strength St, Ruston, LA 10003",
+          "place_id": "rustonAthleticClub",
+          "equipment": [
+            "Treadmills",
+            "Ellipticals",
+            "Rowing Machines",
+            "Dumbbells",
+            "Barbells",
+            "Weight Machines",
+            "Resistance Bands",
+            "Squat Racks",
+            "Deadlift Platforms",
+            "Battle Ropes",
+            "Spin Bikes",
+            "Plyometric Boxes",
+            "Sled Push Tracks",
+            "Stretching Mats",
+            "Jump Ropes",
+            "Foam Rollers",
+            "Cable Machines"
+          ]
+        },
+        {
+          "name": ["Elite Performance Center"],
+          "geometry": {
+            "location": {
+              "latitude": 32.548800,
+              "longitude": -92.640300
+            }
+          },
+          "types": ["gym", "personal_training", "point_of_interest"],
+          "vicinity": "321 Powerhouse Ln, Ruston, LA 10004",
+          "place_id": "elitePerformanceCenter",
+          "equipment": [
+            "Treadmills",
+            "Ellipticals",
+            "Assault Bikes",
+            "Free Weights",
+            "Dumbbells",
+            "Barbells",
+            "Weight Machines",
+            "Cable Machines",
+            "Squat Racks",
+            "Plyometric Boxes",
+            "Sled Push Tracks",
+            "TRX Suspension Trainers",
+            "Battle Ropes",
+            "Kettlebells",
+            "Medicine Balls",
+            "Foam Rollers",
+            "Stretching Mats",
+            "Gymnastics Rings",
+            "Pull-Up Bars"
+            ]
+          }
+        ];
         setGyms(testGym);
       }
     }, [location])
