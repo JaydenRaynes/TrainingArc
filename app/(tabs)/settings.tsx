@@ -8,8 +8,9 @@ import ChangePasswordModal from "../settingComponent/changePasswordModal";
 
 export default function Settings() {
   const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [gender, setGender] = useState("");
+  //const [age, setAge] = useState("");
+  //const [gender, setGender] = useState("");
+  const [username, setUsername] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -17,7 +18,7 @@ export default function Settings() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        <ProfileSettings name={name} setName={setName} age={age} setAge={setAge} gender={gender} setGender={setGender} />
+        <ProfileSettings name={name} setName={setName} username={username} setUsername={setUsername} />
         <AppPreferences isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
         <NotificationsSettings isNotificationsEnabled={isNotificationsEnabled} setIsNotificationsEnabled={setIsNotificationsEnabled} />
         <PrivacySecurity setModalVisible={setModalVisible} />
