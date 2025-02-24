@@ -97,7 +97,7 @@ const GenerateWorkoutScreen: React.FC = () => {
     };
 
     try {
-      const response = await fetch("http://192.168.1.84:5000/generate-workout", {
+      const response = await fetch("http://138.47.136.105:5000/generate-workout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userInfo),
