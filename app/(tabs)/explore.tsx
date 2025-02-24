@@ -66,7 +66,7 @@ const GymMapScreen: React.FC = () => {
       return;
     }
     try {
-      const userRef = doc(db, 'users', user.uid, 'gyms', gym.place_id);
+      const userRef = doc(db, 'users', user.uid, 'gym', gym.place_id);
       const docSnap = await getDoc(userRef);
 
       if (!docSnap.exists()) {
