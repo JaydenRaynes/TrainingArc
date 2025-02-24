@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, Alert, Button, StyleSheet, Modal, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, Alert, Button, StyleSheet, Modal, TouchableOpacity, ActivityIndicator } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { Calendar } from "react-native-calendars"; // Import Calendar
 import { db, auth } from "../firebaseConfig";
@@ -7,6 +7,8 @@ import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase
 import { format } from "date-fns";
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
+
+const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Your API Key
 
 const WorkoutsPage = () => {
   const router = useRouter();
