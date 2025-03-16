@@ -252,7 +252,7 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
-      <Button title="Save Completed Workouts" onPress={saveToProgress} color={theme.colors.secondary}/>
+      <Button title="Save Completed Workouts" onPress={saveToProgress} color={theme.colors.primary}/>
       <Button title="Edit Splits page" onPress={() => router.push("/component/splits")} color={theme.colors.secondary} />
     </View>
   );
