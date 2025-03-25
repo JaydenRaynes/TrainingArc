@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { getAuth } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, getDocs, collection  } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 
 export default function ProfilePage() {
@@ -23,23 +23,42 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfileData = async () => {
       if (!user) return;
-      const docRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+  
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+  
+      let gymName = "None";
+      try {
+        // Get the first gym document from the subcollection
+        const gymSnapshot = await getDocs(collection(db, "users", user.uid, "gym"));
+        if (!gymSnapshot.empty) {
+          const firstGym = gymSnapshot.docs[0].data();
+          gymName = firstGym.name?.[0] || "None";
+        }
+      } catch (err) {
+        if (err instanceof Error) {
+          console.warn("Could not fetch gym info:", err.message);
+        } else {
+          console.warn("Could not fetch gym info:", err);
+        }
+      }
+  
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
         setProfileData({
-          name: data.name || "",
-          username: data.username || "",
+          name: userData.name || "",
+          username: userData.username || "",
           email: user.email || "",
-          location: data.location || "",
-          joined: data.joined || "",
-          photoURL: data.photoURL || "https://i.pravatar.cc/300",
+          location: gymName,
+          joined: userData.joined || "",
+          photoURL: userData.photoURL || "https://i.pravatar.cc/300",
         });
       }
     };
-
+  
     fetchProfileData();
   }, [user]);
+  
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -79,7 +98,7 @@ export default function ProfilePage() {
         <Text style={styles.infoLabel}>Email:</Text>
         <Text style={styles.infoValue}>{profileData.email}</Text>
 
-        <Text style={styles.infoLabel}>Location:</Text>
+        <Text style={styles.infoLabel}>Preferred Gym:</Text>
         <Text style={styles.infoValue}>{profileData.location}</Text>
 
         <Text style={styles.infoLabel}>Joined:</Text>
