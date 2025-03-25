@@ -78,7 +78,14 @@ export default function TabLayout() {
             title: 'Settings',
             tabBarIcon: ({ color }) => <Feather name="settings" size={24} color="black" />,
           }}
-        />   
+        />
+        <Tabs.Screen
+          name="shop"
+          options={{
+            title: 'Shop',
+            tabBarIcon: ({ color }) => <Entypo name="shop" size={24} color="black" />,
+          }}
+        />
       </Tabs>
     </NavigationContainer>
   );
