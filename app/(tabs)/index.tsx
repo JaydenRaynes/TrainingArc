@@ -7,6 +7,7 @@ import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase
 import { format } from "date-fns";
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
+import WorkoutChatbot from "../component/WorkoutChatbot";
 
 const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
@@ -254,6 +255,8 @@ const WorkoutsPage = () => {
       </Modal>
       <Button title="Save Completed Workouts" onPress={saveToProgress} color={theme.colors.primary}/>
       <Button title="Edit Splits page" onPress={() => router.push("/component/splits")} color={theme.colors.secondary} />
+      
+      <WorkoutChatbot />
     </View>
   );
 };
