@@ -8,6 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { NavigationContainer } from '@react-navigation/native';
+import { theme } from '../utils/theme';
 
 export default function TabLayout() {
   return (
@@ -15,75 +16,76 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarStyle: Platform.select({
-            ios: {
-              // Use a transparent background on iOS to show the blur effect
-              position: 'absolute',
-            },
-            default: {},
-          }),
-        }}>
-        <Tabs.Screen
-          name="progress"
-          options={{
-            title: 'Progress',
-            tabBarIcon: ({ color }) => <Entypo name="progress-one" size={24} color="black" />,
-          }}
-        />
+          tabBarStyle: {
+            backgroundColor: theme.colors.background,
+            borderTopColor: theme.colors.border,
+            height: 65,
+            paddingBottom: 5,
+          },
+          tabBarActiveTintColor: theme.colors.primary,
+          tabBarInactiveTintColor: theme.colors.textSecondary,
+          tabBarLabelStyle: {
+            fontSize: 10,
+          },
+          tabBarIconStyle: {
+            marginTop: 5,
+          },
+        }}
+        >
         <Tabs.Screen
           name="exercises"
           options={{
             title: 'Exercises',
-            tabBarIcon: ({ color }) => <MaterialIcons name="format-list-numbered" size={24} color="black" />,
+            tabBarIcon: ({ color }) => <MaterialIcons name="format-list-numbered" size={30} color={color} />,
           }}
         />
         <Tabs.Screen
           name="generateWorkout" 
           options={{
             title: 'AI Workout',
-            tabBarIcon: ({ color }) => <MaterialCommunityIcons name="dumbbell" size={24} color="black" />,
+            tabBarIcon: ({ color }) => <MaterialCommunityIcons name="dumbbell" size={30} color={color} />,
           }}
         />
         <Tabs.Screen
           name="explore"
           options={{
             title: 'Explore',
-            tabBarIcon: ({ color }) => <Feather name="map-pin" size={24} color="black" />,
+            tabBarIcon: ({ color }) => <Feather name="map-pin" size={30} color={color} />,
           }}
         />
         <Tabs.Screen
           name="index"
           options={{
             title: 'Workout',
-            tabBarIcon: ({ color }) => <FontAwesome6 name="house" size={24} color="black" />,
+            tabBarIcon: ({ color }) => <FontAwesome6 name="house" size={30} color={color} />,
           }}
         />
         <Tabs.Screen
           name="splits"
           options={{
             title: 'Splits',
-            tabBarIcon: ({ color }) => <AntDesign name="calendar" size={24} color="black" />,
+            tabBarIcon: ({ color }) => <AntDesign name="calendar" size={30} color={color} />,
           }}
         />
         <Tabs.Screen
           name="questionare"
           options={{
             title: 'Questionare',
-            tabBarIcon: ({ color }) => <FontAwesome6 name="comments" />,
+            tabBarIcon: ({ color }) => <FontAwesome6 name="comments" size={30} color={color} />,
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
             title: 'Profile',
-            tabBarIcon: ({ color }) => <Feather name="user" size={24} color="black" />,
+            tabBarIcon: ({ color }) => <Feather name="user" size={30} color={color} />,
           }}
         />
         <Tabs.Screen
           name="shop"
           options={{
             title: 'Shop',
-            tabBarIcon: ({ color }) => <Entypo name="shop" size={24} color="black" />,
+            tabBarIcon: ({ color }) => <Entypo name="shop" size={30} color={color} />,
           }}
         />
       </Tabs>
