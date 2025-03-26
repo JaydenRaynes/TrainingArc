@@ -73,11 +73,26 @@ app.post("/generate-workout", async (req, res) => {
     ${userData.gym ? `- **Nearby Gyms:** ${userData.gym.name?.join(", ")}\n- **Equipment Available:** ${userData.gym.equipment?.join(", ")}` : "User has no gym preferences."}
 
     🔹 **Format Instructions:**
-    - Use bold markdown (# Day 1: Strength Training).
-    - Add bullet points and structured sections.
-    - Keep responses concise but well-organized.
+    - Format each individual exercise to fit the following structure:
+        export interface Exercise {
+          name: string; // Name of the exercise
+          muscle: string; // Target muscle group
+          equipment: string;  // Equipment needed to do it (default to "body_only" if no equipment)
+          instructions?: string;  // Any optional notes
+        }
+    - Format each workout for the day to fit the following structure:
+        export interface WorkoutDay {
+          day: string;  // Start with "Day 1"
+          exercises: Exercise[]; // Add the exercises for the respective days
+        }
+    - Format the entire split to fit the following structure:
+        export interface Split {
+          days: WorkoutDay[]; // Group the days into one split
+        }
+    - Respond with the split already in JSON format, without any additional text or explanations
     - Generate a **7-day workout plan** based on the user's preferences.
     `;
+
 
     const response = await axios.post(
       OPENAI_URL,
@@ -92,7 +107,7 @@ app.post("/generate-workout", async (req, res) => {
           { role: "user", content: formattedUserData },
         ],
         temperature: 0.4,
-        max_tokens: 500,
+        max_tokens: 1500,
       },
       {
         headers: {
@@ -101,11 +116,14 @@ app.post("/generate-workout", async (req, res) => {
         },
       }
     );
-    console.log(formattedUserData);
-    console.log("OpenAI Responded!!");
-    return res.json({
-      workoutPlan: response.data.choices[0]?.message?.content || "No response from AI",
-    });
+    console.log("OpenAI Raw Response:", response.data); // ✅ Log entire response
+
+    const aiMessage = response.data?.choices?.[0]?.message?.content;
+  
+    if (!aiMessage) {
+      throw new Error("OpenAI did not return a valid workout plan.");
+    }
+    return res.json({ workoutPlan: aiMessage });
   } catch (error) {
     console.error(
       "OpenAI API Error:",
