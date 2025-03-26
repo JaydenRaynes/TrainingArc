@@ -139,3 +139,35 @@ app.post("/generate-workout", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+
+app.post("/chat", async (req, res) => {
+  const { messages } = req.body;
+
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: "Missing or invalid messages array" });
+  }
+
+  try {
+    const response = await axios.post(
+      OPENAI_URL,
+      {
+        model: "gpt-3.5-turbo",
+        messages,
+        temperature: 0.7,
+        max_tokens: 600,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    res.json({ reply: response.data.choices[0].message.content });
+  } catch (error) {
+    console.error("Chat error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Chatbot error", details: error.message });
+  }
+});
