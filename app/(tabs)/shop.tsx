@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from "../utils/theme";
+import { Linking } from 'react-native';
 
 // Dummy data for products
 const promotedProducts = [
@@ -40,7 +41,7 @@ const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState('Weight Loss');
 
   const renderProductItem = ({ item }) => (
-    <TouchableOpacity style={styles.productCard}>
+    <TouchableOpacity style={styles.productCard} onPress={() => Linking.openURL(item.link)}>
       <Image source={{ uri: item.image }} style={styles.productImage} />
       <Text style={styles.productTitle}>{item.name}</Text>
       <Text style={styles.productPrice}>{item.price}</Text>
