@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert } from "react-native";
-import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../Services/fetchUserData";
+import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../services/fetchUserData";
 import { Preferences } from "../models/preferenceModel";
 import { Gym } from "../models/gymInfoModel";
 import { Biometric } from "../models/biometricModel";
@@ -102,7 +102,7 @@ const GenerateWorkoutScreen: React.FC = () => {
     };
 
     try {
-      const response = await fetch("http://192.168.1.72:5000/generate-workout", {
+      const response = await fetch("http://192.168.0.109:5000/generate-workout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userInfo),
