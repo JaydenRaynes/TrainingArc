@@ -2,9 +2,22 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebaseConfig";
+import { useEffect } from "react";
 
 export default function Index() {
   const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.replace("/(tabs)/explore"); // or your intended landing page
+      }
+    });
+
+    return unsubscribe;
+  }, []);
 
   return (
     
@@ -24,11 +37,11 @@ export default function Index() {
 
         {/* Animated Buttons */}
         <Animated.View style={styles.buttonContainer} entering={FadeInDown.duration(1000).delay(200)}>
-          <TouchableOpacity style={styles.button} onPress={() => router.push("/login")}>
+          <TouchableOpacity style={styles.button} onPress={() => router.replace("/login")}>
             <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.button} onPress={() => router.push("/signup")}>
+          <TouchableOpacity style={styles.button} onPress={() => router.replace("/signup")}>
             <Text style={styles.buttonText}>Sign Up</Text>
           </TouchableOpacity>
         </Animated.View>

@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, Alert, Button, StyleSheet, Modal, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Alert, Button, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { Calendar } from "react-native-calendars"; // Import Calendar
 import { db, auth } from "../firebaseConfig";
 import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase/firestore";
-import { format } from "date-fns";
+import { format, parseISO, parse, addDays } from "date-fns";
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 import WorkoutChatbot from "../component/WorkoutChatbot";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import WorkoutSourceToggle from "../component/changeWorkout";
+import { SavedSplit } from "../models/savedWorkoutModel";
+import { Split, WorkoutDay } from "../models/splitModel";
 
 const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
@@ -19,8 +23,9 @@ const WorkoutsPage = () => {
     workouts: { name: string; sets: number; reps: number; weight: number; completed: boolean }[];
   } | null>(null);
 
-  const [today, setToday] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const todayDate = format(new Date(), "MM-dd-yyyy"); // ISO format required by markedDates
+  const [today, setToday] = useState(format(new Date(), "EEEE"));
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "MM-dd-yyyy"));
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [timerModalVisible, setTimerModalVisible] = useState(false);
   const [activeWorkout, setActiveWorkout] = useState<string | null>(null);
@@ -31,34 +36,86 @@ const WorkoutsPage = () => {
   const [workoutDurations, setWorkoutDurations] = useState<{ [key: string]: number }>({});
   const [completedSets, setCompletedSets] = useState<{ [key: string]: boolean }>({});
   const [activeRatingSet, setActiveRatingSet] = useState<string | null>(null);
+  const [setRatings, setSetRatings] = useState<{ [key: string]: number }>({});
+  const [showFooterButtons, setShowFooterButtons] = useState(false);
+  const [useAIWorkout, setUseAIWorkout] = useState(true);
+  const [isSavedWorkoutModalVisible, setSavedWorkoutModalVisible] = useState(false);
+  const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
+  const [savedSplits, setSavedSplits] = useState<SavedSplit[]>([]);
 
 
   useEffect(() => {
-    const currentDay = format(new Date(), "EEEE");
-    setToday(currentDay);
-    fetchWorkoutData(selectedDate);
-  }, [userID, selectedDate]);
+    let unsubscribe: (() => void) | null = null;
 
-  const fetchWorkoutData = (date: string) => {
+    const loadWorkout = async () => {
+      setWorkoutPlan(null); // Reset workout plan when loading new data
+
+      if (useAIWorkout) {
+        unsubscribe = fetchAIWorkoutData(selectedDate);
+      } else {
+        await fetchUserWorkoutData(selectedDate);
+        // Since fetchUserWorkoutData is a one-time fetch, set unsubscribe to null
+        unsubscribe = null;
+      }
+    };
+
+    loadWorkout(); // Call loadWorkout whenever dependencies change
+
+    // Load completed sets (this should likely only depend on selectedDate)
+    const loadCompletedSets = async () => {
+      try {
+        const storageKey = `completedSets-${selectedDate}`;
+        const saved = await AsyncStorage.getItem(storageKey);
+        setCompletedSets(saved ? JSON.parse(saved) : {});
+      } catch (e) {
+        console.error('Failed to load completed sets', e);
+      }
+    };
+
+    loadCompletedSets();
+    fetchSavedSplits();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe(); // Clean up AI workout listener
+      }
+    };
+  }, [userID, selectedDate, useAIWorkout]);
+
+
+  const fetchSavedSplits = async () => {
     if (!userID) return;
-  
-    const userRef = doc(db, "users", userID, 'workout', 'currentWorkout');
+    const userRef = doc(db, "users", userID, 'savedWorkouts', 'workouts');
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const splitsArray = data.workouts as SavedSplit[];
+      //console.log("fetched saved splits: ", splitsArray);
+      setSavedSplits(splitsArray);
+    }
+  };
+
+  const fetchAIWorkoutData = (date: string) => {
+    if (!userID) return () => {};
+
+    const userRef = doc(db, "users", userID, "workout", "currentWorkout");
+
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const dayKey = getDayKey(date); // e.g. "Day 1"
-  
+        const [month, day, year] = date.split("-");
+        const formattedDate = `${month}-${day}-${year}`;
         const workoutDays = data.workout?.days || [];
-        const matchedDay = workoutDays.find((d: any) => d.day === dayKey);
-  
+        const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
+
         if (matchedDay) {
           setWorkoutPlan({
-            split: dayKey,
+            split: formattedDate,
             workouts: matchedDay.exercises.map((ex: any) => ({
               name: ex.name,
-              sets: 3,
-              reps: 10,
-              weight: 0,
+              sets: ex.sets,
+              reps: ex.reps,
+              weight: ex.weight,
               completed: false,
             })),
           });
@@ -69,17 +126,141 @@ const WorkoutsPage = () => {
         setWorkoutPlan(null);
       }
     });
+
+    return unsubscribe;
+  };
+
+  const setNewWorkout = async (presetSplit: SavedSplit) => {
+    if (!userID) return;
   
-    return () => unsubscribe();
+    try {
+      const userRefCurrWorkout = doc(db, "users", userID, "workout", "currentWorkout");
+  
+      const docSnap = await getDoc(userRefCurrWorkout);
+      const newSplit: Split = presetSplit.split;
+  
+      let existingDays: WorkoutDay[] = [];
+  
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        existingDays = data?.workout?.days || [];
+      }
+  
+      const updatedDays = [...existingDays, ...newSplit.days];
+  
+      await setDoc(userRefCurrWorkout, {
+        workout: { days: updatedDays }
+      }, { merge: true });
+  
+      console.log("New workout added successfully!");
+    } catch (error) {
+      console.error("Error adding new workout:", error);
+    }
   };
   
-  const handleSetClick = (exerciseIndex: number, setIndex: number) => {
-    const key = `${exerciseIndex}-${setIndex}`;
-    setCompletedSets(prev => ({ ...prev, [key]: !prev[key] }));
+  const fetchUserWorkoutData = async (date: string) => {
+    if (!userID) return;
+
+    const userRef = doc(db, "users", userID);
+    const docSnap = await getDoc(userRef);
+    if (!docSnap.exists()) return;
+
+    const data = docSnap.data();
+    const workoutDay = format(parse(date, "MM-dd-yyyy", new Date()), "EEEE"); // "Monday", etc.
+
+    const plan = data?.workoutPlans?.[workoutDay]?.workouts || [];
+
+    const formattedWorkout = {
+      split: workoutDay,
+      workouts: plan.map((w: any) => ({
+        name: w.name,
+        sets: w.sets,
+        reps: w.reps,
+        weight: w.weight,
+        completed: false,
+      })),
+    };
+
+    setWorkoutPlan(formattedWorkout);
+  };
   
-    // Toggle rating view
-    setActiveRatingSet(prev => (prev === key ? null : key));
+  const handleRatingChange = (exerciseIndex: number, setIndex: number, rating: number) => {
+    const key = `${exerciseIndex}-${setIndex}`;
+    const newRatings = { ...setRatings, [key]: rating };
+    setSetRatings(newRatings);
+  
+    // Immediately adjust the next sets in the workoutPlan
+    setWorkoutPlan(prevPlan => {
+      if (!prevPlan) return prevPlan;
+  
+      const updatedPlan = { ...prevPlan };
+      const exercise = updatedPlan.workouts[exerciseIndex];
+  
+      // Only update NEXT sets, not past sets
+      for (let nextSetIndex = setIndex + 1; nextSetIndex < exercise.sets; nextSetIndex++) {
+        if (rating <= 2) {
+          exercise.reps += 2;
+          exercise.weight += 5;
+        } else if (rating >= 4) {
+          exercise.reps = Math.max(1, exercise.reps - 2);
+          exercise.weight = Math.max(0, exercise.weight - 5);
+        }
+      }
+  
+      return updatedPlan;
+    });
+  
+    // After rating is chosen, close the rating UI
+    setActiveRatingSet(null);
   };  
+  
+  function redateSplit(split: SavedSplit, startDate: string): SavedSplit {
+    const baseDate = parse(startDate, "MM-dd-yyyy", new Date());
+    const updatedDays = split.split.days.map((day, index) => {
+      const newDate = addDays(baseDate, index);
+      return {
+        ...day,
+        day: format(newDate, "MM-dd-yyyy"), // update the 'day' field with the new date
+      };
+    });
+  
+    return {
+      ...split,
+      split: {
+        ...split.split,
+        days: updatedDays,
+      },
+    };
+  }
+
+  const handleSetClick = async (exerciseIndex: number, setIndex: number) => {
+    const key = `${exerciseIndex}-${setIndex}`;
+    const isCurrentlyCompleted = completedSets[key];
+    const updated = { ...completedSets, [key]: !isCurrentlyCompleted };
+    setCompletedSets(updated);
+  
+    // Save to AsyncStorage
+    try {
+      const storageKey = `completedSets-${selectedDate}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save completed sets', e);
+    }
+  
+    // Get exercise to check how many sets there are
+    const exercise = workoutPlan?.workouts[exerciseIndex];
+    if (!exercise) return;
+  
+    const isLastSet = setIndex === exercise.sets - 1;
+  
+    // ✅ Only show the rating container if the set was just checked
+    if (!isCurrentlyCompleted && !isLastSet) {
+      setActiveRatingSet(key);
+    } else {
+      setActiveRatingSet(null); // hide on uncheck or last set
+    }
+  };
+    
 
   const getDayKey = (dateStr: string): string => {
     const dayIndex = new Date(dateStr).getDay(); // 0 (Sun) to 6 (Sat)
@@ -100,35 +281,59 @@ const WorkoutsPage = () => {
     setWorkoutPlan({ ...workoutPlan, workouts: updatedWorkouts });
   };
 
-  const saveToProgress = async (completedWorkouts: any) => {
-    if (!completedWorkouts || completedWorkouts.length === 0) return;
-    if (!userID) return;
-
-    const progressRef = doc(db, "users", userID, "progress", selectedDate);
-
-    const progressData = {
-      date: selectedDate,
-      workouts: completedWorkouts.map((workout: any) => ({
-        workoutName: workout.name,
-        sets: workout.sets,
-        reps: workout.reps,
-        weight: workout.weight,
-        completed: workout.completed,
-      })),
-    };
-
+  const saveToProgress = async () => {
+    if (!userID || !selectedDate || !workoutPlan || !workoutPlan.workouts) return;
+  
     try {
-      const docSnap = await getDoc(progressRef);
-      if (docSnap.exists()) {
-        await updateDoc(progressRef, { workouts: arrayUnion(...progressData.workouts) });
-      } else {
-        await setDoc(progressRef, progressData);
+      for (let i = 0; i < workoutPlan.workouts.length; i++) {
+        const workout = workoutPlan.workouts[i];
+        const completedSetIndices: number[] = [];
+  
+        for (let j = 0; j < workout.sets; j++) {
+          const key = `${i}-${j}`;
+          if (completedSets[key]) {
+            completedSetIndices.push(j);
+          }
+        }
+  
+        // Skip if no sets were completed
+        if (completedSetIndices.length === 0) continue;
+  
+        const setCount = completedSetIndices.length;
+        const reps = workout.reps;
+        const weight = workout.weight;
+        const exerciseName = workout.name;
+  
+        const newEntry = {
+          date: selectedDate,
+          sets: setCount,
+          reps,
+          weight,
+        };
+  
+        const exerciseRef = doc(db, "users", userID, "progress", exerciseName);
+        const docSnap = await getDoc(exerciseRef);
+  
+        if (docSnap.exists()) {
+          await updateDoc(exerciseRef, {
+            history: arrayUnion(newEntry),
+          });
+        } else {
+          await setDoc(exerciseRef, {
+            history: [newEntry],
+          });
+        }
       }
-      Alert.alert("Success", "Workouts saved successfully!");
+  
+      //setCompletedSets({});
+      setSetRatings({});
+      Alert.alert("Success", "Completed Exercises Saved!");
     } catch (error) {
       console.error("Error saving progress:", error);
+      Alert.alert("Error", "Failed to save workouts.");
     }
   };
+  
 
   const openTimerModal = (workoutName: string) => {
     setActiveWorkout(workoutName);
@@ -205,7 +410,22 @@ const WorkoutsPage = () => {
   
     setLoadingCalories((prev) => ({ ...prev, [exercise]: false }));
   };
+
+  const selectedDateForCalendar = format(parse(selectedDate, "MM-dd-yyyy", new Date()), "yyyy-MM-dd");
   
+  const markedDates = {
+    [todayDate]: {
+      customStyles: {
+        container: { backgroundColor: theme.colors.warning },
+        text: { color: theme.colors.blackText },
+      },
+    },
+    [selectedDateForCalendar]: {
+      selected: true,
+      selectedColor: theme.colors.primary,
+      selectedTextColor: theme.colors.blackText,
+    },
+  };
 
 
   return (
@@ -221,36 +441,79 @@ const WorkoutsPage = () => {
       <Modal visible={calendarVisible} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Calendar
-              onDayPress={(day) => {
-                setSelectedDate(day.dateString);
-                setCalendarVisible(false);
-                fetchWorkoutData(day.dateString);
+          <Calendar
+            onDayPress={(today) => {
+              const selectedDay = parseISO(today.dateString);
+              const dayName = format(selectedDay, "EEEE");
+              const newDate = format(parseISO(today.dateString), "MM-dd-yyyy");
+              setToday(dayName); // Update the day name
+              setSelectedDate(newDate); // format correctly
+              if (useAIWorkout) {
+                fetchAIWorkoutData(newDate);
+              } else {
+                fetchUserWorkoutData(newDate);
+              }
+              setCalendarVisible(false);
+            }}            
+            markedDates={markedDates}
+            theme={{
+              calendarBackground: theme.colors.cardBackground,
+              textSectionTitleColor: theme.colors.textSecondary,
+              selectedDayBackgroundColor: theme.colors.primary,
+              selectedDayTextColor: theme.colors.blackText,
+              todayTextColor: theme.colors.warning,
+              dayTextColor: theme.colors.text,
+              monthTextColor: theme.colors.text,
+              arrowColor: theme.colors.primary,
+              textDisabledColor: "#555",
+              textDayFontSize: theme.fontSize.medium,
+              textMonthFontSize: theme.fontSize.large,
+              textDayHeaderFontSize: theme.fontSize.small,
+            }}
+          />
+            <TouchableOpacity
+              onPress={() => setCalendarVisible(false)}
+              style={{
+                backgroundColor: theme.colors.secondary,
+                paddingVertical: theme.spacing.small,
+                paddingHorizontal: theme.spacing.large,
+                borderRadius: theme.borderRadius.medium,
+                marginTop: theme.spacing.medium,
+                alignItems: "center",
               }}
-              markedDates={{
-                [selectedDate]: { selected: true, selectedColor: theme.colors.primary },
-              }}
-              theme={{
-                todayTextColor: theme.colors.primary,
-                arrowColor: theme.colors.primary,
-                textDayFontSize: theme.fontSize.medium,
-                textMonthFontSize: theme.fontSize.large,
-                textDayHeaderFontSize: theme.fontSize.small,
-              }}
-            />
-            <Button title="Close" onPress={() => setCalendarVisible(false)} color={theme.colors.secondary} />
+            >
+              <Text style={{ color: theme.colors.buttonText, fontWeight: "bold", fontSize: theme.fontSize.medium }}>
+                Close
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
+      <WorkoutSourceToggle
+        useAIWorkout={useAIWorkout}
+        setUseAIWorkout={setUseAIWorkout}
+      />
+      
+      {(!workoutPlan?.workouts || workoutPlan.workouts.length === 0) && (
+      <View style={{ alignItems: "center", marginVertical: 20 }}>
+        <Text style={styles.label}>No exercises available for this day</Text>
+        <TouchableOpacity
+          style={styles.viewSavedButton}
+          onPress={() => setSavedWorkoutModalVisible(true)} // You'll define this modal separately
+        >
+          <Text style={styles.buttonText}>Choose from saved workouts</Text>
+        </TouchableOpacity>
+      </View>
+      )}
 
       <FlatList
-  data={workoutPlan?.workouts || []}
-  keyExtractor={(item, index) => `${item.name}-${index}`}
-  renderItem={({ item, index: exerciseIndex }) => (
-    <View style={styles.workoutItem}>
-      <Text style={styles.headerText}>
-        {item.name} - {item.sets}x{item.reps} @ {item.weight} lbs
-      </Text>
+        data={workoutPlan?.workouts || []}
+        keyExtractor={(item, index) => `${item.name}-${index}`}
+        renderItem={({ item, index: exerciseIndex }) => (
+        <View style={styles.workoutItem}>
+          <Text style={styles.headerText}>
+            {item.name} - {item.sets}x{item.reps} @ {item.weight}
+          </Text>
 
       <View style={styles.setsContainer}>
         {Array.from({ length: item.sets }).map((_, setIndex) => {
@@ -262,20 +525,22 @@ const WorkoutsPage = () => {
               <BouncyCheckbox
                 isChecked={!!completedSets[key]}
                 text={`Set ${setIndex + 1} - 1 x ${item.reps} @ ${item.weight} lbs`}
-                onPress={() => handleSetClick(exerciseIndex, setIndex)}
+                textStyle={{
+                textDecorationLine: completedSets[key] ? "line-through" : "none",
+                color: "white", // make sure it's readable too
+              }}
+               onPress={() => handleSetClick(exerciseIndex, setIndex)}
               />
               {isActive && (
                 <View style={styles.ratingContainer}>
-                  <Text style={{ marginBottom: 4 }}>How hard was this set?</Text>
+                  <Text style={{ marginBottom: 4, color: theme.colors.text, fontSize: theme.fontSize.medium}}>How hard was this set?</Text>
                   <View style={styles.ratingButtons}>
                     {[1, 2, 3, 4, 5].map(rating => (
                       <TouchableOpacity
                         key={rating}
                         style={styles.ratingButton}
-                        onPress={() => {
-                          console.log(`User rated set ${key} as ${rating}`);
-                          setActiveRatingSet(null); // hide after selection
-                        }}
+                        activeOpacity={0.8}
+                        onPress={() => handleRatingChange(exerciseIndex, setIndex, rating)}
                       >
                         <Text style={styles.ratingText}>{rating}</Text>
                       </TouchableOpacity>
@@ -289,40 +554,161 @@ const WorkoutsPage = () => {
       </View>
 
       <View style={styles.buttonsContainer}>
-        <View style={{ flex: 1, marginRight: 5 }}>
-          <Button title="⏱ Timer" onPress={() => openTimerModal(item.name)} />
-        </View>
-        <View style={{ flex: 1, marginLeft: 5 }}>
-          <Button title="🔥 Calories" onPress={() => fetchCaloriesBurned(item.name)} />
-        </View>
-      </View>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
+                onPress={() => openTimerModal(item.name)}
+              >
+                <Text style={styles.actionButtonText}>⏱ Timer</Text>
+              </TouchableOpacity>
 
-      {loadingCalories[item.name] ? (
-        <ActivityIndicator size="small" color="#FFFFFF" />
-      ) : (
-        caloriesBurned[item.name] && <Text>🔥 {caloriesBurned[item.name].toFixed(2)} kcal</Text>
-      )}
-    </View>
-  )}
-/>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: theme.colors.cardBackground, borderColor: theme.colors.primary, borderWidth: 1 }]}
+                onPress={() => fetchCaloriesBurned(item.name)}
+              >
+                <Text style={[styles.actionButtonText, { color: theme.colors.primary }]}>🔥 Calories</Text>
+              </TouchableOpacity>
+            </View>
+            {loadingCalories[item.name] ? (
+              <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginTop: 8 }} />
+            ) : caloriesBurned[item.name] ? (
+              <Text style={styles.calorieText}>
+                🔥 {caloriesBurned[item.name].toFixed(2)} kcal
+              </Text>
+            ) : null}
+          </View>
+        )}
+      />
 
 
       {/* Timer Modal */}
       <Modal visible={timerModalVisible} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text>{activeWorkout} Timer: {timer}s</Text>
-            <Button title="Start" onPress={startTimer} />
-            <Button title="Stop" onPress={stopTimer} />
-            <Button title="Reset" onPress={resetTimer} />
-            <Button title="Close" onPress={() => setTimerModalVisible(false)} />
+          <Text style={styles.timerTitle}>{activeWorkout} Timer</Text>
+          <Text style={styles.timerDisplay}>{timer}s</Text>
+          <View style={styles.timerButtonsContainer}>
+            <TouchableOpacity style={[styles.timerButton, { backgroundColor: theme.colors.primary }]} onPress={startTimer}>
+              <Text style={styles.buttonText}>Start</Text>
+              </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.timerButton, { backgroundColor: "gray" }]} onPress={stopTimer}>
+              <Text style={styles.buttonText}>Pause</Text>
+              </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.timerButton, { backgroundColor: "red" }]} onPress={resetTimer}>
+              <Text style={styles.buttonText}>Stop/Reset</Text>
+              </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.timerButton, { backgroundColor: theme.colors.secondary }]} onPress={() => setTimerModalVisible(false)}>
+              <Text style={styles.buttonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
-      <Button title="Save Completed Workouts" onPress={saveToProgress} color={theme.colors.primary}/>
-      <Button title="Edit Splits page" onPress={() => router.push("/component/splits")} color={theme.colors.secondary} />
-      
-      <WorkoutChatbot />
+    <TouchableOpacity
+      style={[styles.saveButton, { backgroundColor: theme.colors.warning }]}
+      onPress={() => setShowFooterButtons(prev => !prev)}
+    >
+    <Text style={styles.saveButtonText}>
+      {showFooterButtons ? "Hide Options" : "Show Options"}
+    </Text>
+    </TouchableOpacity>
+
+    {/* Conditionally Render Footer Buttons and Chatbot */}
+    {showFooterButtons && (
+      <>
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={() => saveToProgress()}
+        >
+          <Text style={styles.saveButtonText}>Save Completed Workouts</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => router.push("/component/splits")}
+        >
+          <Text style={styles.editButtonText}>Edit Splits Page</Text>
+        </TouchableOpacity>
+
+        {/* Chatbot appears with options */}
+        <WorkoutChatbot />
+      </>
+      )}
+
+      {/* Saved Workout Modal */}
+      <Modal visible={isSavedWorkoutModalVisible} animationType="slide" transparent>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Saved Workouts</Text>
+
+            <ScrollView style={{ maxHeight: "80%" }}>
+              {savedSplits.map((split, index) => (
+                <View key={index} style={{ marginBottom: 12 }}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setExpandedWorkout(expandedWorkout === split.name ? null : split.name)
+                    }
+                    style={{
+                      backgroundColor: theme.colors.cardBackground,
+                      padding: 12,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: theme.colors.primary,
+                    }}
+                  >
+                    <Text style={{ fontSize: theme.fontSize.medium, fontWeight: "bold", color: theme.colors.primary }}>
+                      {split.name}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {expandedWorkout === split.name && (
+                    <View style={{ padding: 10, backgroundColor: "#222", borderRadius: 8, marginTop: 8 }}>
+                      {split.split.days.map((day, i) => (
+                        <View key={i} style={{ marginBottom: 10 }}>
+                          <Text style={{ fontSize: 16, fontWeight: "bold", color: theme.colors.text }}>{`Day ${i + 1}`}</Text>
+                          {day.exercises.length > 0 ? (
+                            day.exercises.map((ex, j) => (
+                              <Text key={j} style={{ color: theme.colors.text, marginLeft: 10 }}>
+                                • {ex.name} - {ex.sets}x{ex.reps} @ {ex.weight ?? "-"} lbs
+                              </Text>
+                            ))
+                          ) : (
+                            <Text style={{ color: "#aaa", marginLeft: 10 }}>No exercises</Text>
+                          )}
+                        </View>
+                      ))}
+
+                      {/* Select Workout Button */}
+                      <TouchableOpacity
+                        onPress={() => {
+                          const updatedSplit = redateSplit(split, selectedDate); // 'selectedDate' should be in MM-dd-yyyy format
+                          setNewWorkout(updatedSplit);
+                          setSavedWorkoutModalVisible(false);
+                        }}
+                        style={{
+                          marginTop: 10,
+                          backgroundColor: theme.colors.primary,
+                          padding: 10,
+                          borderRadius: 6,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text style={{ color: "#fff", fontWeight: "bold" }}>Select Workout</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity onPress={() => setSavedWorkoutModalVisible(false)} style={styles.closeButton}>
+              <Text style={styles.buttonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -332,6 +718,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
     padding: theme.spacing.medium,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center", // centers vertically
+    alignItems: "center",     // centers horizontally
+    backgroundColor: "rgba(0,0,0,0.5)", // semi-transparent backdrop
+  },
+  modalContent: {
+    backgroundColor: theme.colors.cardBackground || "#fff",
+    padding: theme.spacing.large,
+    borderRadius: theme.borderRadius.medium,
+    alignItems: "center", // center content inside
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+    width: "90%",
   },
   buttonsContainer: {
     flexDirection: "row",
@@ -390,33 +794,122 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: theme.spacing.large,
   },
-  setsContainer: {
-  marginVertical: 8,
-  paddingLeft: 10,
-  },
-  ratingContainer: {
-    backgroundColor: '#f0f0f0',
-    padding: 10,
-    borderRadius: 6,
-  },
-  ratingButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  ratingButton: {
-    backgroundColor: '#ccc',
-    padding: 8,
-    borderRadius: 5,
-    marginHorizontal: 3,
-  },
-  ratingText: {
-    fontWeight: 'bold',
-  },
-  exerciseTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 5,
-  }
+  timerTitle: {
+  fontSize: 22,
+  fontWeight: "600",
+  marginBottom: 10,
+  color: theme.colors.primary,
+  textAlign: "center",
+},
+
+timerDisplay: {
+  fontSize: 48,
+  fontWeight: "bold",
+  color: "#333",
+  marginBottom: 20,
+},
+timerButtonsContainer: {
+  width: "100%",
+  marginTop: 20,
+  alignItems: "center",
+  gap: 12,
+},
+
+timerButton: {
+  width: "80%",
+  paddingVertical: 12,
+  borderRadius: 10,
+  alignItems: "center",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 3,
+  elevation: 2,
+},
+
+buttonText: {
+  color: "#fff",
+  fontWeight: "600",
+  fontSize: 16,
+},
+actionButton: {
+  paddingVertical: theme.spacing.small,
+  paddingHorizontal: theme.spacing.medium,
+  borderRadius: theme.borderRadius.small,
+  marginHorizontal: 5,
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: 100,
+},
+
+actionButtonText: {
+  color: theme.colors.buttonText,
+  fontSize: theme.fontSize.medium,
+  fontWeight: "bold",
+},
+calorieText: {
+  color: theme.colors.textSecondary,
+  fontSize: theme.fontSize.medium,
+  marginTop: 8,
+  fontWeight: "500",
+  textAlign: "center",
+},
+saveButton: {
+  backgroundColor: theme.colors.primary,
+  paddingVertical: theme.spacing.medium,
+  borderRadius: theme.borderRadius.medium,
+  alignItems: "center",
+  marginTop: theme.spacing.large,
+},
+
+saveButtonText: {
+  color: theme.colors.buttonText,
+  fontSize: theme.fontSize.medium,
+  fontWeight: "bold",
+},
+editButton: {
+  backgroundColor: theme.colors.secondary,
+  paddingVertical: theme.spacing.medium,
+  borderRadius: theme.borderRadius.medium,
+  alignItems: "center",
+  marginTop: theme.spacing.small,
+},
+editButtonText: {
+  color: theme.colors.buttonText,
+  fontSize: theme.fontSize.medium,
+  fontWeight: "bold",
+  color: theme.colors.text,
+},
+ratingContainer: {
+  backgroundColor: theme.colors.cardBackground,
+  padding: theme.spacing.medium,
+  borderRadius: theme.borderRadius.small,
+  marginTop: theme.spacing.small,
+},
+ratingButtons: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: 8,
+},
+
+ratingButton: {
+  backgroundColor: theme.colors.primary,
+  paddingVertical: 8,
+  paddingHorizontal: 14,
+  borderRadius: 10,
+  marginHorizontal: 4,
+  alignItems: "center",
+},
+ratingText: {
+  color: theme.colors.buttonText,
+  fontWeight: "bold",
+  fontSize: theme.fontSize.medium,
+},
+setsContainer: {
+  marginTop: theme.spacing.small,
+  marginBottom: theme.spacing.medium,
+  paddingHorizontal: theme.spacing.small,
+},
 });
 
 export default WorkoutsPage;
