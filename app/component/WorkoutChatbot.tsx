@@ -93,7 +93,7 @@ const WorkoutChatbot = () => {
 const styles = StyleSheet.create({
   chatButton: {
     position: "absolute",
-    bottom: 120,
+    bottom: 150,
     right: 20,
     backgroundColor: "#ffa500",
     padding: 16,
