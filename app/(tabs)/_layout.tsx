@@ -71,7 +71,6 @@ function TabLayout() {
   }, [copilotEvents]);
 
   return (
-    <NavigationContainer>
       <Tabs screenOptions={{ headerShown: false }}>
         {/* Progress Tab */}
         <Tabs.Screen
@@ -187,24 +186,7 @@ function TabLayout() {
           }}
         />
       </Tabs>
-
-   {/*
-      <TouchableOpacity
-        onPress={() => start()}
-        style={{
-          position: 'absolute',
-          bottom: 80,
-          right: 20,
-          backgroundColor: 'black',
-          padding: 10,
-          borderRadius: 10,
-        }}>
-        <Text style={{ color: 'white' }}>Start Tutorial</Text>
-      </TouchableOpacity>
-      */}
-    </NavigationContainer>
-  );
-}
+)};
 
 // Wrap with CopilotProvider
 export default function App() {
