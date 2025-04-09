@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const OPENAI_API_KEY = 'your-api-key-here'; // Store this securely, do NOT expose it in frontend
+const OPENAI_API_KEY = ''; // Store this securely, do NOT expose it in frontend
 
 const openAIService = async (prompt: string) => {
   try {
@@ -18,7 +18,7 @@ const openAIService = async (prompt: string) => {
         },
       }
     );
-    
+    console.log(response);
     return response.data.choices[0].message.content;
   } catch (error) {
     console.error('Error calling OpenAI API:', error);

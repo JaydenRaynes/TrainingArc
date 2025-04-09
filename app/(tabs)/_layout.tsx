@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Platform, View, TouchableOpacity, Text } from 'react-native';
 import { CopilotStep, useCopilot, CopilotProvider, walkthroughable } from 'react-native-copilot';
 import "../firebaseConfig"
-import { getAuth } from 'firebase/auth';
+import { getAuth, User } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
@@ -11,6 +11,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { NavigationContainer } from '@react-navigation/native';
+import { theme } from '../utils/theme';
 
 const WalkthroughView = walkthroughable(View);
 const firestore = getFirestore();
@@ -22,7 +23,7 @@ function TabLayout() {
   useEffect(() => {
     const auth = getAuth();
   
-    const checkUserTutorialStatus = async (user) => {
+    const checkUserTutorialStatus = async (user: User | null) => {
       try {
         if (!user) {
           console.log("No user found, skipping tutorial check.");
@@ -92,10 +93,10 @@ function TabLayout() {
           name="exercises"
           options={{
             title: 'Exercises',
-            tabBarIcon: () => (
-              <CopilotStep text="View a list of exercises." order={2} name="Exercises">
+            tabBarIcon: ({color}) => (
+              <CopilotStep text="View a list of exercises." order={1} name="Exercises">
                 <WalkthroughView>
-                  <MaterialIcons name="format-list-numbered" size={24} color="black" />
+                  <MaterialIcons name="format-list-numbered" size={24} color={color} />
                 </WalkthroughView>
               </CopilotStep>
             ),
@@ -106,10 +107,10 @@ function TabLayout() {
           name="generateWorkout"
           options={{
             title: 'AI Workout',
-            tabBarIcon: () => (
-              <CopilotStep text="Generate AI-powered workouts!" order={3} name="AIWorkout">
+            tabBarIcon: ({color}) => (
+              <CopilotStep text="Generate AI-powered workouts!" order={2} name="AIWorkout">
                 <WalkthroughView>
-                  <MaterialCommunityIcons name="dumbbell" size={24} color="black" />
+                  <MaterialCommunityIcons name="dumbbell" size={24} color={color} />
                 </WalkthroughView>
               </CopilotStep>
             ),
@@ -120,10 +121,10 @@ function TabLayout() {
           name="explore"
           options={{
             title: 'Explore',
-            tabBarIcon: () => (
-              <CopilotStep text="Discover new workout locations." order={4} name="Explore">
+            tabBarIcon: ({color}) => (
+              <CopilotStep text="Discover new workout locations." order={3} name="Explore">
                 <WalkthroughView>
-                  <Feather name="map-pin" size={24} color="black" />
+                  <Feather name="map-pin" size={24} color={color} />
                 </WalkthroughView>
               </CopilotStep>
             ),
@@ -134,24 +135,23 @@ function TabLayout() {
           name="index"
           options={{
             title: 'Workout',
-            tabBarIcon: () => (
-              <CopilotStep text="View Today's Workout" order={5} name="Workout">
+            tabBarIcon: ({color}) => (
+              <CopilotStep text="View Today's Workout" order={4} name="Workout">
                 <WalkthroughView>
-                  <FontAwesome6 name="house" size={24} color="black" />
+                  <FontAwesome6 name="house" size={24} color={color}/>
                 </WalkthroughView>
               </CopilotStep>
             ),
           }}
         />
-
         <Tabs.Screen
           name="shop"
           options={{
             title: 'Shop',
-            tabBarIcon: () => (
-              <CopilotStep text="View various supplements that may help you on your journey" order={6} name="Shop">
+            tabBarIcon: ({color}) => (
+              <CopilotStep text="View various supplements that may help you on your journey" order={5} name="Shop">
                 <WalkthroughView>
-                  <Entypo name="shop" size={24} color="black" />
+                  <Entypo name="shop" size={24} color={color} />
                 </WalkthroughView>
               </CopilotStep>
             ),
@@ -162,10 +162,10 @@ function TabLayout() {
           name="questionare"
           options={{
             title: 'Questionare',
-            tabBarIcon: () => (
-              <CopilotStep text="General Information Form to help formulate a better workout plan" order={7} name="Questionare">
+            tabBarIcon: ({color}) => (
+              <CopilotStep text="General Information Form to help formulate a better workout plan" order={6} name="Questionare">
                 <WalkthroughView>
-                  <FontAwesome6 name="comments" size={24} color="black" />
+                  <FontAwesome6 name="comments" size={24} color={color} />
                 </WalkthroughView>
               </CopilotStep>
             ),
@@ -173,13 +173,13 @@ function TabLayout() {
         />
 
         <Tabs.Screen
-          name="settings"
+          name="profile"
           options={{
-            title: 'Settings',
-            tabBarIcon: () => (
-              <CopilotStep text="Various Account Settings" order={8} name="Settings">
+            title: 'Profile',
+            tabBarIcon: ({color}) => (
+              <CopilotStep text="Your Profile Page" order={6} name="Profile">
                 <WalkthroughView>
-                  <Feather name="settings" size={24} color="black" />
+                  <FontAwesome6 name="user" size={24} color={color} />
                 </WalkthroughView>
               </CopilotStep>
             ),

@@ -3,6 +3,6 @@ export interface Exercise {
     type: string;
     muscle: string;
     equipment: string;
-    difficulty: string;
-    instructions: string;
+    difficulty?: string;
+    instructions?: string;
 }
