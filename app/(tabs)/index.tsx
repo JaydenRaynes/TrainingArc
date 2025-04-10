@@ -29,6 +29,9 @@ const WorkoutsPage = () => {
   const [caloriesBurned, setCaloriesBurned] = useState<{ [key: string]: number }>({});
   const [loadingCalories, setLoadingCalories] = useState<{ [key: string]: boolean }>({});
   const [workoutDurations, setWorkoutDurations] = useState<{ [key: string]: number }>({});
+  const [completedSets, setCompletedSets] = useState<{ [key: string]: boolean }>({});
+  const [activeRatingSet, setActiveRatingSet] = useState<string | null>(null);
+
 
   useEffect(() => {
     const currentDay = format(new Date(), "EEEE");
@@ -38,14 +41,27 @@ const WorkoutsPage = () => {
 
   const fetchWorkoutData = (date: string) => {
     if (!userID) return;
-
-    const userRef = doc(db, "users", userID);
+  
+    const userRef = doc(db, "users", userID, 'workout', 'currentWorkout');
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const formattedDay = format(new Date(date), "EEEE");
-        if (data.workoutPlans && data.workoutPlans[formattedDay]) {
-          setWorkoutPlan(data.workoutPlans[formattedDay]);
+        const dayKey = getDayKey(date); // e.g. "Day 1"
+  
+        const workoutDays = data.workout?.days || [];
+        const matchedDay = workoutDays.find((d: any) => d.day === dayKey);
+  
+        if (matchedDay) {
+          setWorkoutPlan({
+            split: dayKey,
+            workouts: matchedDay.exercises.map((ex: any) => ({
+              name: ex.name,
+              sets: 3,
+              reps: 10,
+              weight: 0,
+              completed: false,
+            })),
+          });
         } else {
           setWorkoutPlan(null);
         }
@@ -53,9 +69,22 @@ const WorkoutsPage = () => {
         setWorkoutPlan(null);
       }
     });
-
+  
     return () => unsubscribe();
   };
+  
+  const handleSetClick = (exerciseIndex: number, setIndex: number) => {
+    const key = `${exerciseIndex}-${setIndex}`;
+    setCompletedSets(prev => ({ ...prev, [key]: !prev[key] }));
+  
+    // Toggle rating view
+    setActiveRatingSet(prev => (prev === key ? null : key));
+  };  
+
+  const getDayKey = (dateStr: string): string => {
+    const dayIndex = new Date(dateStr).getDay(); // 0 (Sun) to 6 (Sat)
+    return `Day ${dayIndex + 1}`; // Day 1 to Day 7
+  };  
 
   const toggleWorkoutCompletion = async (index: number) => {
     if (!userID || !workoutPlan) return;
@@ -215,31 +244,68 @@ const WorkoutsPage = () => {
       </Modal>
 
       <FlatList
-        data={workoutPlan?.workouts || []}
-        keyExtractor={(item, index) => `${item.name}-${index}`}
-        renderItem={({ item, index }) => (
-          <View style={styles.workoutItem}>
-            <BouncyCheckbox
-              isChecked={item.completed}
-              text={`${item.name} - ${item.sets}x${item.reps} @ ${item.weight} lbs`}
-              onPress={() => toggleWorkoutCompletion(index)}
-            />
-            <View style={styles.buttonsContainer}>
-              <View style={{ flex: 1, marginRight: 5 }}>
-                  <Button title="⏱ Timer" onPress={() => openTimerModal(item.name)} />
-              </View>
-              <View style={{ flex: 1, marginLeft: 5 }}>
-                <Button title="🔥 Calories" onPress={() => fetchCaloriesBurned(item.name)} />
-              </View>
+  data={workoutPlan?.workouts || []}
+  keyExtractor={(item, index) => `${item.name}-${index}`}
+  renderItem={({ item, index: exerciseIndex }) => (
+    <View style={styles.workoutItem}>
+      <Text style={styles.headerText}>
+        {item.name} - {item.sets}x{item.reps} @ {item.weight} lbs
+      </Text>
+
+      <View style={styles.setsContainer}>
+        {Array.from({ length: item.sets }).map((_, setIndex) => {
+          const key = `${exerciseIndex}-${setIndex}`;
+          const isActive = activeRatingSet === key;
+
+          return (
+            <View key={key} style={{ marginBottom: 10 }}>
+              <BouncyCheckbox
+                isChecked={!!completedSets[key]}
+                text={`Set ${setIndex + 1} - 1 x ${item.reps} @ ${item.weight} lbs`}
+                onPress={() => handleSetClick(exerciseIndex, setIndex)}
+              />
+              {isActive && (
+                <View style={styles.ratingContainer}>
+                  <Text style={{ marginBottom: 4 }}>How hard was this set?</Text>
+                  <View style={styles.ratingButtons}>
+                    {[1, 2, 3, 4, 5].map(rating => (
+                      <TouchableOpacity
+                        key={rating}
+                        style={styles.ratingButton}
+                        onPress={() => {
+                          console.log(`User rated set ${key} as ${rating}`);
+                          setActiveRatingSet(null); // hide after selection
+                        }}
+                      >
+                        <Text style={styles.ratingText}>{rating}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
-            {loadingCalories[item.name] ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              caloriesBurned[item.name] && <Text>🔥 {caloriesBurned[item.name].toFixed(2)} kcal</Text>
-            )}
-          </View>
-        )}
-      />
+          );
+        })}
+      </View>
+
+      <View style={styles.buttonsContainer}>
+        <View style={{ flex: 1, marginRight: 5 }}>
+          <Button title="⏱ Timer" onPress={() => openTimerModal(item.name)} />
+        </View>
+        <View style={{ flex: 1, marginLeft: 5 }}>
+          <Button title="🔥 Calories" onPress={() => fetchCaloriesBurned(item.name)} />
+        </View>
+      </View>
+
+      {loadingCalories[item.name] ? (
+        <ActivityIndicator size="small" color="#FFFFFF" />
+      ) : (
+        caloriesBurned[item.name] && <Text>🔥 {caloriesBurned[item.name].toFixed(2)} kcal</Text>
+      )}
+    </View>
+  )}
+/>
+
 
       {/* Timer Modal */}
       <Modal visible={timerModalVisible} animationType="slide" transparent>
@@ -324,6 +390,33 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: theme.spacing.large,
   },
+  setsContainer: {
+  marginVertical: 8,
+  paddingLeft: 10,
+  },
+  ratingContainer: {
+    backgroundColor: '#f0f0f0',
+    padding: 10,
+    borderRadius: 6,
+  },
+  ratingButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  ratingButton: {
+    backgroundColor: '#ccc',
+    padding: 8,
+    borderRadius: 5,
+    marginHorizontal: 3,
+  },
+  ratingText: {
+    fontWeight: 'bold',
+  },
+  exerciseTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 5,
+  }
 });
 
 export default WorkoutsPage;

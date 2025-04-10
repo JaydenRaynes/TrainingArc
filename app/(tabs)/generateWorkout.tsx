@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert } from "react-native";
-import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../services/fetchUserData";
+import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../Services/fetchUserData";
 import { Preferences } from "../models/preferenceModel";
 import { Gym } from "../models/gymInfoModel";
 import { Biometric } from "../models/biometricModel";
@@ -102,7 +102,7 @@ const GenerateWorkoutScreen: React.FC = () => {
     };
 
     try {
-      const response = await fetch("http://192.168.0.109:5000/generate-workout", {
+      const response = await fetch("http://192.168.10.122:5000/generate-workout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userInfo),
@@ -131,8 +131,7 @@ const GenerateWorkoutScreen: React.FC = () => {
   const renderEditableWorkout = () => {
     if (!workout) return <Text>No workout plan available.</Text>;
   
-    return (
-      Array.isArray(workout.days) && workout.days.length > 0 ? (
+    return (      Array.isArray(workout.days) && workout.days.length > 0 ? (
         workout.days.map((day, dayIndex) => (
           <View key={dayIndex} style={styles.workoutDay}>
             <Text style={styles.dayTitle}>{day.day}</Text>
@@ -198,16 +197,24 @@ const GenerateWorkoutScreen: React.FC = () => {
       const docSnap = await getDoc(userRef);
 
       if (!docSnap.exists()) {
-        console.log("Workout does not exist, creating...");
+      console.log("Workout does not exist, creating...");
       } else {
-        console.log("Workout already exists, updating...");
+      console.log("Workout already exists, updating...");
       }
 
       await setDoc(userRef, {
-        workout
+      workout
       });
 
+      // Fetch the document again to confirm it was saved
+      const savedDoc = await getDoc(userRef);
+      if (savedDoc.exists()) {
+      console.log("Workout successfully saved:", savedDoc.data());
       Alert.alert('Success', 'Workout saved!');
+      } else {
+      console.error("Failed to confirm workout save.");
+      Alert.alert('Error', 'Failed to confirm workout save.');
+      }
     } catch (error) {
       console.error('Error saving workout to Firestore:', error);
       Alert.alert('Error', 'Failed to save workout.');
