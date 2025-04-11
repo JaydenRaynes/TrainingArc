@@ -105,14 +105,24 @@ const WorkoutsPage = () => {
         const data = docSnap.data();
         const [month, day, year] = date.split("-");
         const formattedDate = `${month}-${day}-${year}`;
+        //const dayKey = getDayKey(date); // e.g. "Day 1"
+        const [year, month, day] = date.split('-');
+        const formattedDate = `${month}-${day}-${year}`;
+        //console.log("Date: ", formattedDate);
         const workoutDays = data.workout?.days || [];
         const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
 
+        const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
+  
         if (matchedDay) {
           setWorkoutPlan({
             split: formattedDate,
+            split: formattedDate,
             workouts: matchedDay.exercises.map((ex: any) => ({
               name: ex.name,
+              sets: ex.sets,
+              reps: ex.reps,
+              weight: ex.weight,
               sets: ex.sets,
               reps: ex.reps,
               weight: ex.weight,
@@ -513,6 +523,7 @@ const WorkoutsPage = () => {
         <View style={styles.workoutItem}>
           <Text style={styles.headerText}>
             {item.name} - {item.sets}x{item.reps} @ {item.weight}
+            {item.name} - {item.sets}x{item.reps} @ {item.weight}
           </Text>
 
       <View style={styles.setsContainer}>
@@ -524,7 +535,7 @@ const WorkoutsPage = () => {
             <View key={key} style={{ marginBottom: 10 }}>
               <BouncyCheckbox
                 isChecked={!!completedSets[key]}
-                text={`Set ${setIndex + 1} - 1 x ${item.reps} @ ${item.weight} lbs`}
+                text={`Set ${setIndex + 1} - 1 x ${item.reps} @ ${item.weight}`}
                 textStyle={{
                 textDecorationLine: completedSets[key] ? "line-through" : "none",
                 color: "white", // make sure it's readable too

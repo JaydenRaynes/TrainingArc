@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from "react-native";
-import { fetchUserBiometrics, fetchUserGym } from "../Services/fetchUserData";
+import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal } from "react-native";
+// import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../Services/fetchUserData";
+import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
+//import { Preferences } from "../models/preferenceModel";
 import { Gym } from "../models/gymInfoModel";
 import { Biometric } from "../models/biometricModel";
 import { Split, WorkoutDay } from "../models/splitModel";
@@ -8,13 +10,60 @@ import { Exercise } from "../models/exerciseModel";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { auth, db } from "../firebaseConfig";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { Calendar } from "react-native-calendars";
-import { format } from "date-fns";
-import { theme } from "../utils/theme";
-import { useFocusEffect } from '@react-navigation/native';
-import { SavedSplit } from '../models/savedWorkoutModel';
+import { Picker } from "@react-native-picker/picker";
 
-type UserData = Biometric & Gym;
+type Date = { startDate: string };
+// type UserData = Preferences & Biometric & Gym & Date;
+type UserData = Biometric & Gym & Date;
+
+// const normalizePreferences = (preferences: Preferences): Preferences => {
+//   return {
+//     ...preferences,
+//     activityLevel: {
+//       active: preferences.activityLevel?.active || false,
+//       notActive: preferences.activityLevel?.notActive || false,
+//       slightlyActive: preferences.activityLevel?.slightlyActive || false,
+//     },
+//     cardioPreferences: {
+//       cycling: preferences.cardioPreferences?.cycling || false,
+//       rowing: preferences.cardioPreferences?.rowing || false,
+//       running: preferences.cardioPreferences?.running || false,
+//       swimming: preferences.cardioPreferences?.swimming || false,
+//       walking: preferences.cardioPreferences?.walking || false,
+//     },
+//     equipmentPreference: {
+//       barbells: preferences.equipmentPreference?.barbells || false,
+//       dumbbells: preferences.equipmentPreference?.dumbbells || false,
+//       kettlebells: preferences.equipmentPreference?.kettlebells || false,
+//       none: preferences.equipmentPreference?.none || false,
+//       resistanceBands: preferences.equipmentPreference?.resistanceBands || false,
+//     },
+//     preferredWorkoutType: {
+//       bodyweight: preferences.preferredWorkoutType?.bodyweight || false,
+//       cardio: preferences.preferredWorkoutType?.cardio || false,
+//       hiit: preferences.preferredWorkoutType?.hiit || false,
+//       strength: preferences.preferredWorkoutType?.strength || false,
+//       yoga: preferences.preferredWorkoutType?.yoga || false,
+//     },
+//     timeOfDayPreference: {
+//       morning: preferences.timeOfDayPreference?.morning || false,
+//       afternoon: preferences.timeOfDayPreference?.afternoon || false,
+//       evening: preferences.timeOfDayPreference?.evening || false,
+//       night: preferences.timeOfDayPreference?.night || false,
+//       any: preferences.timeOfDayPreference?.any || false,
+//     },
+//     workoutEnvironment: {
+//       gym: preferences.workoutEnvironment?.gym || false,
+//       home: preferences.workoutEnvironment?.home || false,
+//       outdoor: preferences.workoutEnvironment?.outdoor || false,
+//     },
+//     workoutSplit: {
+//       fullBody: preferences.workoutSplit?.fullBody || false,
+//       targeted: preferences.workoutSplit?.targeted || false,
+//       weeklySplit: preferences.workoutSplit?.weeklySplit || false,
+//     },
+//   };
+// };
 
 const GenerateWorkoutScreen: React.FC = () => {
   const localIP = "http://192.168.1.82:5000";
@@ -66,12 +115,11 @@ const GenerateWorkoutScreen: React.FC = () => {
       });
 
       const data = await response.json();
-      //console.log("RESPONSE: ", data)
-      const reformattedData = JSON.parse(data.workoutPlan);
+      console.log(data);
+      const reformattedData = data.workoutPlan.replace(/^```json|```/g, '').replace(/\s*```$/g, '').trim();
+      const newExercise: Exercise = JSON.parse(reformattedData);
 
-      const newExercise: Exercise = reformattedData.exercises[0];
-
-      //console.log("newExercise: ", newExercise);
+      //console.log(workoutPlan);
       addExerciseToWorkout(newExercise || null);
 
     } catch (error) {
@@ -121,6 +169,7 @@ const GenerateWorkoutScreen: React.FC = () => {
     setLoading(true);
     const biometrics = await fetchUserBiometrics();
     //const tempPreferences = await fetchUserPreferences();
+    //const tempPreferences = await fetchUserPreferences();
     const gym = await fetchUserGym();
 
     if (!biometrics) {
@@ -128,6 +177,15 @@ const GenerateWorkoutScreen: React.FC = () => {
       setLoading(false);
       return;
     }
+    // if (!tempPreferences) {
+    //   setWorkout(null);
+    //   setLoading(false);
+    //   return;
+    // }
+
+
+    // Normalize preferences to ensure all expected fields exist
+    //const preferences = normalizePreferences(tempPreferences);
 
     const defaultGym: Gym = {
       name: ["none"],
@@ -139,6 +197,7 @@ const GenerateWorkoutScreen: React.FC = () => {
     };
 
     const userInfo: UserData = {
+      //...preferences,
       //...preferences,
       ...biometrics,
       ...(gym || defaultGym),
@@ -320,90 +379,22 @@ const GenerateWorkoutScreen: React.FC = () => {
                   <Text>Create New Exercise</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() => setAddModalVisible(false)}
-                  style={styles.closeButton}
-                >
-                  <Text>Close</Text>
-                </TouchableOpacity>
-              </View>
+                      <TouchableOpacity
+                        onPress={() => setAddModalVisible(false)}
+                        style={styles.closeButton}
+                      >
+                        <Text>Close</Text>
+                      </TouchableOpacity>
+                    </ScrollView>
+                  </View>
+                </View>
+              </Modal>
             </View>
-          </Modal>
-        )}
-
-        {isEditModalVisible && selectedExercise !== null && (
-          <Modal
-            visible={isEditModalVisible}
-            animationType="slide"
-            transparent
-            onRequestClose={() => setEditModalVisible(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.editModalContainer}>
-                <Text>Edit Exercise</Text>
-
-                {/* Weight */}
-                <Text>Weight:</Text>
-                <TextInput
-                  value={weight}
-                  onChangeText={setWeight}
-                  placeholder="Weight (lbs/kg)"
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
-
-                {/* Sets */}
-                <Text>Sets:</Text>
-                <TextInput
-                  value={sets}
-                  onChangeText={setSets}
-                  placeholder="Sets"
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
-
-                {/* Reps */}
-                <Text>Reps:</Text>
-                <TextInput
-                  value={reps}
-                  onChangeText={setReps}
-                  placeholder="Reps"
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
-
-                {/* Save */}
-                <TouchableOpacity
-                  onPress={() => {
-                    if (
-                      currDay !== null &&
-                      selectedExerciseIndex !== null &&
-                      workout.days[currDay]?.exercises[selectedExerciseIndex]
-                    ) {
-                      workout.days[currDay].exercises[selectedExerciseIndex] = {
-                        ...workout.days[currDay].exercises[selectedExerciseIndex],
-                        sets,
-                        reps,
-                        weight,
-                      };
-                    }
-
-                    setEditModalVisible(false);
-                    setSelectedExercise(null);
-                  }}
-                >
-                  <Text>Save</Text>
-                </TouchableOpacity>
-
-                {/* Cancel */}
-                <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-                  <Text>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-        )}
-      </View>
+          </View>
+        ))
+      ) : (
+        <Text>No workout days available</Text> // Fallback if workout.days is empty or not an array
+      )
     );
   };
   
