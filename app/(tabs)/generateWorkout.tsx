@@ -143,7 +143,27 @@ const GenerateWorkoutScreen: React.FC = () => {
       ...biometrics,
       ...(gym || defaultGym),
     };
-    setUserData(userInfo);
+
+    try {
+      const response = await fetch("http://192.168.1.207:5000/generate-workout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userInfo),
+      });
+
+      const data = await response.json();
+      //console.log(data);
+      const reformattedData = data.workoutPlan.replace(/^```json|```/g, '').replace(/\s*```$/g, '').trim();
+      const workoutPlan: Split = JSON.parse(reformattedData);
+
+      //console.log(workoutPlan);
+      setWorkout(workoutPlan || null);
+
+    } catch (error) {
+      console.error("Error generating workout:", error);
+      setWorkout(null);
+    }
+
     setLoading(false);
   }
 
@@ -151,8 +171,7 @@ const GenerateWorkoutScreen: React.FC = () => {
     const muscleGroups = ['Chest', 'Back', 'Legs', 'Shoulders', 'Abs', 'Arms'];
     if (!workout) return <Text>No workout plan available.</Text>;
   
-    return (
-      <View>
+    return (      <View>
         {Array.isArray(workout.days) && workout.days.length > 0 ? (
           workout.days.map((day, dayIndex) => (
             <View key={dayIndex} style={styles.workoutDay}>
@@ -451,51 +470,19 @@ const GenerateWorkoutScreen: React.FC = () => {
       return;
     }
     try {
-      const userRefCurrWorkout = doc(db, 'users', user.uid, 'workout', 'currentWorkout');
-      const docSnapCurrWorkout = await getDoc(userRefCurrWorkout);
-      const userRefSavedWorkouts = doc(db, 'users', user.uid, 'savedWorkouts', 'workouts');
-      const docSnapSavedWorkouts = await getDoc(userRefSavedWorkouts);
+      const userRef = doc(db, 'users', user.uid, 'workout', 'currentWorkout');
+      const docSnap = await getDoc(userRef);
 
-      if (!docSnapCurrWorkout.exists()) {
-      console.log("Workout does not exist, creating...");
+      if (!docSnap.exists()) {
+        console.log("Workout does not exist, creating...");
       } else {
       console.log("Workout already exists, updating...");
       }
 
-      let existingSavedWorkouts: SavedSplit[] = [];
-
-      if (!docSnapSavedWorkouts.exists()) {
-      console.log("Workout does not exist, creating...");
-      existingSavedWorkouts = [];
-      } else {
-      console.log("Workout already exists, updating...");
-      
-      const data = docSnapSavedWorkouts.data();
-      if (Array.isArray(data.workouts)) {
-        existingSavedWorkouts = data.workouts;
-      } else {
-        console.warn("Unexpected type for 'workouts' in Firestore:", typeof data.workouts);
-        existingSavedWorkouts = [];
-      }
-
-      }
-
-      await setDoc(userRefCurrWorkout, {
-        workout: addToWorkout
+      await setDoc(userRef, {
+        workout
       });
 
-      const generalizedSplit: SavedSplit = { name: workoutPresetName, split: generalizeWorkout(addToWorkout) }
-      const updatedWorkouts = [...existingSavedWorkouts, generalizedSplit];
-
-      await setDoc(userRefSavedWorkouts, {
-        workouts: updatedWorkouts
-      }, {merge: true});
-
-      // Fetch the document again to confirm it was saved
-      const savedDocCurrWorkout = await getDoc(userRefCurrWorkout);
-      const savedDocSavedWorkouts = await getDoc(userRefSavedWorkouts);
-      if (savedDocCurrWorkout.exists() && savedDocSavedWorkouts.exists()) {
-      console.log("Workout successfully saved:", savedDocCurrWorkout.data(), savedDocSavedWorkouts.data());
       Alert.alert('Success', 'Workout saved!');
       } else {
       console.error("Failed to confirm workout save.");
