@@ -66,7 +66,7 @@ type UserData = Biometric & Gym & Date;
 // };
 
 const GenerateWorkoutScreen: React.FC = () => {
-  const localIP = "http://192.168.1.69:5000";
+  const localIP = "http://138.47.134.175:5000";
   
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -218,11 +218,7 @@ const GenerateWorkoutScreen: React.FC = () => {
 
                   <View style={styles.equipmentInputContainer}>
                     <Text style={styles.equipmentLabel}>Sets: </Text>
-                    <TextInput
-                      style={styles.equipmentInfo}
-                      value={exercise.sets}
-                      onChangeText={(text) => updateExerciseField(dayIndex, exIndex, "sets", text)}
-                    />
+                    <Text style={styles.equipmentInfo}>{exercise.sets}</Text>
                   </View>
                   <View style={styles.exerciseButtonsRow}>
                     <TouchableOpacity
