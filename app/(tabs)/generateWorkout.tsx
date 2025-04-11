@@ -66,7 +66,7 @@ type UserData = Biometric & Gym & Date;
 // };
 
 const GenerateWorkoutScreen: React.FC = () => {
-  const localIP = "http://192.168.1.82:5000";
+  const localIP = "http://138.47.134.175:5000";
   
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -268,62 +268,123 @@ const GenerateWorkoutScreen: React.FC = () => {
                       <Text style={styles.equipmentInfo}>{exercise.reps}</Text>
                     </View>
 
-                    <View style={styles.equipmentInputContainer}>
-                      <Text style={styles.equipmentLabel}>Sets: </Text>
-                      <Text style={styles.equipmentInfo}>{exercise.sets}</Text>
-                    </View>
-                    <View style={styles.exerciseButtonsRow}>
-                      <TouchableOpacity
-                        style={styles.editExerciseButton}
-                        onPress={() => {
-                          setSelectedExercise(exercise);
-                          setWeight(exercise.weight || "");
-                          setSets(exercise.sets || "");
-                          setReps(exercise.reps || "");
-                          setSelectedDayIndex(dayIndex);
-                          setSelectedExerciseIndex(exIndex);
-                          setEditModalVisible(true);
-                          setEditModalVisible(true);
-                        }}
-                      >
-                        <Text style={styles.buttonSmallText}>Edit</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.removeExerciseButton}
-                        onPress={() => removeExercise(dayIndex, exIndex)}
-                      >
-                        <Text style={styles.buttonSmallText}>Remove</Text>
-                      </TouchableOpacity>
-                    </View>
+                  <View style={styles.equipmentInputContainer}>
+                    <Text style={styles.equipmentLabel}>Sets: </Text>
+                    <Text style={styles.equipmentInfo}>{exercise.sets}</Text>
                   </View>
-                ))
+                  <View style={styles.exerciseButtonsRow}>
+                    <TouchableOpacity
+                      style={styles.editExerciseButton}
+                      onPress={() => setEditModalVisible(true)}
+                    >
+                      <Text style={styles.buttonSmallText}>Edit</Text>
+                    </TouchableOpacity>
+                    <Modal
+                      visible={isEditModalVisible}
+                      animationType="slide"
+                      transparent
+                      onRequestClose={() => setEditModalVisible(false)} // for Android back button
+                    >
+                      <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                          <Text>Edit Exercise</Text>
+                          <View>
+                            <Text>Weight:</Text>
+                            <TextInput
+                              value={weight}
+                              onChangeText={setWeight}
+                              placeholder="Weight (lbs/kg)"
+                              keyboardType="numeric"
+                              style={styles.input}
+                            />
+                          </View>
+                          <View>
+                          <Text>Sets:</Text>
+                            <TextInput
+                              value={sets}
+                              onChangeText={setSets}
+                              placeholder="Sets"
+                              keyboardType="numeric"
+                              style={styles.input}
+                            />
+                          </View>
+                          <View>
+                            <Text>Reps:</Text>
+                            <TextInput
+                              value={reps}
+                              onChangeText={setReps}
+                              placeholder="Reps"
+                              keyboardType="numeric"
+                              style={styles.input}
+                            />
+                          </View>
 
-              ) : (
-                <Text style={styles.label}>No exercises available for this day</Text> // Optional fallback if exercises are empty
-              )}
-              <View>
-                <TouchableOpacity style={styles.addExerciseButton} onPress={() => handleAddExercise(dayIndex)}>
-                  <Text style={styles.buttonText}>+ Add Exercise</Text>
-                </TouchableOpacity>                
-              </View>
-            </View>
-          ))
-          
-        ) : (
-          <Text>No workout days available</Text> // Fallback if workout.days is empty or not an array
-        )}
-        
-        {/* Modal for Add Exercise Input */}
-        {isAddModalVisible && (
-          <Modal
-            visible={isAddModalVisible}
-            animationType="slide"
-            transparent
-            onRequestClose={() => setAddModalVisible(false)} // for Android back button
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.editModalContainer}>
-                <Text style={styles.modalTitle}>Add a New Exercise</Text>
+                          <TouchableOpacity
+                            onPress={() => {
+                              const updatedExercise = {
+                                ...editExercise,
+                                sets: sets,
+                                reps: reps,
+                                weight: weight,
+                              };
+                              exercise.sets = updatedExercise.sets;
+                              exercise.reps = updatedExercise.reps;
+                              exercise.weight = updatedExercise.weight;
+                              // Then close modal
+                              setEditModalVisible(false);
+                            }}
+                          >
+                            <Text>Save</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                            <Text>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </Modal>
+
+                    <TouchableOpacity
+                      style={styles.removeExerciseButton}
+                      onPress={() => removeExercise(dayIndex, exIndex)}
+                    >
+                      <Text style={styles.buttonSmallText}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.label}>No exercises available for this day</Text> // Optional fallback if exercises are empty
+            )}
+            <View>
+              <TouchableOpacity style={styles.addExerciseButton} onPress={() => handleAddExercise(dayIndex)}>
+                <Text style={styles.buttonText}>+ Add Exercise</Text>
+              </TouchableOpacity>
+
+              {/* Modal for Exercise Input */}
+              <Modal
+                visible={isAddModalVisible}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setAddModalVisible(false)} // for Android back button
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={styles.modalContainer}>
+                    <ScrollView contentContainerStyle={styles.scrollContent}>
+                      <Text style={styles.modalTitle}>Select Muscle Group</Text>
+
+                      <Picker
+                        selectedValue={selectedMuscleGroup}
+                        onValueChange={(itemValue) => setSelectedMuscleGroup(itemValue)}
+                        style={{ height: 50, width: '100%' }}
+                      >
+                        <Picker.Item label="Chest" value="chest" />
+                        <Picker.Item label="Back" value="back" />
+                        <Picker.Item label="Legs" value="legs" />
+                        <Picker.Item label="Shoulders" value="shoulder" />
+                        <Picker.Item label="Abs" value="abs" />
+                        <Picker.Item label="Arms" value="arms" />
+                      </Picker>
 
                 <TouchableOpacity onPress={() => generateExercise(selectedMuscleGroup)}>
                   <Text>Generate Exercise for Selected Muscle Group</Text>
