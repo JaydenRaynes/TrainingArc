@@ -29,7 +29,7 @@ export const theme = {
     extraSmall: 4,
     small: 8,
     medium: 16,
-    large: 24,
+    large: 25,
     extraLarge: 32,
   },
   borderRadius: {
