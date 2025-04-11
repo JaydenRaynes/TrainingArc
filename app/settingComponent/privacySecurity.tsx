@@ -31,7 +31,7 @@ export default function PrivacySecurity({ setModalVisible }: any) {
           try {
             await signOut(auth);
             Alert.alert("Success", "You have been signed out!");
-            router.replace("/login");
+            router.replace("/");
           } catch (error) {
             console.error("Error signing out:", error);
             Alert.alert("Error", "Failed to sign out. Please try again.");
