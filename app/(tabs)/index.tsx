@@ -19,7 +19,7 @@ const WorkoutsPage = () => {
     workouts: { name: string; sets: number; reps: number; weight: number; completed: boolean }[];
   } | null>(null);
 
-  const [displayedDay, setDisplayedDay] = useState<string>("");
+  const [today, setToday] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [timerModalVisible, setTimerModalVisible] = useState(false);
@@ -29,23 +29,40 @@ const WorkoutsPage = () => {
   const [caloriesBurned, setCaloriesBurned] = useState<{ [key: string]: number }>({});
   const [loadingCalories, setLoadingCalories] = useState<{ [key: string]: boolean }>({});
   const [workoutDurations, setWorkoutDurations] = useState<{ [key: string]: number }>({});
+  const [completedSets, setCompletedSets] = useState<{ [key: string]: boolean }>({});
+  const [activeRatingSet, setActiveRatingSet] = useState<string | null>(null);
+  const [setRatings, setSetRatings] = useState<{ [key: string]: number }>({});
+
 
   useEffect(() => {
-    const selectedDayName = format(new Date(selectedDate), "EEEE");
-    setDisplayedDay(selectedDayName);
+    const currentDay = format(new Date(), "EEEE");
+    setToday(currentDay);
     fetchWorkoutData(selectedDate);
   }, [userID, selectedDate]);
 
   const fetchWorkoutData = (date: string) => {
     if (!userID) return;
-
-    const userRef = doc(db, "users", userID);
+  
+    const userRef = doc(db, "users", userID, 'workout', 'currentWorkout');
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const formattedDay = format(new Date(date), "EEEE");
-        if (data.workoutPlans && data.workoutPlans[formattedDay]) {
-          setWorkoutPlan(data.workoutPlans[formattedDay]);
+        const dayKey = getDayKey(date); // e.g. "Day 1"
+  
+        const workoutDays = data.workout?.days || [];
+        const matchedDay = workoutDays.find((d: any) => d.day === dayKey);
+  
+        if (matchedDay) {
+          setWorkoutPlan({
+            split: dayKey,
+            workouts: matchedDay.exercises.map((ex: any) => ({
+              name: ex.name,
+              sets: 3,
+              reps: 10,
+              weight: 0,
+              completed: false,
+            })),
+          });
         } else {
           setWorkoutPlan(null);
         }
@@ -53,9 +70,50 @@ const WorkoutsPage = () => {
         setWorkoutPlan(null);
       }
     });
-
+  
     return () => unsubscribe();
   };
+
+  const adjustWorkoutBasedOnRatings = (plan: typeof workoutPlan | null) => {
+    if (!plan) return plan;
+  
+    const updatedWorkouts = plan.workouts.map((exercise, exIndex) => {
+      const updatedExercise = { ...exercise };
+  
+      for (let setIndex = 0; setIndex < exercise.sets; setIndex++) {
+        const key = `${exIndex}-${setIndex}`;
+        const rating = setRatings[key];
+  
+        if (rating) {
+          if (rating <= 2) {
+            updatedExercise.reps += 2;
+            updatedExercise.weight += 5;
+          } else if (rating >= 4) {
+            updatedExercise.reps = Math.max(1, updatedExercise.reps - 2);
+            updatedExercise.weight = Math.max(0, updatedExercise.weight - 5);
+          }
+        }
+      }
+  
+      return updatedExercise;
+    });
+  
+    return { ...plan, workouts: updatedWorkouts };
+  };
+  
+  
+  const handleSetClick = (exerciseIndex: number, setIndex: number) => {
+    const key = `${exerciseIndex}-${setIndex}`;
+    setCompletedSets(prev => ({ ...prev, [key]: !prev[key] }));
+  
+    // Toggle rating view
+    setActiveRatingSet(prev => (prev === key ? null : key));
+  };  
+
+  const getDayKey = (dateStr: string): string => {
+    const dayIndex = new Date(dateStr).getDay(); // 0 (Sun) to 6 (Sat)
+    return `Day ${dayIndex + 1}`; // Day 1 to Day 7
+  };  
 
   const toggleWorkoutCompletion = async (index: number) => {
     if (!userID || !workoutPlan) return;
@@ -63,52 +121,39 @@ const WorkoutsPage = () => {
     const updatedWorkouts = [...workoutPlan.workouts];
     updatedWorkouts[index].completed = !updatedWorkouts[index].completed;
 
-    const dayKey = format(new Date(selectedDate), "EEEE");
-
     const userRef = doc(db, "users", userID);
     await updateDoc(userRef, {
-      [`workoutPlans.${dayKey}.workouts`]: updatedWorkouts,
+      [`workoutPlans.${today}.workouts`]: updatedWorkouts,
     });
 
     setWorkoutPlan({ ...workoutPlan, workouts: updatedWorkouts });
   };
 
-  const saveToProgress = async () => {
-    if (!userID || !workoutPlan) return;
-  
-    const completedWorkouts = workoutPlan.workouts.filter((w) => w.completed);
-    if (completedWorkouts.length === 0) {
-      Alert.alert("⚠️ Nothing to Save", "Please complete at least one workout first.");
-      return;
-    }
-  
+  const saveToProgress = async (completedWorkouts: any) => {
+    if (!completedWorkouts || completedWorkouts.length === 0) return;
+    if (!userID) return;
+
     const progressRef = doc(db, "users", userID, "progress", selectedDate);
-  
+
+    const adjustedPlan = adjustWorkoutBasedOnRatings(workoutPlan);
+    setWorkoutPlan(adjustedPlan); // Update the state with adjusted plan
     const progressData = {
       date: selectedDate,
-      workouts: completedWorkouts.map((workout) => ({
-        workoutName: workout.name,
-        sets: workout.sets,
-        reps: workout.reps,
-        weight: workout.weight,
-        completed: workout.completed,
-      })),
+      workouts: adjustedPlan?.workouts || [],
     };
-  
+
     try {
       const docSnap = await getDoc(progressRef);
       if (docSnap.exists()) {
-        await updateDoc(progressRef, {
-          workouts: arrayUnion(...progressData.workouts),
-        });
+        await updateDoc(progressRef, { workouts: arrayUnion(...progressData.workouts) });
       } else {
         await setDoc(progressRef, progressData);
       }
-  
-      Alert.alert(" Completed", "Workout saved successfully!");
+      setCompletedSets({}); // Reset completed sets after saving
+      setSetRatings({}); // Reset ratings after saving
+      Alert.alert("Success", "Workouts saved successfully!");
     } catch (error) {
       console.error("Error saving progress:", error);
-      Alert.alert(" Error", "Failed to save workout.");
     }
   };
 
@@ -192,7 +237,7 @@ const WorkoutsPage = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerText}>{displayedDay}'s Workout</Text>
+      <Text style={styles.headerText}>{today}'s Workout</Text>
 
       {/* Button to open calendar */}
       <TouchableOpacity style={styles.calendarButton} onPress={() => setCalendarVisible(true)}>
@@ -227,20 +272,21 @@ const WorkoutsPage = () => {
               textDayHeaderFontSize: theme.fontSize.small,
             }}
           />
-          <TouchableOpacity
-            onPress={() => setCalendarVisible(false)}
-            style={{
-              backgroundColor: theme.colors.primary,
-              paddingVertical: theme.spacing.small,
-              paddingHorizontal: theme.spacing.large,
-              borderRadius: theme.borderRadius.small,
-              marginTop: theme.spacing.medium,
-            }}
-          >
-            <Text style={{ color: theme.colors.buttonText, fontWeight: "bold", fontSize: theme.fontSize.medium }}>
-              Close
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setCalendarVisible(false)}
+              style={{
+                backgroundColor: theme.colors.secondary,
+                paddingVertical: theme.spacing.small,
+                paddingHorizontal: theme.spacing.large,
+                borderRadius: theme.borderRadius.medium,
+                marginTop: theme.spacing.medium,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: theme.colors.buttonText, fontWeight: "bold", fontSize: theme.fontSize.medium }}>
+                Close
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -248,14 +294,56 @@ const WorkoutsPage = () => {
       <FlatList
         data={workoutPlan?.workouts || []}
         keyExtractor={(item, index) => `${item.name}-${index}`}
-        renderItem={({ item, index }) => (
-          <View style={styles.workoutItem}>
-            <BouncyCheckbox
-              isChecked={item.completed}
-              text={`${item.name} - ${item.sets}x${item.reps} @ ${item.weight} lbs`}
-              onPress={() => toggleWorkoutCompletion(index)}
-            />
-            <View style={styles.buttonsContainer}>
+        renderItem={({ item, index: exerciseIndex }) => (
+        <View style={styles.workoutItem}>
+          <Text style={styles.headerText}>
+            {item.name} - {item.sets}x{item.reps} @ {item.weight} lbs
+          </Text>
+
+      <View style={styles.setsContainer}>
+        {Array.from({ length: item.sets }).map((_, setIndex) => {
+          const key = `${exerciseIndex}-${setIndex}`;
+          const isActive = activeRatingSet === key;
+
+          return (
+            <View key={key} style={{ marginBottom: 10 }}>
+              <BouncyCheckbox
+                isChecked={!!completedSets[key]}
+                text={`Set ${setIndex + 1} - 1 x ${item.reps} @ ${item.weight} lbs`}
+                textStyle={{
+                textDecorationLine: completedSets[key] ? "line-through" : "none",
+                color: "white", // make sure it's readable too
+              }}
+               onPress={() => handleSetClick(exerciseIndex, setIndex)}
+              />
+              {isActive && (
+                <View style={styles.ratingContainer}>
+                  <Text style={{ marginBottom: 4, color: theme.colors.text, fontSize: theme.fontSize.medium}}>How hard was this set?</Text>
+                  <View style={styles.ratingButtons}>
+                    {[1, 2, 3, 4, 5].map(rating => (
+                      <TouchableOpacity
+                        key={rating}
+                        style={styles.ratingButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          const newRatings = { ...setRatings, [key]: rating };
+                          setSetRatings(newRatings);
+                          console.log(`Set ${key} rated as ${rating}`);
+                          setActiveRatingSet(null); // hide after selection
+                        }}
+                      >
+                        <Text style={styles.ratingText}>{rating}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={styles.buttonsContainer}>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
                 onPress={() => openTimerModal(item.name)}
@@ -280,6 +368,7 @@ const WorkoutsPage = () => {
           </View>
         )}
       />
+
 
       {/* Timer Modal */}
       <Modal visible={timerModalVisible} animationType="slide" transparent>
@@ -484,6 +573,36 @@ editButtonText: {
   fontSize: theme.fontSize.medium,
   fontWeight: "bold",
   color: theme.colors.text,
+},
+ratingContainer: {
+  backgroundColor: theme.colors.cardBackground,
+  padding: theme.spacing.medium,
+  borderRadius: theme.borderRadius.small,
+  marginTop: theme.spacing.small,
+},
+ratingButtons: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: 8,
+},
+
+ratingButton: {
+  backgroundColor: theme.colors.primary,
+  paddingVertical: 8,
+  paddingHorizontal: 14,
+  borderRadius: 10,
+  marginHorizontal: 4,
+  alignItems: "center",
+},
+ratingText: {
+  color: theme.colors.buttonText,
+  fontWeight: "bold",
+  fontSize: theme.fontSize.medium,
+},
+setsContainer: {
+  marginTop: theme.spacing.small,
+  marginBottom: theme.spacing.medium,
+  paddingHorizontal: theme.spacing.small,
 },
 });
 
