@@ -71,9 +71,9 @@ app.post("/generate-workout", async (req, res) => {
           name: string; // Name of the exercise
           muscle: string; // Target muscle group
           equipment: string;  // Equipment needed to do it (default to "none" if no equipment)
-          weight: string;  // Recommended weight for the user based off of experience and preferences (provide weight in pounds, bodyweight if no equipment)
-          reps: string;  // Recommended number of repetitions for the user
-          sets: string;  // Recommended number of sets for the user
+          weight: number;  // Recommended weight for the user based off of experience and preferences (provide a number)
+          reps: number;  // Recommended number of repetitions for the user
+          sets: number;  // Recommended number of sets for the user
           instructions?: string;  // Any optional notes
         }
     - Format each workout for the day to fit the following structure:
@@ -221,9 +221,9 @@ app.post("/generate-exercise/:exercise", async (req, res) => {
           name: string; // Name of the exercise
           muscle: string; // Target muscle group
           equipment: string;  // Equipment needed to do it (default to "none" if no equipment)
-          weight: string;  // Recommended weight for the user based off of experience and preferences (provide weight in pounds, bodyweight if no equipment)
-          reps: string;  // Recommended number of repetitions for the user
-          sets: string;  // Recommended number of sets for the user
+          weight: number;  // Recommended weight for the user based off of experience and preferences (provide a number)
+          reps: number;  // Recommended number of repetitions for the user
+          sets: number;  // Recommended number of sets for the user ()
           instructions?: string;  // Any optional notes
         }
     - Respond with the exercise already in JSON format, without any additional text or explanations

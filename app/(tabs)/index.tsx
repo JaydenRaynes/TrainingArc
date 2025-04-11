@@ -311,7 +311,7 @@ const WorkoutsPage = () => {
             <View key={key} style={{ marginBottom: 10 }}>
               <BouncyCheckbox
                 isChecked={!!completedSets[key]}
-                text={`Set ${setIndex + 1} - 1 x ${item.reps} @ ${item.weight}`}
+                text={`Set ${setIndex + 1} - 1 x ${item.reps} @ ${item.weight} lbs`}
                 textStyle={{
                 textDecorationLine: completedSets[key] ? "line-through" : "none",
                 color: "white", // make sure it's readable too
