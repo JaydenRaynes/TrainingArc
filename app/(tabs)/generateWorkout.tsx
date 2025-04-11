@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal } from "react-native";
-import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../Services/fetchUserData";
-import { Preferences } from "../models/preferenceModel";
+// import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../Services/fetchUserData";
+import { fetchUserBiometrics, fetchUserGym } from "../Services/fetchUserData";
+//import { Preferences } from "../models/preferenceModel";
 import { Gym } from "../models/gymInfoModel";
 import { Biometric } from "../models/biometricModel";
 import { Split, WorkoutDay } from "../models/splitModel";
@@ -12,56 +13,57 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { Picker } from "@react-native-picker/picker";
 
 type Date = { startDate: string };
-type UserData = Preferences & Biometric & Gym & Date;
+// type UserData = Preferences & Biometric & Gym & Date;
+type UserData = Biometric & Gym & Date;
 
-const normalizePreferences = (preferences: Preferences): Preferences => {
-  return {
-    ...preferences,
-    activityLevel: {
-      active: preferences.activityLevel?.active || false,
-      notActive: preferences.activityLevel?.notActive || false,
-      slightlyActive: preferences.activityLevel?.slightlyActive || false,
-    },
-    cardioPreferences: {
-      cycling: preferences.cardioPreferences?.cycling || false,
-      rowing: preferences.cardioPreferences?.rowing || false,
-      running: preferences.cardioPreferences?.running || false,
-      swimming: preferences.cardioPreferences?.swimming || false,
-      walking: preferences.cardioPreferences?.walking || false,
-    },
-    equipmentPreference: {
-      barbells: preferences.equipmentPreference?.barbells || false,
-      dumbbells: preferences.equipmentPreference?.dumbbells || false,
-      kettlebells: preferences.equipmentPreference?.kettlebells || false,
-      none: preferences.equipmentPreference?.none || false,
-      resistanceBands: preferences.equipmentPreference?.resistanceBands || false,
-    },
-    preferredWorkoutType: {
-      bodyweight: preferences.preferredWorkoutType?.bodyweight || false,
-      cardio: preferences.preferredWorkoutType?.cardio || false,
-      hiit: preferences.preferredWorkoutType?.hiit || false,
-      strength: preferences.preferredWorkoutType?.strength || false,
-      yoga: preferences.preferredWorkoutType?.yoga || false,
-    },
-    timeOfDayPreference: {
-      morning: preferences.timeOfDayPreference?.morning || false,
-      afternoon: preferences.timeOfDayPreference?.afternoon || false,
-      evening: preferences.timeOfDayPreference?.evening || false,
-      night: preferences.timeOfDayPreference?.night || false,
-      any: preferences.timeOfDayPreference?.any || false,
-    },
-    workoutEnvironment: {
-      gym: preferences.workoutEnvironment?.gym || false,
-      home: preferences.workoutEnvironment?.home || false,
-      outdoor: preferences.workoutEnvironment?.outdoor || false,
-    },
-    workoutSplit: {
-      fullBody: preferences.workoutSplit?.fullBody || false,
-      targeted: preferences.workoutSplit?.targeted || false,
-      weeklySplit: preferences.workoutSplit?.weeklySplit || false,
-    },
-  };
-};
+// const normalizePreferences = (preferences: Preferences): Preferences => {
+//   return {
+//     ...preferences,
+//     activityLevel: {
+//       active: preferences.activityLevel?.active || false,
+//       notActive: preferences.activityLevel?.notActive || false,
+//       slightlyActive: preferences.activityLevel?.slightlyActive || false,
+//     },
+//     cardioPreferences: {
+//       cycling: preferences.cardioPreferences?.cycling || false,
+//       rowing: preferences.cardioPreferences?.rowing || false,
+//       running: preferences.cardioPreferences?.running || false,
+//       swimming: preferences.cardioPreferences?.swimming || false,
+//       walking: preferences.cardioPreferences?.walking || false,
+//     },
+//     equipmentPreference: {
+//       barbells: preferences.equipmentPreference?.barbells || false,
+//       dumbbells: preferences.equipmentPreference?.dumbbells || false,
+//       kettlebells: preferences.equipmentPreference?.kettlebells || false,
+//       none: preferences.equipmentPreference?.none || false,
+//       resistanceBands: preferences.equipmentPreference?.resistanceBands || false,
+//     },
+//     preferredWorkoutType: {
+//       bodyweight: preferences.preferredWorkoutType?.bodyweight || false,
+//       cardio: preferences.preferredWorkoutType?.cardio || false,
+//       hiit: preferences.preferredWorkoutType?.hiit || false,
+//       strength: preferences.preferredWorkoutType?.strength || false,
+//       yoga: preferences.preferredWorkoutType?.yoga || false,
+//     },
+//     timeOfDayPreference: {
+//       morning: preferences.timeOfDayPreference?.morning || false,
+//       afternoon: preferences.timeOfDayPreference?.afternoon || false,
+//       evening: preferences.timeOfDayPreference?.evening || false,
+//       night: preferences.timeOfDayPreference?.night || false,
+//       any: preferences.timeOfDayPreference?.any || false,
+//     },
+//     workoutEnvironment: {
+//       gym: preferences.workoutEnvironment?.gym || false,
+//       home: preferences.workoutEnvironment?.home || false,
+//       outdoor: preferences.workoutEnvironment?.outdoor || false,
+//     },
+//     workoutSplit: {
+//       fullBody: preferences.workoutSplit?.fullBody || false,
+//       targeted: preferences.workoutSplit?.targeted || false,
+//       weeklySplit: preferences.workoutSplit?.weeklySplit || false,
+//     },
+//   };
+// };
 
 const GenerateWorkoutScreen: React.FC = () => {
   const localIP = "http://192.168.1.69:5000";
@@ -142,7 +144,7 @@ const GenerateWorkoutScreen: React.FC = () => {
   const combineUserData = async () => {
     setLoading(true);
     const biometrics = await fetchUserBiometrics();
-    const tempPreferences = await fetchUserPreferences();
+    //const tempPreferences = await fetchUserPreferences();
     const gym = await fetchUserGym();
     const startDate = "1-1-2000";
 
@@ -151,15 +153,15 @@ const GenerateWorkoutScreen: React.FC = () => {
       setLoading(false);
       return;
     }
-    if (!tempPreferences) {
-      setWorkout(null);
-      setLoading(false);
-      return;
-    }
+    // if (!tempPreferences) {
+    //   setWorkout(null);
+    //   setLoading(false);
+    //   return;
+    // }
 
 
     // Normalize preferences to ensure all expected fields exist
-    const preferences = normalizePreferences(tempPreferences);
+    //const preferences = normalizePreferences(tempPreferences);
 
     const defaultGym: Gym = {
       name: ["none"],
@@ -171,7 +173,7 @@ const GenerateWorkoutScreen: React.FC = () => {
     };
 
     const userInfo: UserData = {
-      ...preferences,
+      //...preferences,
       ...biometrics,
       ...(gym || defaultGym),
       startDate,
