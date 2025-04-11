@@ -72,25 +72,23 @@ function TabLayout() {
   }, [copilotEvents]);
 
   return (
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: theme.colors.background,
-            borderTopColor: theme.colors.border,
-            height: 65,
-            paddingBottom: 5,
-          },
-          tabBarActiveTintColor: theme.colors.primary,
-          tabBarInactiveTintColor: theme.colors.textSecondary,
-          tabBarLabelStyle: {
-            fontSize: 8,
-          },
-          tabBarIconStyle: {
-            marginTop: 5,
-          },
-        }}
-        >
+      <Tabs screenOptions={{ headerShown: false }}>
+        {/* Progress Tab */}
+        <Tabs.Screen
+          name="progress"
+          options={{
+            title: 'Progress',
+            tabBarIcon: () => (
+              <CopilotStep text="Track your progress here!" order={1} name="Progress">
+                <WalkthroughView>
+                  <Entypo name="progress-one" size={24} color="black" />
+                </WalkthroughView>
+              </CopilotStep>
+            ),
+          }}
+        />
+
+        {/* Other Tabs */}
         <Tabs.Screen
           name="exercises"
           options={{
@@ -188,8 +186,7 @@ function TabLayout() {
           }}
         />
       </Tabs>
-  );
-}
+)};
 
 // Wrap with CopilotProvider
 export default function App() {

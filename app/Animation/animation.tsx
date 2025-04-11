@@ -6,21 +6,27 @@ import { useRouter, useLocalSearchParams, Stack } from "expo-router";
 const AnimationScreen: React.FC = () => {
   const animation = useRef<LottieView>(null);
   const router = useRouter();
-  const params = useLocalSearchParams(); // Get params safely
+  const { nextScreen, animationKey } = useLocalSearchParams();
 
   // Ensure nextScreen is always a string
-  const nextScreen: string = Array.isArray(params.nextScreen)
-    ? params.nextScreen[0]
-    : params.nextScreen || "/(tabs)/explore";
+  const destination: string = Array.isArray(nextScreen)
+    ? nextScreen[0]
+    : nextScreen || "/(tabs)/shop";
+
+    const handleAnimationFinish = () => {
+      router.replace(destination);
+    };
 
   useEffect(() => {
     // Wait 5 seconds, then navigate
+    animation.current?.play();
+
     const timer = setTimeout(() => {
-      router.push(nextScreen as any);
+      router.replace(destination);
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [nextScreen]);
+  }, [animationKey]);
 
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#061E44" }}>
@@ -29,6 +35,7 @@ const AnimationScreen: React.FC = () => {
         autoPlay
         loop={false}
         ref={animation}
+        onAnimationFinish={handleAnimationFinish}
         style={{ width: 300, height: 300 }}
         source={require("../../assets/videos/Animation.json")}
       />

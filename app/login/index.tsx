@@ -27,9 +27,11 @@ export default function Login() {
             const nextScreen = userData.isFirstLogin ? "/biometrics" : "/(tabs)";
   
             // Navigate to animation screen with the nextScreen as a parameter
-            router.push({
+            router.replace({
               pathname: "/Animation/animation",
-              params: { nextScreen }, // Pass the next screen destination
+              params: { 
+                nextScreen: "/(tabs)/shop", 
+                animationKey: Date.now().toString() }, // Pass the next screen destination and force screen refresh
             });
           }
         })

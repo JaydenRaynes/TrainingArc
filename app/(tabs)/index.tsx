@@ -29,6 +29,10 @@ const WorkoutsPage = () => {
   const [caloriesBurned, setCaloriesBurned] = useState<{ [key: string]: number }>({});
   const [loadingCalories, setLoadingCalories] = useState<{ [key: string]: boolean }>({});
   const [workoutDurations, setWorkoutDurations] = useState<{ [key: string]: number }>({});
+  const [completedSets, setCompletedSets] = useState<{ [key: string]: boolean }>({});
+  const [activeRatingSet, setActiveRatingSet] = useState<string | null>(null);
+  const [setRatings, setSetRatings] = useState<{ [key: string]: number }>({});
+
 
   useEffect(() => {
     const currentDay = format(new Date(), "EEEE");
@@ -38,14 +42,27 @@ const WorkoutsPage = () => {
 
   const fetchWorkoutData = (date: string) => {
     if (!userID) return;
-
-    const userRef = doc(db, "users", userID);
+  
+    const userRef = doc(db, "users", userID, 'workout', 'currentWorkout');
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const formattedDay = format(new Date(date), "EEEE");
-        if (data.workoutPlans && data.workoutPlans[formattedDay]) {
-          setWorkoutPlan(data.workoutPlans[formattedDay]);
+        const dayKey = getDayKey(date); // e.g. "Day 1"
+  
+        const workoutDays = data.workout?.days || [];
+        const matchedDay = workoutDays.find((d: any) => d.day === dayKey);
+  
+        if (matchedDay) {
+          setWorkoutPlan({
+            split: dayKey,
+            workouts: matchedDay.exercises.map((ex: any) => ({
+              name: ex.name,
+              sets: 3,
+              reps: 10,
+              weight: 0,
+              completed: false,
+            })),
+          });
         } else {
           setWorkoutPlan(null);
         }
@@ -53,9 +70,50 @@ const WorkoutsPage = () => {
         setWorkoutPlan(null);
       }
     });
-
+  
     return () => unsubscribe();
   };
+
+  const adjustWorkoutBasedOnRatings = (plan: typeof workoutPlan | null) => {
+    if (!plan) return plan;
+  
+    const updatedWorkouts = plan.workouts.map((exercise, exIndex) => {
+      const updatedExercise = { ...exercise };
+  
+      for (let setIndex = 0; setIndex < exercise.sets; setIndex++) {
+        const key = `${exIndex}-${setIndex}`;
+        const rating = setRatings[key];
+  
+        if (rating) {
+          if (rating <= 2) {
+            updatedExercise.reps += 2;
+            updatedExercise.weight += 5;
+          } else if (rating >= 4) {
+            updatedExercise.reps = Math.max(1, updatedExercise.reps - 2);
+            updatedExercise.weight = Math.max(0, updatedExercise.weight - 5);
+          }
+        }
+      }
+  
+      return updatedExercise;
+    });
+  
+    return { ...plan, workouts: updatedWorkouts };
+  };
+  
+  
+  const handleSetClick = (exerciseIndex: number, setIndex: number) => {
+    const key = `${exerciseIndex}-${setIndex}`;
+    setCompletedSets(prev => ({ ...prev, [key]: !prev[key] }));
+  
+    // Toggle rating view
+    setActiveRatingSet(prev => (prev === key ? null : key));
+  };  
+
+  const getDayKey = (dateStr: string): string => {
+    const dayIndex = new Date(dateStr).getDay(); // 0 (Sun) to 6 (Sat)
+    return `Day ${dayIndex + 1}`; // Day 1 to Day 7
+  };  
 
   const toggleWorkoutCompletion = async (index: number) => {
     if (!userID || !workoutPlan) return;
@@ -77,15 +135,11 @@ const WorkoutsPage = () => {
 
     const progressRef = doc(db, "users", userID, "progress", selectedDate);
 
+    const adjustedPlan = adjustWorkoutBasedOnRatings(workoutPlan);
+    setWorkoutPlan(adjustedPlan); // Update the state with adjusted plan
     const progressData = {
       date: selectedDate,
-      workouts: completedWorkouts.map((workout: any) => ({
-        workoutName: workout.name,
-        sets: workout.sets,
-        reps: workout.reps,
-        weight: workout.weight,
-        completed: workout.completed,
-      })),
+      workouts: adjustedPlan?.workouts || [],
     };
 
     try {
@@ -95,6 +149,8 @@ const WorkoutsPage = () => {
       } else {
         await setDoc(progressRef, progressData);
       }
+      setCompletedSets({}); // Reset completed sets after saving
+      setSetRatings({}); // Reset ratings after saving
       Alert.alert("Success", "Workouts saved successfully!");
     } catch (error) {
       console.error("Error saving progress:", error);
@@ -192,24 +248,45 @@ const WorkoutsPage = () => {
       <Modal visible={calendarVisible} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Calendar
-              onDayPress={(day) => {
-                setSelectedDate(day.dateString);
-                setCalendarVisible(false);
-                fetchWorkoutData(day.dateString);
+          <Calendar
+            onDayPress={(day) => {
+            setSelectedDate(day.dateString);
+            setCalendarVisible(false);
+            fetchWorkoutData(day.dateString);
+            }}
+            markedDates={{
+              [selectedDate]: { selected: true, selectedColor: theme.colors.primary },
+            }}
+            theme={{
+              calendarBackground: theme.colors.cardBackground,
+              textSectionTitleColor: theme.colors.textSecondary,
+              selectedDayBackgroundColor: theme.colors.primary,
+              selectedDayTextColor: theme.colors.blackText,
+              todayTextColor: theme.colors.warning,
+              dayTextColor: theme.colors.text,
+              monthTextColor: theme.colors.text,
+              arrowColor: theme.colors.primary,
+              textDisabledColor: "#555",
+              textDayFontSize: theme.fontSize.medium,
+              textMonthFontSize: theme.fontSize.large,
+              textDayHeaderFontSize: theme.fontSize.small,
+            }}
+          />
+            <TouchableOpacity
+              onPress={() => setCalendarVisible(false)}
+              style={{
+                backgroundColor: theme.colors.secondary,
+                paddingVertical: theme.spacing.small,
+                paddingHorizontal: theme.spacing.large,
+                borderRadius: theme.borderRadius.medium,
+                marginTop: theme.spacing.medium,
+                alignItems: "center",
               }}
-              markedDates={{
-                [selectedDate]: { selected: true, selectedColor: theme.colors.primary },
-              }}
-              theme={{
-                todayTextColor: theme.colors.primary,
-                arrowColor: theme.colors.primary,
-                textDayFontSize: theme.fontSize.medium,
-                textMonthFontSize: theme.fontSize.large,
-                textDayHeaderFontSize: theme.fontSize.small,
-              }}
-            />
-            <Button title="Close" onPress={() => setCalendarVisible(false)} color={theme.colors.secondary} />
+            >
+              <Text style={{ color: theme.colors.buttonText, fontWeight: "bold", fontSize: theme.fontSize.medium }}>
+                Close
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -217,45 +294,114 @@ const WorkoutsPage = () => {
       <FlatList
         data={workoutPlan?.workouts || []}
         keyExtractor={(item, index) => `${item.name}-${index}`}
-        renderItem={({ item, index }) => (
-          <View style={styles.workoutItem}>
-            <BouncyCheckbox
-              isChecked={item.completed}
-              text={`${item.name} - ${item.sets}x${item.reps} @ ${item.weight} lbs`}
-              onPress={() => toggleWorkoutCompletion(index)}
-            />
-            <View style={styles.buttonsContainer}>
-              <View style={{ flex: 1, marginRight: 5 }}>
-                  <Button title="⏱ Timer" onPress={() => openTimerModal(item.name)} />
-              </View>
-              <View style={{ flex: 1, marginLeft: 5 }}>
-                <Button title="🔥 Calories" onPress={() => fetchCaloriesBurned(item.name)} />
-              </View>
+        renderItem={({ item, index: exerciseIndex }) => (
+        <View style={styles.workoutItem}>
+          <Text style={styles.headerText}>
+            {item.name} - {item.sets}x{item.reps} @ {item.weight} lbs
+          </Text>
+
+      <View style={styles.setsContainer}>
+        {Array.from({ length: item.sets }).map((_, setIndex) => {
+          const key = `${exerciseIndex}-${setIndex}`;
+          const isActive = activeRatingSet === key;
+
+          return (
+            <View key={key} style={{ marginBottom: 10 }}>
+              <BouncyCheckbox
+                isChecked={!!completedSets[key]}
+                text={`Set ${setIndex + 1} - 1 x ${item.reps} @ ${item.weight} lbs`}
+                textStyle={{
+                textDecorationLine: completedSets[key] ? "line-through" : "none",
+                color: "white", // make sure it's readable too
+              }}
+               onPress={() => handleSetClick(exerciseIndex, setIndex)}
+              />
+              {isActive && (
+                <View style={styles.ratingContainer}>
+                  <Text style={{ marginBottom: 4, color: theme.colors.text, fontSize: theme.fontSize.medium}}>How hard was this set?</Text>
+                  <View style={styles.ratingButtons}>
+                    {[1, 2, 3, 4, 5].map(rating => (
+                      <TouchableOpacity
+                        key={rating}
+                        style={styles.ratingButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          const newRatings = { ...setRatings, [key]: rating };
+                          setSetRatings(newRatings);
+                          console.log(`Set ${key} rated as ${rating}`);
+                          setActiveRatingSet(null); // hide after selection
+                        }}
+                      >
+                        <Text style={styles.ratingText}>{rating}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={styles.buttonsContainer}>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
+                onPress={() => openTimerModal(item.name)}
+              >
+                <Text style={styles.actionButtonText}>⏱ Timer</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: theme.colors.cardBackground, borderColor: theme.colors.primary, borderWidth: 1 }]}
+                onPress={() => fetchCaloriesBurned(item.name)}
+              >
+                <Text style={[styles.actionButtonText, { color: theme.colors.primary }]}>🔥 Calories</Text>
+              </TouchableOpacity>
             </View>
             {loadingCalories[item.name] ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              caloriesBurned[item.name] && <Text>🔥 {caloriesBurned[item.name].toFixed(2)} kcal</Text>
-            )}
+              <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginTop: 8 }} />
+            ) : caloriesBurned[item.name] ? (
+              <Text style={styles.calorieText}>
+                🔥 {caloriesBurned[item.name].toFixed(2)} kcal
+              </Text>
+            ) : null}
           </View>
         )}
       />
+
 
       {/* Timer Modal */}
       <Modal visible={timerModalVisible} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text>{activeWorkout} Timer: {timer}s</Text>
-            <Button title="Start" onPress={startTimer} />
-            <Button title="Stop" onPress={stopTimer} />
-            <Button title="Reset" onPress={resetTimer} />
-            <Button title="Close" onPress={() => setTimerModalVisible(false)} />
+          <Text style={styles.timerTitle}>{activeWorkout} Timer</Text>
+          <Text style={styles.timerDisplay}>{timer}s</Text>
+          <View style={styles.timerButtonsContainer}>
+            <TouchableOpacity style={[styles.timerButton, { backgroundColor: theme.colors.primary }]} onPress={startTimer}>
+              <Text style={styles.buttonText}>Start</Text>
+              </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.timerButton, { backgroundColor: "gray" }]} onPress={stopTimer}>
+              <Text style={styles.buttonText}>Pause</Text>
+              </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.timerButton, { backgroundColor: "red" }]} onPress={resetTimer}>
+              <Text style={styles.buttonText}>Stop/Reset</Text>
+              </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.timerButton, { backgroundColor: theme.colors.secondary }]} onPress={() => setTimerModalVisible(false)}>
+              <Text style={styles.buttonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
-      <Button title="Save Completed Workouts" onPress={saveToProgress} color={theme.colors.primary}/>
-      <Button title="Edit Splits page" onPress={() => router.push("/component/splits")} color={theme.colors.secondary} />
-      
+      <TouchableOpacity style={styles.saveButton} onPress={saveToProgress}>
+        <Text style={styles.saveButtonText}> Save Completed Workouts</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.editButton} onPress={() => router.push("/component/splits")}>
+        <Text style={styles.editButtonText}> Edit Splits Page</Text>
+      </TouchableOpacity>
       <WorkoutChatbot />
     </View>
   );
@@ -266,6 +412,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
     padding: theme.spacing.medium,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center", // centers vertically
+    alignItems: "center",     // centers horizontally
+    backgroundColor: "rgba(0,0,0,0.5)", // semi-transparent backdrop
+  },
+  modalContent: {
+    backgroundColor: theme.colors.cardBackground || "#fff",
+    padding: theme.spacing.large,
+    borderRadius: theme.borderRadius.medium,
+    alignItems: "center", // center content inside
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+    width: "90%",
   },
   buttonsContainer: {
     flexDirection: "row",
@@ -324,6 +488,122 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: theme.spacing.large,
   },
+  timerTitle: {
+  fontSize: 22,
+  fontWeight: "600",
+  marginBottom: 10,
+  color: theme.colors.primary,
+  textAlign: "center",
+},
+
+timerDisplay: {
+  fontSize: 48,
+  fontWeight: "bold",
+  color: "#333",
+  marginBottom: 20,
+},
+timerButtonsContainer: {
+  width: "100%",
+  marginTop: 20,
+  alignItems: "center",
+  gap: 12,
+},
+
+timerButton: {
+  width: "80%",
+  paddingVertical: 12,
+  borderRadius: 10,
+  alignItems: "center",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 3,
+  elevation: 2,
+},
+
+buttonText: {
+  color: "#fff",
+  fontWeight: "600",
+  fontSize: 16,
+},
+actionButton: {
+  paddingVertical: theme.spacing.small,
+  paddingHorizontal: theme.spacing.medium,
+  borderRadius: theme.borderRadius.small,
+  marginHorizontal: 5,
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: 100,
+},
+
+actionButtonText: {
+  color: theme.colors.buttonText,
+  fontSize: theme.fontSize.medium,
+  fontWeight: "bold",
+},
+calorieText: {
+  color: theme.colors.textSecondary,
+  fontSize: theme.fontSize.medium,
+  marginTop: 8,
+  fontWeight: "500",
+  textAlign: "center",
+},
+saveButton: {
+  backgroundColor: theme.colors.primary,
+  paddingVertical: theme.spacing.medium,
+  borderRadius: theme.borderRadius.medium,
+  alignItems: "center",
+  marginTop: theme.spacing.large,
+},
+
+saveButtonText: {
+  color: theme.colors.buttonText,
+  fontSize: theme.fontSize.medium,
+  fontWeight: "bold",
+},
+editButton: {
+  backgroundColor: theme.colors.secondary,
+  paddingVertical: theme.spacing.medium,
+  borderRadius: theme.borderRadius.medium,
+  alignItems: "center",
+  marginTop: theme.spacing.small,
+},
+editButtonText: {
+  color: theme.colors.buttonText,
+  fontSize: theme.fontSize.medium,
+  fontWeight: "bold",
+  color: theme.colors.text,
+},
+ratingContainer: {
+  backgroundColor: theme.colors.cardBackground,
+  padding: theme.spacing.medium,
+  borderRadius: theme.borderRadius.small,
+  marginTop: theme.spacing.small,
+},
+ratingButtons: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: 8,
+},
+
+ratingButton: {
+  backgroundColor: theme.colors.primary,
+  paddingVertical: 8,
+  paddingHorizontal: 14,
+  borderRadius: 10,
+  marginHorizontal: 4,
+  alignItems: "center",
+},
+ratingText: {
+  color: theme.colors.buttonText,
+  fontWeight: "bold",
+  fontSize: theme.fontSize.medium,
+},
+setsContainer: {
+  marginTop: theme.spacing.small,
+  marginBottom: theme.spacing.medium,
+  paddingHorizontal: theme.spacing.small,
+},
 });
 
 export default WorkoutsPage;
