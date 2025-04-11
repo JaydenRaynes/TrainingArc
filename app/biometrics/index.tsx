@@ -4,6 +4,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { useRouter } from "expo-router";
 import { Biometric } from "../models/biometricModel";
+import { theme } from "../utils/theme"
 
 const Biometrics = () => {
   const [age, setAge] = useState("");
@@ -110,37 +111,43 @@ export default Biometrics;
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: "#fff",
+    padding: theme.spacing.medium,
+    backgroundColor: theme.colors.background,
   },
   header: {
-    fontSize: 22,
+    fontSize: theme.fontSize.extraLarge,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: theme.spacing.medium,
+    color: theme.colors.text,
   },
   label: {
-    fontSize: 16,
-    marginTop: 15,
-    marginBottom: 5,
+    fontSize: theme.fontSize.medium,
+    marginTop: theme.spacing.medium,
+    marginBottom: theme.spacing.small,
+    color: theme.colors.text,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    padding: 10,
-    fontSize: 16,
-    backgroundColor: "#f9f9f9",
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.small,
+    padding: theme.spacing.small,
+    fontSize: theme.fontSize.medium,
+    backgroundColor: theme.colors.inputBackground,
+    color: theme.colors.text,
   },
   optionButton: {
-    padding: 12,
-    backgroundColor: "#eee",
-    borderRadius: 10,
-    marginBottom: 8,
+    padding: theme.spacing.small,
+    backgroundColor: theme.colors.cardBackground,
+    borderRadius: theme.borderRadius.small,
+    marginBottom: theme.spacing.extraSmall,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   selectedOption: {
-    backgroundColor: "#add8e6",
+    backgroundColor: theme.colors.primary,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: theme.fontSize.medium,
+    color: theme.colors.text,
   },
 });
