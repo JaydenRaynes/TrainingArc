@@ -20,7 +20,7 @@ const WorkoutsPage = () => {
   } | null>(null);
 
   const [today, setToday] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "mm-dd-yyyy"));
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [timerModalVisible, setTimerModalVisible] = useState(false);
   const [activeWorkout, setActiveWorkout] = useState<string | null>(null);
@@ -47,19 +47,21 @@ const WorkoutsPage = () => {
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const dayKey = getDayKey(date); // e.g. "Day 1"
-  
+        //const dayKey = getDayKey(date); // e.g. "Day 1"
+        const [year, month, day] = date.split('-');
+        const formattedDate = `${month}-${day}-${year}`;
+        //console.log("Date: ", formattedDate);
         const workoutDays = data.workout?.days || [];
-        const matchedDay = workoutDays.find((d: any) => d.day === dayKey);
+        const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
   
         if (matchedDay) {
           setWorkoutPlan({
-            split: dayKey,
+            split: formattedDate,
             workouts: matchedDay.exercises.map((ex: any) => ({
               name: ex.name,
-              sets: 3,
-              reps: 10,
-              weight: 0,
+              sets: ex.sets,
+              reps: ex.reps,
+              weight: ex.weight,
               completed: false,
             })),
           });
@@ -297,7 +299,7 @@ const WorkoutsPage = () => {
         renderItem={({ item, index: exerciseIndex }) => (
         <View style={styles.workoutItem}>
           <Text style={styles.headerText}>
-            {item.name} - {item.sets}x{item.reps} @ {item.weight} lbs
+            {item.name} - {item.sets}x{item.reps} @ {item.weight}
           </Text>
 
       <View style={styles.setsContainer}>
@@ -309,7 +311,7 @@ const WorkoutsPage = () => {
             <View key={key} style={{ marginBottom: 10 }}>
               <BouncyCheckbox
                 isChecked={!!completedSets[key]}
-                text={`Set ${setIndex + 1} - 1 x ${item.reps} @ ${item.weight} lbs`}
+                text={`Set ${setIndex + 1} - 1 x ${item.reps} @ ${item.weight}`}
                 textStyle={{
                 textDecorationLine: completedSets[key] ? "line-through" : "none",
                 color: "white", // make sure it's readable too
