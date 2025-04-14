@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal } from "react-native";
 // import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../Services/fetchUserData";
-import { fetchUserBiometrics, fetchUserGym } from "../Services/fetchUserData";
+import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
 //import { Preferences } from "../models/preferenceModel";
 import { Gym } from "../models/gymInfoModel";
 import { Biometric } from "../models/biometricModel";
@@ -66,7 +66,7 @@ type UserData = Biometric & Gym & Date;
 // };
 
 const GenerateWorkoutScreen: React.FC = () => {
-  const localIP = "http://138.47.134.175:5000";
+  const localIP = "http://192.168.1.207:5000";
   
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
