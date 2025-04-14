@@ -158,7 +158,7 @@ function TabLayout() {
           }}
         />
 
-        <Tabs.Screen
+        {/* <Tabs.Screen
           name="questionare"
           options={{
             title: 'Questionare',
@@ -170,7 +170,7 @@ function TabLayout() {
               </CopilotStep>
             ),
           }}
-        />
+        /> */}
 
         <Tabs.Screen
           name="profile"
