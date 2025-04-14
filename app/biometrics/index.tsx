@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, Button, StyleSheet
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { useRouter } from "expo-router";
+import { Biometric } from "../models/biometricModel";
 
 const Biometrics = () => {
   const [age, setAge] = useState("");
@@ -33,7 +34,7 @@ const Biometrics = () => {
     const user = auth.currentUser;
     if (!user) return;
 
-    const biometricsData = {
+    const biometricsData: Biometric = {
       age: parseInt(age),
       height,
       weight,
@@ -47,7 +48,7 @@ const Biometrics = () => {
 
     try {
       setLoading(true);
-      await setDoc(doc(db, "users", user.uid), biometricsData, { merge: true });
+      await setDoc(doc(db, "users", user.uid, "newBiometrics", "data"), biometricsData, { merge: true });
       router.replace("/(tabs)");
     } catch (error) {
       console.error("Error saving biometrics:", error);
