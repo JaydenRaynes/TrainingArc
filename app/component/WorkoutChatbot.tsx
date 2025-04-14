@@ -30,7 +30,7 @@ const WorkoutChatbot = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://192.168.0.109:5000/chat", {
+      const response = await fetch("http://192.168.1.207:5000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: newMessages }),
@@ -93,7 +93,7 @@ const WorkoutChatbot = () => {
 const styles = StyleSheet.create({
   chatButton: {
     position: "absolute",
-    bottom: 120,
+    bottom: 150,
     right: 20,
     backgroundColor: "#ffa500",
     padding: 16,

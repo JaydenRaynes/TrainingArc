@@ -11,6 +11,7 @@ app.use(bodyParser.json());
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const OPENAI_API_KEY = ""; // Remember to keep your API key safe!
+const APININJA_API_KEY = "F1MrXYbs75rYDmGS8V9GQw==nADb7j66vFLL1qmo";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -24,52 +25,44 @@ app.post("/generate-workout", async (req, res) => {
   try {
     console.log("Sending request to OpenAI with formatted data...");
 
-    // Dynamically construct user preferences
-    const formatPreferences = (prefObject) => {
-      return Object.keys(prefObject)
-        .filter((key) => prefObject[key])
-        .join(", ") || "None";
-    };
+    // // Dynamically construct user preferences
+    // const formatPreferences = (prefObject) => {
+    //   return Object.keys(prefObject)
+    //     .filter((key) => prefObject[key])
+    //     .join(", ") || "None";
+    // };
 
-    // Format conditions: Check if it's an array, else treat it as a string
-    const formatConditions = (conditions) => {
-      // If conditions is an array, join them into a comma-separated string
-      if (Array.isArray(conditions)) {
-        return conditions.length ? conditions.join(", ") : "None";
-      }
-      // If it's a string (like "none"), return it directly
-      return conditions || "None";
-    };
+    // // Format conditions: Check if it's an array, else treat it as a string
+    // const formatConditions = (conditions) => {
+    //   // If conditions is an array, join them into a comma-separated string
+    //   if (Array.isArray(conditions)) {
+    //     return conditions.length ? conditions.join(", ") : "None";
+    //   }
+    //   // If it's a string (like "none"), return it directly
+    //   return conditions || "None";
+    // };
 
     const formattedUserData = `
     📌 **User Biometrics:**
     - **Age:** ${userData.age || "N/A"}
-    - **Gender:** ${userData.gender || "N/A"}
     - **Height:** ${userData.height ? `${userData.height} cm` : "N/A"}
     - **Weight:** ${userData.weight ? `${userData.weight} kg` : "N/A"}
-    - **Goal:** ${userData.goal || "N/A"}
+    - **Goal:** ${userData.fitnessGoal || "N/A"}
     - **Activity Level:** ${userData.activityLevel || "N/A"}
+    - **Start Date:** ${userData.startDate || "N/A"} ** formatted as MM-DD-YYYY **
 
     📌 **User Preferences:**
-    - **Fitness Level:** ${userData.fitnessLevel || "N/A"}
-    - **Workout Duration:** ${userData.workoutDuration || "N/A"}
-    - **Workout Frequency:** ${userData.workoutFrequency || "N/A"}
-    - **Preferred Workout Type:** ${formatPreferences(userData.preferredWorkoutType)}
-    - **Cardio Preferences:** ${formatPreferences(userData.cardioPreferences)}
-    - **Equipment Preference:** ${formatPreferences(userData.equipmentPreference)}
-    - **Workout Environment:** ${formatPreferences(userData.workoutEnvironment)}
-    - **Workout Split Preference:** ${formatPreferences(userData.workoutSplit)}
-    - **Time of Day Preference:** ${formatPreferences(userData.timeOfDayPreference)}
-    - **Intensity Preference:** ${userData.intensityPreference || "N/A"}
-    - **Focus Areas:** ${userData.preferences?.focusAreas?.join(", ") || "None"}
+    - **Experience Level:** ${userData.experienceLevel || "N/A"}
+    - **Workout Frequency in times per week:** ${userData.timesPerWeek || "N/A"} ** This will dictate how many rest days are in the workout ie days with no exercises **
+        Working out 1-2 times a week will require either 1 day with exercises and 6 rest days or 2 days with exercises and 5 rest days.
+        Working out 3-4 times a week will require either 3 day with exercises and 4 rest days or 4 days with exercises and 3 rest days.
+        Working out 5+ times a week will require at least 5 days with exercise, and the remaining number of days as rest days
+    - **Workout Location:** ${userData.workoutPreference || "home"}
 
+       **IMPORTANT NOTE (Please make sure that any movements/exercises don't interfere with the following):**
+    - **Limitations:** ${userData.limitations || "none"} 
 
-       **IMPORTANT NOTES (Please make sure that any movements/exercises don't interfere with the following):**
-    - **Medical Conditions:** ${formatConditions(userData.conditions)} 
-    - **Disabilities:** ${userData.disabilities?.length ? userData.disabilities : "None"}
-    - **Injuries:** ${userData.injuries?.length ? userData.injuries.join : "None"}
-
-    📌 **Gym Preferences (if applicable):**
+    📌 **Gym Preferences if Workout Location is set to gym (otherwise, ignore):**
     ${userData.gym ? `- **Nearby Gyms:** ${userData.gym.name?.join(", ")}\n- **Equipment Available:** ${userData.gym.equipment?.join(", ")}` : "User has no gym preferences."}
 
     🔹 **Format Instructions:**
@@ -77,20 +70,23 @@ app.post("/generate-workout", async (req, res) => {
         export interface Exercise {
           name: string; // Name of the exercise
           muscle: string; // Target muscle group
-          equipment: string;  // Equipment needed to do it (default to "body_only" if no equipment)
+          equipment: string;  // Equipment needed to do it (default to "none" if no equipment)
+          weight: number;  // Recommended weight for the user based off of experience and preferences (provide a number)
+          reps: number;  // Recommended number of repetitions for the user
+          sets: number;  // Recommended number of sets for the user
           instructions?: string;  // Any optional notes
         }
     - Format each workout for the day to fit the following structure:
         export interface WorkoutDay {
-          day: string;  // Start with "Day 1"
+          day: string;  // Start with the start date given above, where it is formatted as MM-DD-YYYY
           exercises: Exercise[]; // Add the exercises for the respective days
         }
     - Format the entire split to fit the following structure:
         export interface Split {
           days: WorkoutDay[]; // Group the days into one split
         }
-    - Respond with the split already in JSON format, without any additional text or explanations
-    - Generate a **7-day workout plan** based on the user's preferences.
+    - Respond with the split already in JSON format ** DO NOT INCLUDE any additional text, explanations, or comments **
+    - Generate a **7-day workout plan** based off of what the client wants or perfers. Rest days will still count as a day.
     `;
 
 
@@ -107,7 +103,7 @@ app.post("/generate-workout", async (req, res) => {
           { role: "user", content: formattedUserData },
         ],
         temperature: 0.4,
-        max_tokens: 1500,
+        max_tokens: 3500,
       },
       {
         headers: {
@@ -119,6 +115,7 @@ app.post("/generate-workout", async (req, res) => {
     console.log("OpenAI Raw Response:", response.data); // ✅ Log entire response
 
     const aiMessage = response.data?.choices?.[0]?.message?.content;
+    console.log(aiMessage);
   
     if (!aiMessage) {
       throw new Error("OpenAI did not return a valid workout plan.");
@@ -171,3 +168,238 @@ app.post("/chat", async (req, res) => {
     res.status(500).json({ error: "Chatbot error", details: error.message });
   }
 });
+
+app.post("/generate-exercise/:exercise", async (req, res) => {
+  const exercise = req.params.exercise;
+  const userData = req.body;
+
+  if (!userData || !exercise) {
+    return res.status(400).json({ error: "Missing user data or exercise name/type" });
+  }
+
+  try {
+    console.log("Sending request to OpenAI with formatted data...");
+
+    // // Dynamically construct user preferences
+    // const formatPreferences = (prefObject) => {
+    //   return Object.keys(prefObject)
+    //     .filter((key) => prefObject[key])
+    //     .join(", ") || "None";
+    // };
+
+    // // Format conditions: Check if it's an array, else treat it as a string
+    // const formatConditions = (conditions) => {
+    //   // If conditions is an array, join them into a comma-separated string
+    //   if (Array.isArray(conditions)) {
+    //     return conditions.length ? conditions.join(", ") : "None";
+    //   }
+    //   // If it's a string (like "none"), return it directly
+    //   return conditions || "None";
+    // };
+
+    const formattedUserData = `
+    📌 **User Biometrics:**
+    - **Age:** ${userData.age || "N/A"}
+    - **Height:** ${userData.height ? `${userData.height} cm` : "N/A"}
+    - **Weight:** ${userData.weight ? `${userData.weight} kg` : "N/A"}
+    - **Goal:** ${userData.fitnessGoal || "N/A"}
+    - **Activity Level:** ${userData.activityLevel || "N/A"}
+
+    📌 **User Preferences:**
+    - **Experience Level:** ${userData.experienceLevel || "N/A"}
+    - **Workout Location:** ${userData.workoutPreference || "home"}
+
+       **IMPORTANT NOTE (Please make sure that any movements/exercises don't interfere with the following):**
+    - **Limitations:** ${userData.limitations || "none"} 
+
+    📌 **Gym Preferences if Workout Location is set to gym (otherwise, ignore):**
+    ${userData.gym ? `- **Nearby Gyms:** ${userData.gym.name?.join(", ")}\n- **Equipment Available:** ${userData.gym.equipment?.join(", ")}` : "User has no gym preferences."}
+
+    🔹 **Format Instructions:**
+    - Format one exercise with the name ${exercise} or of type ${exercise} to fit the following structure:
+        export interface Exercise {
+          name: string; // Name of the exercise
+          muscle: string; // Target muscle group
+          equipment: string;  // Equipment needed to do it (default to "none" if no equipment)
+          weight: number;  // Recommended weight for the user based off of experience and preferences (provide a number)
+          reps: number;  // Recommended number of repetitions for the user
+          sets: number;  // Recommended number of sets for the user ()
+          instructions?: string;  // Any optional notes
+        }
+    - Respond with the exercise already in JSON format, without any additional text or explanations
+    - Generate ONE exercise based on the user's preferences.
+    `;
+
+
+    const response = await axios.post(
+      OPENAI_URL,
+      {
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a fitness coach who provides personalized exercises based on user details.",
+          },
+          { role: "user", content: formattedUserData },
+        ],
+        temperature: 0.4,
+        max_tokens: 3500,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    console.log("OpenAI Raw Response:", response.data); // ✅ Log entire response
+
+    const aiMessage = response.data?.choices?.[0]?.message?.content;
+  
+    if (!aiMessage) {
+      throw new Error("OpenAI did not return a valid workout plan.");
+    }
+    return res.json({ workoutPlan: aiMessage });
+  } catch (error) {
+    console.error(
+      "OpenAI API Error:",
+      error.response ? error.response.data : error.message
+    );
+    return res.status(500).json({
+      error: "Failed to generate AI workout",
+      details: error.response ? error.response.data : error.message,
+    });
+  }
+});
+
+app.post("/find-exercises", async (req, res) => {
+  const { muscle, name } = req.body;
+
+  if (!muscle && !name) {
+    return res.status(400).json({ error: "Please provide a muscle or name to search." });
+  }
+
+  try {
+    const response = await axios.get("https://api.api-ninjas.com/v1/exercises", {
+      params: {
+        muscle, // e.g. "biceps"
+        name,   // e.g. "curl"
+      },
+      headers: {
+        "X-Api-Key": APININJA_API_KEY,
+      },
+    });
+
+    return res.json({ exercises: response.data });
+  } catch (error) {
+    console.error("API Ninja Error:", error.response?.data || error.message);
+    return res.status(500).json({
+      error: "Failed to fetch exercises",
+      details: error.response?.data || error.message,
+    });
+  }
+});
+
+// const formattedUserData = `
+// 📌 **User Biometrics:**
+// - **Age:** ${userData.age || "N/A"}
+// - **Gender:** ${userData.gender || "N/A"}
+// - **Height:** ${userData.height ? `${userData.height} cm` : "N/A"}
+// - **Weight:** ${userData.weight ? `${userData.weight} kg` : "N/A"}
+// - **Goal:** ${userData.goal || "N/A"}
+// - **Activity Level:** ${userData.activityLevel || "N/A"}
+// - **Start Date:** ${userData.startDate || "N/A"}
+
+// 📌 **User Preferences:**
+// - **Fitness Level:** ${userData.fitnessLevel || "N/A"}
+// - **Workout Duration:** ${userData.workoutDuration || "N/A"}
+// - **Workout Frequency:** ${userData.workoutFrequency || "N/A"}
+// - **Preferred Workout Type:** ${formatPreferences(userData.preferredWorkoutType)}
+// - **Cardio Preferences:** ${formatPreferences(userData.cardioPreferences)}
+// - **Equipment Preference:** ${formatPreferences(userData.equipmentPreference)}
+// - **Workout Environment:** ${formatPreferences(userData.workoutEnvironment)}
+// - **Workout Split Preference:** ${formatPreferences(userData.workoutSplit)}
+// - **Time of Day Preference:** ${formatPreferences(userData.timeOfDayPreference)}
+// - **Intensity Preference:** ${userData.intensityPreference || "N/A"}
+// - **Focus Areas:** ${userData.preferences?.focusAreas?.join(", ") || "None"}
+
+
+//    **IMPORTANT NOTES (Please make sure that any movements/exercises don't interfere with the following):**
+// - **Medical Conditions:** ${formatConditions(userData.conditions)} 
+// - **Disabilities:** ${userData.disabilities?.length ? userData.disabilities : "None"}
+// - **Injuries:** ${userData.injuries?.length ? userData.injuries.join : "None"}
+
+// 📌 **Gym Preferences (if applicable):**
+// ${userData.gym ? `- **Nearby Gyms:** ${userData.gym.name?.join(", ")}\n- **Equipment Available:** ${userData.gym.equipment?.join(", ")}` : "User has no gym preferences."}
+
+// 🔹 **Format Instructions:**
+// - Format each individual exercise to fit the following structure:
+//     export interface Exercise {
+//       name: string; // Name of the exercise
+//       muscle: string; // Target muscle group
+//       equipment: string;  // Equipment needed to do it (default to "none" if no equipment)
+//       weight: string;  // Recommended weight for the user based off of experience and preferences (provide weight in pounds, bodyweight if no equipment)
+//       reps: string;  // Recommended number of repetitions for the user
+//       sets: string;  // Recommended number of sets for the user
+//       instructions?: string;  // Any optional notes
+//     }
+// - Format each workout for the day to fit the following structure:
+//     export interface WorkoutDay {
+//       day: string;  // Start with the start date given above, where it is formatted as MM-DD-YYYY
+//       exercises: Exercise[]; // Add the exercises for the respective days
+//     }
+// - Format the entire split to fit the following structure:
+//     export interface Split {
+//       days: WorkoutDay[]; // Group the days into one split
+//     }
+// - Respond with the split already in JSON format, without any additional text or explanations
+// - Generate a **7-day workout plan** based on the user's preferences.
+// `;
+
+// const formattedUserData = `
+// 📌 **User Biometrics:**
+// - **Age:** ${userData.age || "N/A"}
+// - **Gender:** ${userData.gender || "N/A"}
+// - **Height:** ${userData.height ? `${userData.height} cm` : "N/A"}
+// - **Weight:** ${userData.weight ? `${userData.weight} kg` : "N/A"}
+// - **Goal:** ${userData.goal || "N/A"}
+// - **Activity Level:** ${userData.activityLevel || "N/A"}
+// - **Start Date:** ${userData.startDate || "N/A"}
+
+// 📌 **User Preferences:**
+// - **Fitness Level:** ${userData.fitnessLevel || "N/A"}
+// - **Workout Duration:** ${userData.workoutDuration || "N/A"}
+// - **Workout Frequency:** ${userData.workoutFrequency || "N/A"}
+// - **Preferred Workout Type:** ${formatPreferences(userData.preferredWorkoutType)}
+// - **Cardio Preferences:** ${formatPreferences(userData.cardioPreferences)}
+// - **Equipment Preference:** ${formatPreferences(userData.equipmentPreference)}
+// - **Workout Environment:** ${formatPreferences(userData.workoutEnvironment)}
+// - **Workout Split Preference:** ${formatPreferences(userData.workoutSplit)}
+// - **Time of Day Preference:** ${formatPreferences(userData.timeOfDayPreference)}
+// - **Intensity Preference:** ${userData.intensityPreference || "N/A"}
+// - **Focus Areas:** ${userData.preferences?.focusAreas?.join(", ") || "None"}
+
+
+//    **IMPORTANT NOTES (Please make sure that any movements/exercises don't interfere with the following):**
+// - **Medical Conditions:** ${formatConditions(userData.conditions)} 
+// - **Disabilities:** ${userData.disabilities?.length ? userData.disabilities : "None"}
+// - **Injuries:** ${userData.injuries?.length ? userData.injuries.join : "None"}
+
+// 📌 **Gym Preferences (if applicable):**
+// ${userData.gym ? `- **Nearby Gyms:** ${userData.gym.name?.join(", ")}\n- **Equipment Available:** ${userData.gym.equipment?.join(", ")}` : "User has no gym preferences."}
+
+// 🔹 **Format Instructions:**
+// - Format one exercise with the name ${exercise} or of type ${exercise} to fit the following structure:
+//     export interface Exercise {
+//       name: string; // Name of the exercise
+//       muscle: string; // Target muscle group
+//       equipment: string;  // Equipment needed to do it (default to "none" if no equipment)
+//       weight: string;  // Recommended weight for the user based off of experience and preferences (provide weight in pounds, bodyweight if no equipment)
+//       reps: string;  // Recommended number of repetitions for the user
+//       sets: string;  // Recommended number of sets for the user
+//       instructions?: string;  // Any optional notes
+//     }
+// - Respond with the exercise already in JSON format, without any additional text or explanations
+// - Generate ONE workout based on the user's preferences.
+// `;
