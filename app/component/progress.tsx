@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, StyleSheet, Text, Pressable, View, ScrollView, TouchableWithoutFeedback, Dimensions } from 'react-native';
+import { Modal, StyleSheet, Text, Pressable, View, ScrollView, TouchableWithoutFeedback, Dimensions, TouchableOpacity} from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { LineChart } from 'react-native-chart-kit';
 import { theme } from "../utils/theme"
+import { Stack } from 'expo-router';
+import { useRouter } from "expo-router";
 
 const ProgressPage = () => {
   const [infoVisible, setInfoVisible] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [workouts, setWorkouts] = useState([]);
   const [exerciseHistory, setExerciseHistory] = useState([]);
+  const router = useRouter();
 
   useEffect(() => {
     const userID = auth.currentUser?.uid;
@@ -118,8 +121,13 @@ const ProgressPage = () => {
   
 
   return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1 }}>
+      <TouchableOpacity onPress={() => router.back()} style={{ margin: 10 }}>
+        <Text style={{ color: "Black", fontSize: 18 }}>←</Text>
+      </TouchableOpacity>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Text style={styles.header}>Workout Progress</Text>
           {workouts.length > 0 ? (
@@ -185,6 +193,7 @@ const ProgressPage = () => {
         </Modal>
       </SafeAreaView>
     </SafeAreaProvider>
+    </>
   );
 };
 

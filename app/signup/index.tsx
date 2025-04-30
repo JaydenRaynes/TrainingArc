@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator, Image } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform } from "react-native";
 import { useRouter } from "expo-router";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
@@ -31,7 +31,9 @@ export default function Signup() {
             isFirstLogin: true,
             email: user.email,
           });
-          Alert.alert("Success", "Account created successfully!");
+
+          await sendEmailVerification(user);
+          Alert.alert("Verification Email Sent", "Please check your email to verify your account before you login.");
           router.push("/login");
         })
         .catch((error) => {
@@ -48,6 +50,14 @@ export default function Signup() {
 
   return (
     <LinearGradient colors={["#0D0D0D", "#191a2f"]} style={styles.background}>
+      <KeyboardAvoidingView
+              style={{ flex: 1 }} 
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+            >
+              <ScrollView
+                contentContainerStyle={{flexGrow: 1, justifyContent: 'center'}}
+                keyboardShouldPersistTaps="handled"
+              >
       <View style={styles.container}>
         {/* Animated Logo */}
         <Animated.Image
@@ -110,6 +120,8 @@ export default function Signup() {
           Already have an account? <Text style={{ color: "#FFA500" }}>Login</Text>
         </Animated.Text>
       </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }
