@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal } from "react-native";
-// import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../Services/fetchUserData";
-import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
-//import { Preferences } from "../models/preferenceModel";
+import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from "react-native";
+import { fetchUserBiometrics, fetchUserGym } from "../Services/fetchUserData";
 import { Gym } from "../models/gymInfoModel";
 import { Biometric } from "../models/biometricModel";
 import { Split, WorkoutDay } from "../models/splitModel";
@@ -11,10 +9,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { auth, db } from "../firebaseConfig";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { Picker } from "@react-native-picker/picker";
+import { Calendar } from "react-native-calendars";
+import { format } from "date-fns";
+import { theme } from "../utils/theme";
+import { useFocusEffect } from '@react-navigation/native';
 
-type Date = { startDate: string };
-// type UserData = Preferences & Biometric & Gym & Date;
-type UserData = Biometric & Gym & Date;
+type UserData = Biometric & Gym;
 
 // const normalizePreferences = (preferences: Preferences): Preferences => {
 //   return {
@@ -66,7 +66,7 @@ type UserData = Biometric & Gym & Date;
 // };
 
 const GenerateWorkoutScreen: React.FC = () => {
-  const localIP = "http://192.168.1.207:5000";
+  const localIP = "http://:5000";
   
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -82,10 +82,13 @@ const GenerateWorkoutScreen: React.FC = () => {
   const [weight, setWeight] = useState('');
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "MM-dd-yyyy"));
   const [calendarVisible, setCalendarVisible] = useState(false);
+<<<<<<< HEAD
   const [isSaveWorkoutVisible, setSavedModalVisible] = useState(false);
   const [workoutName, setWorkoutName] = useState('');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
+=======
+>>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
 
   useFocusEffect(
     React.useCallback(() => {
@@ -230,6 +233,7 @@ const GenerateWorkoutScreen: React.FC = () => {
     const muscleGroups = ['Chest', 'Back', 'Legs', 'Shoulders', 'Abs', 'Arms'];
     if (!workout) return <Text>No workout plan available.</Text>;
   
+<<<<<<< HEAD
     return (      <View>
         {Array.isArray(workout.days) && workout.days.length > 0 ? (
           workout.days.map((day, dayIndex) => (
@@ -241,6 +245,19 @@ const GenerateWorkoutScreen: React.FC = () => {
                 day.exercises.map((exercise, exIndex) => (
                   <View key={exIndex} style={styles.exerciseContainer}>
                     <Text style={styles.exerciseName}>{exercise.name}</Text>
+=======
+    return (
+      Array.isArray(workout.days) && workout.days.length > 0 ? (
+        workout.days.map((day, dayIndex) => (
+          <View key={dayIndex} style={styles.workoutDay}>
+            <Text style={styles.dayTitle}>{day.day}</Text>
+  
+            {/* Check if day.exercises is an array before mapping */}
+            {Array.isArray(day.exercises) && day.exercises.length > 0 ? (
+              day.exercises.map((exercise, exIndex) => (
+                <View key={exIndex} style={styles.exerciseContainer}>
+                  <Text style={styles.exerciseName}>{exercise.name}</Text>
+>>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
 
                     <View style={styles.muscleInputContainer}>
                       <Text style={styles.muscleLabel}>Muscle Group: </Text>
@@ -252,6 +269,7 @@ const GenerateWorkoutScreen: React.FC = () => {
                       <Text style={styles.equipmentInfo}>{exercise.equipment}</Text>
                     </View>
 
+<<<<<<< HEAD
                     <View style={styles.equipmentInputContainer}>
                       <Text style={styles.equipmentLabel}>Weight: </Text>
                       <Text style={styles.equipmentInfo}>
@@ -262,6 +280,16 @@ const GenerateWorkoutScreen: React.FC = () => {
                               : "Error"}
                       </Text>
                     </View>
+=======
+                  <View style={styles.equipmentInputContainer}>
+                    <Text style={styles.equipmentLabel}>Weight: </Text>
+                    <Text style={styles.equipmentInfo}>
+                      {exercise.weight !== undefined && parseFloat(exercise.weight) === 0 
+                        ? "Body Weight" 
+                        : exercise.weight || "Error"}
+                    </Text>
+                  </View>
+>>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
 
                     <View style={styles.equipmentInputContainer}>
                       <Text style={styles.equipmentLabel}>Repetitions: </Text>
@@ -286,7 +314,7 @@ const GenerateWorkoutScreen: React.FC = () => {
                       onRequestClose={() => setEditModalVisible(false)} // for Android back button
                     >
                       <View style={styles.modalOverlay}>
-                        <View style={styles.modalContainer}>
+                        <View style={styles.editModalContainer}>
                           <Text>Edit Exercise</Text>
                           <View>
                             <Text>Weight:</Text>
@@ -369,23 +397,14 @@ const GenerateWorkoutScreen: React.FC = () => {
                 onRequestClose={() => setAddModalVisible(false)} // for Android back button
               >
                 <View style={styles.modalOverlay}>
-                  <View style={styles.modalContainer}>
-                    <ScrollView contentContainerStyle={styles.scrollContent}>
-                      <Text style={styles.modalTitle}>Select Muscle Group</Text>
+                  <View style={styles.editModalContainer}>
+                    <Text style={styles.modalTitle}>Add a New Exercise</Text>
 
-                      <Picker
-                        selectedValue={selectedMuscleGroup}
-                        onValueChange={(itemValue) => setSelectedMuscleGroup(itemValue)}
-                        style={{ height: 50, width: '100%' }}
-                      >
-                        <Picker.Item label="Chest" value="chest" />
-                        <Picker.Item label="Back" value="back" />
-                        <Picker.Item label="Legs" value="legs" />
-                        <Picker.Item label="Shoulders" value="shoulder" />
-                        <Picker.Item label="Abs" value="abs" />
-                        <Picker.Item label="Arms" value="arms" />
-                      </Picker>
+                    <TouchableOpacity onPress={() => generateExercise(selectedMuscleGroup)}>
+                      <Text>Generate Exercise for Selected Muscle Group</Text>
+                    </TouchableOpacity>
 
+<<<<<<< HEAD
                 <TouchableOpacity onPress={() => generateExercise(selectedMuscleGroup)}>
                   <Text>Generate Exercise for Selected Muscle Group</Text>
                 </TouchableOpacity>
@@ -439,14 +458,64 @@ const GenerateWorkoutScreen: React.FC = () => {
                 >
                   <Text>Create New Exercise</Text>
                 </TouchableOpacity>
+=======
 
-                      <TouchableOpacity
-                        onPress={() => setAddModalVisible(false)}
-                        style={styles.closeButton}
-                      >
-                        <Text>Close</Text>
-                      </TouchableOpacity>
-                    </ScrollView>
+                    <FlatList
+                      key={'muscle-group-2-columns'}
+                      data={muscleGroups}
+                      keyExtractor={(item) => item}
+                      numColumns={2}
+                      contentContainerStyle={{ paddingBottom: 20 }}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={{
+                            flex: 1,
+                            margin: 8,
+                            padding: 15,
+                            paddingVertical: 12,
+                            borderRadius: 8,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: 10,
+                            backgroundColor: selectedMuscleGroup === item.toLowerCase() ? '#ddd' : '#fff',
+                            borderWidth: 1,
+                            borderColor: '#ccc',
+                          }}
+                          onPress={() => setSelectedMuscleGroup(item.toLowerCase())}
+                        >
+                          <Text style={{ fontSize: 16, textAlign: 'center' }}>{item}</Text>
+                        </TouchableOpacity>
+                      )}
+                    />
+>>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
+
+                    <TouchableOpacity
+                      onPress={() => generateExercise(selectedMuscleGroup)}
+                      style={styles.saveButton}
+                    >
+                      <Text>Create New Exercise</Text>
+                    </TouchableOpacity>
+
+                    <Text>Or Enter Exercise Name</Text>
+                    <TextInput
+                      value={exerciseName}
+                      onChangeText={setExerciseName}
+                      placeholder="Type exercise name"
+                      style={styles.input}
+                    />
+                    <TouchableOpacity
+                      onPress={() => generateExercise(exerciseName)}
+                      style={styles.saveButton}
+                    >
+                      <Text>Create New Exercise</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => setAddModalVisible(false)}
+                      style={styles.closeButton}
+                    >
+                      <Text>Close</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               </Modal>
@@ -564,7 +633,11 @@ return (
         >
           {/* Calendar Modal */}
           <Modal visible={calendarVisible} transparent={true} animationType="slide">
+<<<<<<< HEAD
             <View style={styles.modalContainer}>
+=======
+            <View style={styles.calenderModalContainer}>
+>>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
               <View style={styles.calenderModalContent}>
                 <Text style={styles.label}>Please select your preferred start day:</Text>
                 <Calendar
@@ -602,7 +675,11 @@ return (
                     alignItems: "center",
                   }}
                 >
+<<<<<<< HEAD
                   <Text style={{ color: "#FFA500", fontWeight: "bold", fontSize: theme.fontSize.medium }}>
+=======
+                  <Text style={{ color: theme.colors.buttonText, fontWeight: "bold", fontSize: theme.fontSize.medium }}>
+>>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
                     Close
                   </Text>
                 </TouchableOpacity>
@@ -943,6 +1020,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   },
+<<<<<<< HEAD
 
   addGenButton: {
     backgroundColor: "#32CD32",
@@ -950,6 +1028,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   }
+=======
+>>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
   
 });
 
