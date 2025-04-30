@@ -4,6 +4,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { useRouter } from "expo-router";
 import { Biometric } from "../models/biometricModel";
+import { theme } from "../utils/theme"
 
 const Biometrics = () => {
   const [age, setAge] = useState("");
@@ -14,6 +15,8 @@ const Biometrics = () => {
   const [experienceLevel, setExperienceLevel] = useState("");
   const [limitations, setLimitations] = useState("");
   const [workoutPreference, setWorkoutPreference] = useState("");
+  const [equipmentPreference, setEquipmentPreference] = useState<string[]>([]);
+  const [daysPreference, setDaysPreference] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(false);
   const auth = getAuth();
@@ -24,6 +27,8 @@ const Biometrics = () => {
   const levels = ["Beginner", "Intermediate", "Advanced"];
   const locations = ["Gym", "Home", "No preference"];
   const timesOptions = ["1-2", "3-4", "5+"]; // The new multiple-choice options for workouts per week
+  const equipmentChoice = ["Barbell", "Dumbell", "Machine", "Body weight", "Any"];
+  const daysChoice = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
 
   const handleSubmit = async () => {
     if (!age || !height || !weight || !timesPerWeek || !fitnessGoal || !experienceLevel || !workoutPreference) {
@@ -39,10 +44,12 @@ const Biometrics = () => {
       height,
       weight,
       timesPerWeek, // Storing the selected multiple-choice value
+      daysPreference,
       fitnessGoal,
       experienceLevel,
       limitations,
       workoutPreference,
+      equipmentPreference,
       biometricsComplete: true,
     };
 
@@ -68,6 +75,32 @@ const Biometrics = () => {
       </TouchableOpacity>
     ));
 
+    const renderMultiSelectButtons = (options: string[], selected: string[], onSelect: (options: string[]) => void) => {
+      return options.map((option) => {
+        const isSelected = selected.includes(option);
+    
+        const handlePress = () => {
+          if (isSelected) {
+            // Remove if already selected
+            onSelect(selected.filter(item => item !== option));
+          } else {
+            // Add if not selected
+            onSelect([...selected, option]);
+          }
+        };
+    
+        return (
+          <TouchableOpacity
+            key={option}
+            style={[styles.optionButton, isSelected && styles.selectedOption]}
+            onPress={handlePress}
+          >
+            <Text style={styles.optionText}>{option}</Text>
+          </TouchableOpacity>
+        );
+      });
+    };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.header}>Your Fitness Profile</Text>
@@ -75,14 +108,17 @@ const Biometrics = () => {
       <Text style={styles.label}>Age</Text>
       <TextInput style={styles.input} keyboardType="numeric" value={age} onChangeText={setAge} />
 
-      <Text style={styles.label}>Height (in cm or ft/in)</Text>
-      <TextInput style={styles.input} value={height} onChangeText={setHeight} />
+      <Text style={styles.label}>Height (in ft/in)</Text>
+      <TextInput style={styles.input} keyboardType="numeric" value={height} onChangeText={setHeight} />
 
-      <Text style={styles.label}>Weight (in lbs or kg)</Text>
-      <TextInput style={styles.input} value={weight} onChangeText={setWeight} />
+      <Text style={styles.label}>Weight (in lbs)</Text>
+      <TextInput style={styles.input} keyboardType="numeric" value={weight} onChangeText={setWeight} />
 
       <Text style={styles.label}>How many times a week do you want to workout?</Text>
       {renderOptionButtons(timesOptions, timesPerWeek, setTimesPerWeek)} {/* Render the multiple-choice options */}
+
+      <Text style={styles.label}>What days of the week can you workout?</Text>
+      {renderMultiSelectButtons(daysChoice, daysPreference, setDaysPreference)}
 
       <Text style={styles.label}>Fitness Goal</Text>
       {renderOptionButtons(goals, fitnessGoal, setFitnessGoal)}
@@ -90,7 +126,7 @@ const Biometrics = () => {
       <Text style={styles.label}>Current Experience Level</Text>
       {renderOptionButtons(levels, experienceLevel, setExperienceLevel)}
 
-      <Text style={styles.label}>Any limitations for working out?</Text>
+      <Text style={styles.label}>Any limitations for working out? Ie. physical disabilites, injuries, medication, etc.</Text>
       <TextInput
           style={[styles.input, { height: 80 }]}  // Ensure the height is large enough for multiline input
           multiline={true}  // Allow multiple lines
@@ -101,6 +137,9 @@ const Biometrics = () => {
       <Text style={styles.label}>Preferred Workout Location</Text>
       {renderOptionButtons(locations, workoutPreference, setWorkoutPreference)}
 
+      <Text style={styles.label}>Preferred Equipment</Text>
+      {renderMultiSelectButtons(equipmentChoice, equipmentPreference, setEquipmentPreference)}
+
       <Button title={loading ? "Submitting..." : "Submit"} onPress={handleSubmit} disabled={loading} />
     </ScrollView>
   );
@@ -110,37 +149,43 @@ export default Biometrics;
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: "#fff",
+    padding: theme.spacing.medium,
+    backgroundColor: theme.colors.background,
   },
   header: {
-    fontSize: 22,
+    fontSize: theme.fontSize.extraLarge,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: theme.spacing.medium,
+    color: theme.colors.text,
   },
   label: {
-    fontSize: 16,
-    marginTop: 15,
-    marginBottom: 5,
+    fontSize: theme.fontSize.medium,
+    marginTop: theme.spacing.medium,
+    marginBottom: theme.spacing.small,
+    color: theme.colors.text,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    padding: 10,
-    fontSize: 16,
-    backgroundColor: "#f9f9f9",
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.small,
+    padding: theme.spacing.small,
+    fontSize: theme.fontSize.medium,
+    backgroundColor: theme.colors.inputBackground,
+    color: theme.colors.text,
   },
   optionButton: {
-    padding: 12,
-    backgroundColor: "#eee",
-    borderRadius: 10,
-    marginBottom: 8,
+    padding: theme.spacing.small,
+    backgroundColor: theme.colors.cardBackground,
+    borderRadius: theme.borderRadius.small,
+    marginBottom: theme.spacing.extraSmall,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   selectedOption: {
-    backgroundColor: "#add8e6",
+    backgroundColor: theme.colors.primary,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: theme.fontSize.medium,
+    color: theme.colors.text,
   },
 });
