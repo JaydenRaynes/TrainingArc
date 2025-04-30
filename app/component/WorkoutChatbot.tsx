@@ -1,8 +1,6 @@
-// WorkoutChatbot.tsx
 import React, { useState } from "react";
 import {
   View,
-  Modal,
   Text,
   TextInput,
   TouchableOpacity,
@@ -13,7 +11,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { theme } from "../utils/theme";
 
 const WorkoutChatbot = () => {
   const [chatVisible, setChatVisible] = useState(false);
@@ -46,17 +43,24 @@ const WorkoutChatbot = () => {
   };
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       {/* Floating Button */}
-      <TouchableOpacity style={styles.chatButton} onPress={() => setChatVisible(true)}>
+      <TouchableOpacity style={styles.chatButton} onPress={() => setChatVisible(!chatVisible)}>
         <Feather name="message-circle" size={28} color="white" />
       </TouchableOpacity>
 
-      {/* Chat Modal */}
-      <Modal visible={chatVisible} animationType="slide" transparent>
-        <View style={styles.chatContainer}>
+      {/* Chat Popup Box */}
+      {chatVisible && (
+        <KeyboardAvoidingView
+          style={styles.popupContainer}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 80}
+        >
           <View style={styles.chatBox}>
-            <ScrollView contentContainerStyle={styles.chatMessages}>
+            <ScrollView
+              contentContainerStyle={styles.chatMessages}
+              keyboardShouldPersistTaps="handled"
+            >
               {messages.map((msg, index) => (
                 <Text key={index} style={msg.role === "user" ? styles.userMsg : styles.botMsg}>
                   {msg.content}
@@ -65,35 +69,29 @@ const WorkoutChatbot = () => {
               {loading && <ActivityIndicator color="white" />}
             </ScrollView>
 
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
-              <View style={styles.chatInputArea}>
-                <TextInput
-                  style={styles.chatInput}
-                  value={chatInput}
-                  onChangeText={setChatInput}
-                  placeholder="Ask a workout question..."
-                  placeholderTextColor="#aaa"
-                />
-                <TouchableOpacity onPress={sendMessage} disabled={loading || !chatInput.trim()}>
-                  <Feather name="send" size={24} color="white" />
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity onPress={() => setChatVisible(false)}>
-                <Text style={{ color: "white", textAlign: "center", marginTop: 10 }}>Close</Text>
+            <View style={styles.chatInputArea}>
+              <TextInput
+                style={styles.chatInput}
+                value={chatInput}
+                onChangeText={setChatInput}
+                placeholder="Ask a workout question..."
+                placeholderTextColor="#aaa"
+              />
+              <TouchableOpacity onPress={sendMessage} disabled={loading || !chatInput.trim()}>
+                <Feather name="send" size={24} color="white" />
               </TouchableOpacity>
-            </KeyboardAvoidingView>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </>
+        </KeyboardAvoidingView>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   chatButton: {
     position: "absolute",
-    bottom: 150,
+    bottom: 120,
     right: 20,
     backgroundColor: "#ffa500",
     padding: 16,
@@ -101,19 +99,24 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 99,
   },
-  chatContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "flex-end",
+  popupContainer: {
+    position: "absolute",
+    bottom: 180,
+    right: 20,
+    width: 300,
+    height: 400,
+    backgroundColor: "transparent",
+    zIndex: 100,
   },
   chatBox: {
+    flex: 1,
     backgroundColor: "#1e1e2d",
-    padding: 16,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "65%",
+    borderRadius: 20,
+    padding: 10,
+    overflow: "hidden",
   },
   chatMessages: {
+    flexGrow: 1,
     paddingBottom: 10,
   },
   userMsg: {
@@ -139,7 +142,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    marginTop: 10,
+    marginTop: 5,
   },
   chatInput: {
     flex: 1,
