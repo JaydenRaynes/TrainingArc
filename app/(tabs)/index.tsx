@@ -383,7 +383,11 @@ const WorkoutsPage = () => {
               const newDate = format(parseISO(today.dateString), "MM-dd-yyyy");
               setToday(dayName); // Update the day name
               setSelectedDate(newDate); // format correctly
-              fetchWorkoutData(newDate); // Fetch workout data for the selected date
+              if (useAIWorkout) {
+                fetchAIWorkoutData(newDate);
+              } else {
+                fetchUserWorkoutData(newDate);
+              }
               setCalendarVisible(false);
             }}            
             markedDates={markedDates}
