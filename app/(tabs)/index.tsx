@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, Alert, Button, StyleSheet, Modal, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Alert, Button, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { Calendar } from "react-native-calendars"; // Import Calendar
 import { db, auth } from "../firebaseConfig";
@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 import WorkoutChatbot from "../component/WorkoutChatbot";
+import { SavedSplit } from "../models/savedWorkoutModel";
 
 const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
@@ -32,13 +33,28 @@ const WorkoutsPage = () => {
   const [completedSets, setCompletedSets] = useState<{ [key: string]: boolean }>({});
   const [activeRatingSet, setActiveRatingSet] = useState<string | null>(null);
   const [setRatings, setSetRatings] = useState<{ [key: string]: number }>({});
+  const [isSavedWorkoutModalVisible, setSavedWorkoutModalVisible] = useState(false);
+  const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
+  const [savedSplits, setSavedSplits] = useState<SavedSplit[]>([]);
 
 
   useEffect(() => {
     const currentDay = format(new Date(), "EEEE");
     setToday(currentDay);
     fetchWorkoutData(selectedDate);
+    fetchSavedSplits();
   }, [userID, selectedDate]);
+
+  const fetchSavedSplits = async () => {
+    if (!userID) return;
+    const userRef = doc(db, "users", userID, 'savedWorkouts', 'workouts');
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const splitsArray = Object.values(data) as SavedSplit[];
+      setSavedSplits(splitsArray);
+    }
+  };
 
   const fetchWorkoutData = (date: string) => {
     if (!userID) return;
@@ -50,10 +66,8 @@ const WorkoutsPage = () => {
         //const dayKey = getDayKey(date); // e.g. "Day 1"
         const [year, month, day] = date.split('-');
         const formattedDate = `${month}-${day}-${year}`;
-        //console.log("Date: ", formattedDate);
         const workoutDays = data.workout?.days || [];
         const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
-  
         if (matchedDay) {
           setWorkoutPlan({
             split: formattedDate,
@@ -292,6 +306,18 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
+      
+      {(!workoutPlan?.workouts || workoutPlan.workouts.length === 0) && (
+      <View style={{ alignItems: "center", marginVertical: 20 }}>
+        <Text style={styles.label}>No exercises available for this day</Text>
+        <TouchableOpacity
+          style={styles.viewSavedButton}
+          onPress={() => setSavedWorkoutModalVisible(true)} // You'll define this modal separately
+        >
+          <Text style={styles.buttonText}>View Saved Workouts</Text>
+        </TouchableOpacity>
+      </View>
+      )}
 
       <FlatList
         data={workoutPlan?.workouts || []}
@@ -398,6 +424,61 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={isSavedWorkoutModalVisible} animationType="slide" transparent>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Saved Workouts</Text>
+
+            <ScrollView style={{ maxHeight: "80%" }}>
+              {savedSplits.map((split, index) => (
+                <View key={index} style={{ marginBottom: 12 }}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setExpandedWorkout(expandedWorkout === split.name ? null : split.name)
+                    }
+                    style={{
+                      backgroundColor: theme.colors.cardBackground,
+                      padding: 12,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: theme.colors.primary,
+                    }}
+                  >
+                    <Text style={{ fontSize: theme.fontSize.medium, fontWeight: "bold", color: theme.colors.primary }}>
+                      {split.name}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {expandedWorkout === split.name && (
+                    <View style={{ padding: 10, backgroundColor: "#222", borderRadius: 8, marginTop: 8 }}>
+                      {split.split.days.map((day, i) => (
+                        <View key={i} style={{ marginBottom: 10 }}>
+                          <Text style={{ fontSize: 16, fontWeight: "bold", color: theme.colors.text }}>{`Day ${i + 1}`}</Text>
+                          {day.exercises.length > 0 ? (
+                            day.exercises.map((ex, j) => (
+                              <Text key={j} style={{ color: theme.colors.text, marginLeft: 10 }}>
+                                • {ex.name} - {ex.sets}x{ex.reps} @ {ex.weight ?? "-"} lbs
+                              </Text>
+                            ))
+                          ) : (
+                            <Text style={{ color: "#aaa", marginLeft: 10 }}>No exercises</Text>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity onPress={() => setSavedWorkoutModalVisible(false)} style={styles.closeButton}>
+              <Text style={styles.buttonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <TouchableOpacity style={styles.saveButton} onPress={saveToProgress}>
         <Text style={styles.saveButtonText}> Save Completed Workouts</Text>
       </TouchableOpacity>
