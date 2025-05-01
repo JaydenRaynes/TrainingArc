@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, StyleSheet, Text, Pressable, View, ScrollView, TouchableWithoutFeedback, Dimensions } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDoc, getDocs, doc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { LineChart } from 'react-native-chart-kit';
 import { theme } from "../utils/theme"
@@ -13,55 +13,46 @@ const ProgressPage = () => {
   const [exerciseHistory, setExerciseHistory] = useState([]);
 
   useEffect(() => {
-    const userID = auth.currentUser?.uid;
-    if (!userID) return;
+    const fetchAllProgress = async () => {
+      const userID = auth.currentUser?.uid;
+      if (!userID) return;
   
-    const progressRef = collection(db, "users", userID, "progress");
-    const q = query(progressRef, orderBy("date", "desc"));
+      try {
+        const progressRef = collection(db, "users", userID, "progress");
+        const querySnapshot = await getDocs(progressRef);
   
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      if (!querySnapshot.empty) {
-        const groupedWorkouts = [];
+        const allWorkouts = [];
   
         querySnapshot.forEach(docSnap => {
-          const docData = docSnap.data();
-          console.log('Document Data:', docData); // Log to inspect the document
+          const exerciseName = docSnap.id;
+          const data = docSnap.data();
   
-          // Flatten exercises from the "workouts" array and map them
-          docData.workouts.forEach(exercise => {
-            console.log('Exercise:', exercise); // Log to inspect individual exercises
+          if (Array.isArray(data.history)) {
+            data.history.forEach(entry => {
+              const { date, sets, reps, weight } = entry;
   
-            const { workoutName, sets, reps, weight, date } = exercise;
-  
-            // Safely handle missing or malformed data
-            const safeSets = sets ? sets : 0;
-            const safeReps = reps ? reps : 0;
-            const safeWeight = weight ? weight : 0;
-            const safeDate = date ? date : 'Unknown Date';
-  
-            groupedWorkouts.push({
-              workoutName: workoutName || 'Unnamed Exercise',
-              sets: safeSets,
-              reps: safeReps,
-              weight: safeWeight,
-              date: safeDate,
+              allWorkouts.push({
+                workoutName: exerciseName,
+                sets: sets || 0,
+                reps: reps || 0,
+                weight: weight || 0,
+                date: date || "Unknown",
+              });
             });
-          });
+          }
         });
   
-        setWorkouts(groupedWorkouts); // Update workouts for display
-      } else {
-        setWorkouts([]);
+        // Optional: sort by date
+        allWorkouts.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  
+        setWorkouts(allWorkouts);
+      } catch (error) {
+        console.error("Error fetching all progress data:", error);
       }
-    }, (error) => {
-      console.error("Error fetching workout data:", error);
-    });
+    };
   
-    return () => unsubscribe();
-  }, []);
-  
-  
-  
+    fetchAllProgress();
+  }, []);  
 
   const openInfoModal = (exercise) => {
     setSelectedExercise(exercise);
@@ -77,46 +68,43 @@ const ProgressPage = () => {
 
   const fetchExerciseHistory = async (exerciseName) => {
     const userID = auth.currentUser?.uid;
-    if (!userID) return;
+    if (!userID || !exerciseName) return;
   
-    const progressRef = collection(db, "users", userID, "progress");
-    const querySnapshot = await getDocs(progressRef);
+    try {
+      const exerciseRef = doc(db, "users", userID, "progress", exerciseName);
+      const docSnap = await getDoc(exerciseRef);
   
-    const history = [];
-    querySnapshot.forEach(docSnap => {
-      const docData = docSnap.data();
-      console.log('Document Data:', docData); // Log the full document data
+      if (!docSnap.exists()) {
+        console.log("No progress found for this exercise.");
+        setExerciseHistory([]);
+        return;
+      }
   
-      // Iterate over the "workouts" array to access each workout object
-      docData.workouts.forEach(exercise => {
-        console.log('Exercise Data:', exercise); // Log each exercise data
+      const data = docSnap.data();
+      const history = [];
   
-        const { workoutName, weight, reps, date } = exercise;
+      data.history.forEach(entry => {
+        const { date, weight, reps } = entry;
   
-        // Only proceed if this exercise matches the selected exercise name
-        if (workoutName === exerciseName) {
-          // Convert reps and weight to numbers before using them
-          const numWeight = parseFloat(weight) || 0;
-          const numReps = parseInt(reps) || 0;
+        const numWeight = parseFloat(weight);
+        const numReps = parseInt(reps);
   
-          history.push({
-            date: date, // Add date if needed
-            maxRep: numWeight && numReps ? Math.round(numWeight * (1 + numReps / 30)) : 0, // Safely calculate maxRep
-          });
+        if (!isNaN(numWeight) && !isNaN(numReps)) {
+          const maxRep = Math.round(numWeight * (1 + numReps / 30));
+          history.push({ date, maxRep });
         }
       });
-    });
   
-    if (history.length === 0) {
-      console.log("No data found for this exercise.");
+      // Optional: sort by date (if date is ISO string like "2025-04-27")
+      history.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  
+      setExerciseHistory(history);
+    } catch (error) {
+      console.error("Error fetching exercise history:", error);
+      setExerciseHistory([]);
     }
+  };  
   
-    setExerciseHistory(history); // Update state with filtered history
-  };
-  
-  
-  
-
   return (
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1 }}>
