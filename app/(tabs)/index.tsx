@@ -8,10 +8,14 @@ import { format, parseISO, parse, addDays } from "date-fns";
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 import WorkoutChatbot from "../component/WorkoutChatbot";
+<<<<<<< HEAD
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WorkoutSourceToggle from "../component/changeWorkout";
 import { SavedSplit } from "../models/savedWorkoutModel";
 import { Split, WorkoutDay } from "../models/splitModel";
+=======
+import { SavedSplit } from "../models/savedWorkoutModel";
+>>>>>>> c174b5b (added ability so save workout presets)
 
 const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
@@ -37,14 +41,18 @@ const WorkoutsPage = () => {
   const [completedSets, setCompletedSets] = useState<{ [key: string]: boolean }>({});
   const [activeRatingSet, setActiveRatingSet] = useState<string | null>(null);
   const [setRatings, setSetRatings] = useState<{ [key: string]: number }>({});
+<<<<<<< HEAD
   const [showFooterButtons, setShowFooterButtons] = useState(false);
   const [useAIWorkout, setUseAIWorkout] = useState(true);
+=======
+>>>>>>> c174b5b (added ability so save workout presets)
   const [isSavedWorkoutModalVisible, setSavedWorkoutModalVisible] = useState(false);
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [savedSplits, setSavedSplits] = useState<SavedSplit[]>([]);
 
 
   useEffect(() => {
+<<<<<<< HEAD
     let unsubscribe: (() => void) | null = null;
 
     const loadWorkout = async () => {
@@ -84,6 +92,26 @@ const WorkoutsPage = () => {
 
 
   const fetchSavedSplits = async () => {
+=======
+    const currentDay = format(new Date(), "EEEE");
+    setToday(currentDay);
+    fetchWorkoutData(selectedDate);
+    fetchSavedSplits();
+  }, [userID, selectedDate]);
+
+  const fetchSavedSplits = async () => {
+    if (!userID) return;
+    const userRef = doc(db, "users", userID, 'savedWorkouts', 'workouts');
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const splitsArray = Object.values(data) as SavedSplit[];
+      setSavedSplits(splitsArray);
+    }
+  };
+
+  const fetchWorkoutData = (date: string) => {
+>>>>>>> c174b5b (added ability so save workout presets)
     if (!userID) return;
     const userRef = doc(db, "users", userID, 'savedWorkouts', 'workouts');
     const docSnap = await getDoc(userRef);
@@ -108,12 +136,14 @@ const WorkoutsPage = () => {
         //const dayKey = getDayKey(date); // e.g. "Day 1"
         const [year, month, day] = date.split('-');
         const formattedDate = `${month}-${day}-${year}`;
-        //console.log("Date: ", formattedDate);
         const workoutDays = data.workout?.days || [];
         const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
+<<<<<<< HEAD
 
         const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
   
+=======
+>>>>>>> c174b5b (added ability so save workout presets)
         if (matchedDay) {
           setWorkoutPlan({
             split: formattedDate,
@@ -499,10 +529,13 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
+<<<<<<< HEAD
       <WorkoutSourceToggle
         useAIWorkout={useAIWorkout}
         setUseAIWorkout={setUseAIWorkout}
       />
+=======
+>>>>>>> c174b5b (added ability so save workout presets)
       
       {(!workoutPlan?.workouts || workoutPlan.workouts.length === 0) && (
       <View style={{ alignItems: "center", marginVertical: 20 }}>
@@ -511,7 +544,11 @@ const WorkoutsPage = () => {
           style={styles.viewSavedButton}
           onPress={() => setSavedWorkoutModalVisible(true)} // You'll define this modal separately
         >
+<<<<<<< HEAD
           <Text style={styles.buttonText}>Choose from saved workouts</Text>
+=======
+          <Text style={styles.buttonText}>View Saved Workouts</Text>
+>>>>>>> c174b5b (added ability so save workout presets)
         </TouchableOpacity>
       </View>
       )}
@@ -617,6 +654,7 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
+<<<<<<< HEAD
     <TouchableOpacity
       style={[styles.saveButton, { backgroundColor: theme.colors.warning }]}
       onPress={() => setShowFooterButtons(prev => !prev)}
@@ -649,6 +687,9 @@ const WorkoutsPage = () => {
       )}
 
       {/* Saved Workout Modal */}
+=======
+
+>>>>>>> c174b5b (added ability so save workout presets)
       <Modal visible={isSavedWorkoutModalVisible} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -690,6 +731,7 @@ const WorkoutsPage = () => {
                           )}
                         </View>
                       ))}
+<<<<<<< HEAD
 
                       {/* Select Workout Button */}
                       <TouchableOpacity
@@ -708,6 +750,8 @@ const WorkoutsPage = () => {
                       >
                         <Text style={{ color: "#fff", fontWeight: "bold" }}>Select Workout</Text>
                       </TouchableOpacity>
+=======
+>>>>>>> c174b5b (added ability so save workout presets)
                     </View>
                   )}
                 </View>
@@ -720,6 +764,17 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
+<<<<<<< HEAD
+=======
+
+      <TouchableOpacity style={styles.saveButton} onPress={saveToProgress}>
+        <Text style={styles.saveButtonText}> Save Completed Workouts</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.editButton} onPress={() => router.push("/component/splits")}>
+        <Text style={styles.editButtonText}> Edit Splits Page</Text>
+      </TouchableOpacity>
+      <WorkoutChatbot />
+>>>>>>> c174b5b (added ability so save workout presets)
     </View>
   );
 };
