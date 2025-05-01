@@ -13,60 +13,12 @@ import { Calendar } from "react-native-calendars";
 import { format } from "date-fns";
 import { theme } from "../utils/theme";
 import { useFocusEffect } from '@react-navigation/native';
+import { SavedSplit } from '../models/savedWorkoutModel';
 
 type UserData = Biometric & Gym;
 
-// const normalizePreferences = (preferences: Preferences): Preferences => {
-//   return {
-//     ...preferences,
-//     activityLevel: {
-//       active: preferences.activityLevel?.active || false,
-//       notActive: preferences.activityLevel?.notActive || false,
-//       slightlyActive: preferences.activityLevel?.slightlyActive || false,
-//     },
-//     cardioPreferences: {
-//       cycling: preferences.cardioPreferences?.cycling || false,
-//       rowing: preferences.cardioPreferences?.rowing || false,
-//       running: preferences.cardioPreferences?.running || false,
-//       swimming: preferences.cardioPreferences?.swimming || false,
-//       walking: preferences.cardioPreferences?.walking || false,
-//     },
-//     equipmentPreference: {
-//       barbells: preferences.equipmentPreference?.barbells || false,
-//       dumbbells: preferences.equipmentPreference?.dumbbells || false,
-//       kettlebells: preferences.equipmentPreference?.kettlebells || false,
-//       none: preferences.equipmentPreference?.none || false,
-//       resistanceBands: preferences.equipmentPreference?.resistanceBands || false,
-//     },
-//     preferredWorkoutType: {
-//       bodyweight: preferences.preferredWorkoutType?.bodyweight || false,
-//       cardio: preferences.preferredWorkoutType?.cardio || false,
-//       hiit: preferences.preferredWorkoutType?.hiit || false,
-//       strength: preferences.preferredWorkoutType?.strength || false,
-//       yoga: preferences.preferredWorkoutType?.yoga || false,
-//     },
-//     timeOfDayPreference: {
-//       morning: preferences.timeOfDayPreference?.morning || false,
-//       afternoon: preferences.timeOfDayPreference?.afternoon || false,
-//       evening: preferences.timeOfDayPreference?.evening || false,
-//       night: preferences.timeOfDayPreference?.night || false,
-//       any: preferences.timeOfDayPreference?.any || false,
-//     },
-//     workoutEnvironment: {
-//       gym: preferences.workoutEnvironment?.gym || false,
-//       home: preferences.workoutEnvironment?.home || false,
-//       outdoor: preferences.workoutEnvironment?.outdoor || false,
-//     },
-//     workoutSplit: {
-//       fullBody: preferences.workoutSplit?.fullBody || false,
-//       targeted: preferences.workoutSplit?.targeted || false,
-//       weeklySplit: preferences.workoutSplit?.weeklySplit || false,
-//     },
-//   };
-// };
-
 const GenerateWorkoutScreen: React.FC = () => {
-  const localIP = "http://:5000";
+  const localIP = "http://192.168.1.82:5000";
   
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -82,6 +34,8 @@ const GenerateWorkoutScreen: React.FC = () => {
   const [weight, setWeight] = useState('');
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "MM-dd-yyyy"));
   const [calendarVisible, setCalendarVisible] = useState(false);
+  const [isSaveWorkoutVisible, setSavedModalVisible] = useState(false);
+  const [workoutName, setWorkoutName] = useState('');
 
   useFocusEffect(
     React.useCallback(() => {
@@ -425,6 +379,16 @@ const GenerateWorkoutScreen: React.FC = () => {
     });
   };
   
+  function generalizeWorkout(split: Split): Split {
+    const updatedDays = split.days.map((day, index) => ({
+      ...day,
+      day: `day${index + 1}`, // Replace actual date with "day1", "day2", ...
+    }));
+  
+    return { days: updatedDays };
+  }
+  
+
   const addExerciseToWorkout = (exercise: Exercise) => {
     if (currDay === null) return;
 
@@ -462,30 +426,45 @@ const GenerateWorkoutScreen: React.FC = () => {
     setEditModalVisible(true);
   };
 
-  const handleSaveWorkoutPlan = async () => {
+  const handleSaveWorkoutPlan = async (addToWorkout: Split, workoutPresetName: string) => {
     const user = auth.currentUser;
     if (!user) {
       Alert.alert("Error", "You must be logged in to save your data.");
       return;
     }
     try {
-      const userRef = doc(db, 'users', user.uid, 'workout', 'currentWorkout');
-      const docSnap = await getDoc(userRef);
+      const userRefCurrWorkout = doc(db, 'users', user.uid, 'workout', 'currentWorkout');
+      const docSnapCurrWorkout = await getDoc(userRefCurrWorkout);
+      const userRefSavedWorkouts = doc(db, 'users', user.uid, 'savedWorkouts', 'workouts');
+      const docSnapSavedWorkouts = await getDoc(userRefSavedWorkouts);
 
-      if (!docSnap.exists()) {
+      if (!docSnapCurrWorkout.exists()) {
       console.log("Workout does not exist, creating...");
       } else {
       console.log("Workout already exists, updating...");
       }
 
-      await setDoc(userRef, {
-      workout
+      if (!docSnapSavedWorkouts.exists()) {
+      console.log("Workout does not exist, creating...");
+      } else {
+      console.log("Workout already exists, updating...");
+      }
+
+      await setDoc(userRefCurrWorkout, {
+        workout: addToWorkout
       });
 
+      const generalizedSplit: SavedSplit = { name: workoutPresetName, split: generalizeWorkout(addToWorkout) }
+
+      await setDoc(userRefSavedWorkouts, {
+        workouts: generalizedSplit
+      }, {merge: true});
+
       // Fetch the document again to confirm it was saved
-      const savedDoc = await getDoc(userRef);
-      if (savedDoc.exists()) {
-      console.log("Workout successfully saved:", savedDoc.data());
+      const savedDocCurrWorkout = await getDoc(userRefCurrWorkout);
+      const savedDocSavedWorkouts = await getDoc(userRefSavedWorkouts);
+      if (savedDocCurrWorkout.exists() && savedDocSavedWorkouts.exists()) {
+      console.log("Workout successfully saved:", savedDocCurrWorkout.data(), savedDocSavedWorkouts.data());
       Alert.alert('Success', 'Workout saved!');
       } else {
       console.error("Failed to confirm workout save.");
@@ -572,10 +551,51 @@ return (
         </TouchableOpacity>
 
         {workout != null && (
-          <TouchableOpacity style={styles.saveButton} onPress={handleSaveWorkoutPlan}>
-            <Text style={styles.buttonText}>Save Workout</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={() => setSavedModalVisible(true)}
+            >
+              <Text style={styles.buttonText}>Save Workout</Text>
+            </TouchableOpacity>
+
+            <Modal
+              visible={isSaveWorkoutVisible}
+              transparent
+              animationType="slide"
+              onRequestClose={() => setSavedModalVisible(false)}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.editModalContainer}>
+                  <Text style={styles.modalTitle}>Name Your Workout</Text>
+                  <TextInput
+                    value={workoutName}
+                    onChangeText={setWorkoutName}
+                    placeholder="Enter workout name"
+                    style={styles.input}
+                  />
+                  <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={() => {
+                      handleSaveWorkoutPlan(workout, workoutName); // Call your save logic here
+                      setSavedModalVisible(false);
+                      setWorkoutName('');
+                    }}
+                  >
+                    <Text style={styles.buttonText}>Confirm</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => setSavedModalVisible(false)}
+                  >
+                    <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          </>
         )}
+
       </View>
     </View>
   </KeyboardAvoidingView>
@@ -585,6 +605,17 @@ return (
 };
 
 const styles = StyleSheet.create({
+  confirmButton: {
+    backgroundColor: "#4CAF50",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  cancelButton: {
+    backgroundColor: "#f44336",
+    padding: 10,
+    borderRadius: 8,
+  },
   picker: {
     height: 50,
     width: '100%', // Ensure it takes the full width of the container
