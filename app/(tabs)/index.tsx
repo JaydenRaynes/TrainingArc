@@ -9,6 +9,7 @@ import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 import WorkoutChatbot from "../component/WorkoutChatbot";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import WorkoutSourceToggle from "../component/changeWorkout";
 
 const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
@@ -34,35 +35,53 @@ const WorkoutsPage = () => {
   const [completedSets, setCompletedSets] = useState<{ [key: string]: boolean }>({});
   const [activeRatingSet, setActiveRatingSet] = useState<string | null>(null);
   const [setRatings, setSetRatings] = useState<{ [key: string]: number }>({});
+  const [showFooterButtons, setShowFooterButtons] = useState(false);
+  const [useAIWorkout, setUseAIWorkout] = useState(true);
 
   useEffect(() => {
     if (!userID) return;
-    const unsubscribe = fetchWorkoutData(selectedDate);
+
+    let unsubscribe: (() => void) | null = null;
+
+    const loadWorkout = async () => {
+      setWorkoutPlan(null); // Reset workout plan when loading new data
+
+      if (useAIWorkout) {
+        unsubscribe = fetchAIWorkoutData(selectedDate);
+      } else {
+        await fetchUserWorkoutData(selectedDate);
+        // Since fetchUserWorkoutData is a one-time fetch, set unsubscribe to null
+        unsubscribe = null;
+      }
+    };
+
+    loadWorkout(); // Call loadWorkout whenever dependencies change
+
+    // Load completed sets (this should likely only depend on selectedDate)
     const loadCompletedSets = async () => {
       try {
         const storageKey = `completedSets-${selectedDate}`;
         const saved = await AsyncStorage.getItem(storageKey);
-        if (saved) {
-          setCompletedSets(JSON.parse(saved));
-        } else {
-          setCompletedSets({});
-        }
+        setCompletedSets(saved ? JSON.parse(saved) : {});
       } catch (e) {
         console.error('Failed to load completed sets', e);
       }
     };
-  
+
     loadCompletedSets();
+
     return () => {
-      unsubscribe(); // Clean up the listener
+      if (unsubscribe) {
+        unsubscribe(); // Clean up AI workout listener
+      }
     };
-  }, [userID, selectedDate]);
-  
-  const fetchWorkoutData = (date: string) => {
+  }, [userID, selectedDate, useAIWorkout]);
+
+  const fetchAIWorkoutData = (date: string) => {
     if (!userID) return () => {};
-  
+
     const userRef = doc(db, "users", userID, "workout", "currentWorkout");
-  
+
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -70,7 +89,7 @@ const WorkoutsPage = () => {
         const formattedDate = `${month}-${day}-${year}`;
         const workoutDays = data.workout?.days || [];
         const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
-  
+
         if (matchedDay) {
           setWorkoutPlan({
             split: formattedDate,
@@ -89,10 +108,36 @@ const WorkoutsPage = () => {
         setWorkoutPlan(null);
       }
     });
-  
-    return unsubscribe;
-  };  
 
+    return unsubscribe;
+  };
+
+  const fetchUserWorkoutData = async (date: string) => {
+    if (!userID) return;
+
+    const userRef = doc(db, "users", userID);
+    const docSnap = await getDoc(userRef);
+    if (!docSnap.exists()) return;
+
+    const data = docSnap.data();
+    const workoutDay = format(parse(date, "MM-dd-yyyy", new Date()), "EEEE"); // "Monday", etc.
+
+    const plan = data?.workoutPlans?.[workoutDay]?.workouts || [];
+
+    const formattedWorkout = {
+      split: workoutDay,
+      workouts: plan.map((w: any) => ({
+        name: w.name,
+        sets: w.sets,
+        reps: w.reps,
+        weight: w.weight,
+        completed: false,
+      })),
+    };
+
+    setWorkoutPlan(formattedWorkout);
+  };
+  
   const handleRatingChange = (exerciseIndex: number, setIndex: number, rating: number) => {
     const key = `${exerciseIndex}-${setIndex}`;
     const newRatings = { ...setRatings, [key]: rating };
@@ -375,7 +420,10 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
-
+      <WorkoutSourceToggle
+        useAIWorkout={useAIWorkout}
+        setUseAIWorkout={setUseAIWorkout}
+      />
       <FlatList
         data={workoutPlan?.workouts || []}
         keyExtractor={(item, index) => `${item.name}-${index}`}
@@ -476,13 +524,36 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
-      <TouchableOpacity style={styles.saveButton} onPress={() => saveToProgress(workoutPlan?.workouts || [])}>
-        <Text style={styles.saveButtonText}> Save Completed Workouts</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.editButton} onPress={() => router.push("/component/splits")}>
-        <Text style={styles.editButtonText}> Edit Splits Page</Text>
-      </TouchableOpacity>
-      <WorkoutChatbot />
+    <TouchableOpacity
+      style={[styles.saveButton, { backgroundColor: theme.colors.warning }]}
+      onPress={() => setShowFooterButtons(prev => !prev)}
+    >
+    <Text style={styles.saveButtonText}>
+      {showFooterButtons ? "Hide Options" : "Show Options"}
+    </Text>
+  </TouchableOpacity>
+
+{/* Conditionally Render Footer Buttons and Chatbot */}
+{showFooterButtons && (
+  <>
+    <TouchableOpacity
+      style={styles.saveButton}
+      onPress={() => saveToProgress(workoutPlan?.workouts || [])}
+    >
+      <Text style={styles.saveButtonText}>Save Completed Workouts</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={styles.editButton}
+      onPress={() => router.push("/component/splits")}
+    >
+      <Text style={styles.editButtonText}>Edit Splits Page</Text>
+    </TouchableOpacity>
+
+    {/* Chatbot appears with options */}
+    <WorkoutChatbot />
+  </>
+)}
     </View>
   );
 };
