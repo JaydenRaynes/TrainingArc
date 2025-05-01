@@ -35,7 +35,11 @@ import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 import WorkoutChatbot from "../component/WorkoutChatbot";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+<<<<<<< HEAD
 >>>>>>> 6dd479b (All workout page and progress page bug fixes)
+=======
+import WorkoutSourceToggle from "../component/changeWorkout";
+>>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
 
 const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
@@ -66,6 +70,7 @@ const WorkoutsPage = () => {
   const [activeRatingSet, setActiveRatingSet] = useState<string | null>(null);
   const [setRatings, setSetRatings] = useState<{ [key: string]: number }>({});
 <<<<<<< HEAD
+<<<<<<< HEAD
   const [showFooterButtons, setShowFooterButtons] = useState(false);
   const [useAIWorkout, setUseAIWorkout] = useState(true);
 =======
@@ -73,6 +78,10 @@ const WorkoutsPage = () => {
   const [isSavedWorkoutModalVisible, setSavedWorkoutModalVisible] = useState(false);
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [savedSplits, setSavedSplits] = useState<SavedSplit[]>([]);
+=======
+  const [showFooterButtons, setShowFooterButtons] = useState(false);
+  const [useAIWorkout, setUseAIWorkout] = useState(true);
+>>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
 
   useEffect(() => {
 <<<<<<< HEAD
@@ -155,33 +164,53 @@ const WorkoutsPage = () => {
 
 =======
     if (!userID) return;
-    const unsubscribe = fetchWorkoutData(selectedDate);
+
+    let unsubscribe: (() => void) | null = null;
+
+    const loadWorkout = async () => {
+      setWorkoutPlan(null); // Reset workout plan when loading new data
+
+      if (useAIWorkout) {
+        unsubscribe = fetchAIWorkoutData(selectedDate);
+      } else {
+        await fetchUserWorkoutData(selectedDate);
+        // Since fetchUserWorkoutData is a one-time fetch, set unsubscribe to null
+        unsubscribe = null;
+      }
+    };
+
+    loadWorkout(); // Call loadWorkout whenever dependencies change
+
+    // Load completed sets (this should likely only depend on selectedDate)
     const loadCompletedSets = async () => {
       try {
         const storageKey = `completedSets-${selectedDate}`;
         const saved = await AsyncStorage.getItem(storageKey);
-        if (saved) {
-          setCompletedSets(JSON.parse(saved));
-        } else {
-          setCompletedSets({});
-        }
+        setCompletedSets(saved ? JSON.parse(saved) : {});
       } catch (e) {
         console.error('Failed to load completed sets', e);
       }
     };
-  
+
     loadCompletedSets();
+
     return () => {
-      unsubscribe(); // Clean up the listener
+      if (unsubscribe) {
+        unsubscribe(); // Clean up AI workout listener
+      }
     };
-  }, [userID, selectedDate]);
-  
-  const fetchWorkoutData = (date: string) => {
+  }, [userID, selectedDate, useAIWorkout]);
+
+  const fetchAIWorkoutData = (date: string) => {
     if (!userID) return () => {};
-  
+
     const userRef = doc(db, "users", userID, "workout", "currentWorkout");
+<<<<<<< HEAD
   
 >>>>>>> 6dd479b (All workout page and progress page bug fixes)
+=======
+
+>>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -196,11 +225,15 @@ const WorkoutsPage = () => {
         const workoutDays = data.workout?.days || [];
         const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
 <<<<<<< HEAD
+<<<<<<< HEAD
 
         const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
   
 =======
 >>>>>>> c174b5b (added ability so save workout presets)
+=======
+
+>>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
         if (matchedDay) {
           setWorkoutPlan({
             split: formattedDate,
@@ -223,6 +256,7 @@ const WorkoutsPage = () => {
         setWorkoutPlan(null);
       }
     });
+<<<<<<< HEAD
 <<<<<<< HEAD
 
     return unsubscribe;
@@ -332,7 +366,38 @@ const WorkoutsPage = () => {
   
     return unsubscribe;
   };  
+=======
+>>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
 
+    return unsubscribe;
+  };
+
+  const fetchUserWorkoutData = async (date: string) => {
+    if (!userID) return;
+
+    const userRef = doc(db, "users", userID);
+    const docSnap = await getDoc(userRef);
+    if (!docSnap.exists()) return;
+
+    const data = docSnap.data();
+    const workoutDay = format(parse(date, "MM-dd-yyyy", new Date()), "EEEE"); // "Monday", etc.
+
+    const plan = data?.workoutPlans?.[workoutDay]?.workouts || [];
+
+    const formattedWorkout = {
+      split: workoutDay,
+      workouts: plan.map((w: any) => ({
+        name: w.name,
+        sets: w.sets,
+        reps: w.reps,
+        weight: w.weight,
+        completed: false,
+      })),
+    };
+
+    setWorkoutPlan(formattedWorkout);
+  };
+  
   const handleRatingChange = (exerciseIndex: number, setIndex: number, rating: number) => {
     const key = `${exerciseIndex}-${setIndex}`;
     const newRatings = { ...setRatings, [key]: rating };
@@ -683,10 +748,14 @@ const WorkoutsPage = () => {
         </View>
       </Modal>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
       <WorkoutSourceToggle
         useAIWorkout={useAIWorkout}
         setUseAIWorkout={setUseAIWorkout}
       />
+<<<<<<< HEAD
 =======
 >>>>>>> c174b5b (added ability so save workout presets)
       
@@ -710,6 +779,8 @@ const WorkoutsPage = () => {
       </View>
       )}
 
+=======
+>>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
       <FlatList
         data={workoutPlan?.workouts || []}
         keyExtractor={(item, index) => `${item.name}-${index}`}
@@ -813,6 +884,9 @@ const WorkoutsPage = () => {
       </Modal>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
     <TouchableOpacity
       style={[styles.saveButton, { backgroundColor: theme.colors.warning }]}
       onPress={() => setShowFooterButtons(prev => !prev)}
@@ -820,6 +894,7 @@ const WorkoutsPage = () => {
     <Text style={styles.saveButtonText}>
       {showFooterButtons ? "Hide Options" : "Show Options"}
     </Text>
+<<<<<<< HEAD
     </TouchableOpacity>
 
 <<<<<<< HEAD
@@ -950,6 +1025,31 @@ const WorkoutsPage = () => {
       </TouchableOpacity>
       <WorkoutChatbot />
 >>>>>>> c174b5b (added ability so save workout presets)
+=======
+  </TouchableOpacity>
+
+{/* Conditionally Render Footer Buttons and Chatbot */}
+{showFooterButtons && (
+  <>
+    <TouchableOpacity
+      style={styles.saveButton}
+      onPress={() => saveToProgress(workoutPlan?.workouts || [])}
+    >
+      <Text style={styles.saveButtonText}>Save Completed Workouts</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={styles.editButton}
+      onPress={() => router.push("/component/splits")}
+    >
+      <Text style={styles.editButtonText}>Edit Splits Page</Text>
+    </TouchableOpacity>
+
+    {/* Chatbot appears with options */}
+    <WorkoutChatbot />
+  </>
+)}
+>>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
     </View>
   );
 };
