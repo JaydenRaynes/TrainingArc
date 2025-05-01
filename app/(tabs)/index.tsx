@@ -703,14 +703,20 @@ const WorkoutsPage = () => {
               setToday(dayName); // Update the day name
               setSelectedDate(newDate); // format correctly
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 969f85b (fixed error forgetting to update calender for both workout fetches)
               if (useAIWorkout) {
                 fetchAIWorkoutData(newDate);
               } else {
                 fetchUserWorkoutData(newDate);
               }
+<<<<<<< HEAD
 =======
               fetchWorkoutData(newDate); // Fetch workout data for the selected date
 >>>>>>> 6dd479b (All workout page and progress page bug fixes)
+=======
+>>>>>>> 969f85b (fixed error forgetting to update calender for both workout fetches)
               setCalendarVisible(false);
             }}            
             markedDates={markedDates}
