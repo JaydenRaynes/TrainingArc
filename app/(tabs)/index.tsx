@@ -5,6 +5,7 @@ import { Calendar } from "react-native-calendars"; // Import Calendar
 import { db, auth } from "../firebaseConfig";
 import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase/firestore";
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { format, parseISO, parse, addDays } from "date-fns";
 =======
 import { addDays, format, parse } from "date-fns";
@@ -28,6 +29,13 @@ import { Split } from "../models/splitModel";
 =======
 import { Split, WorkoutDay } from "../models/splitModel";
 >>>>>>> d09f937 (got adding the saved exercises fully working)
+=======
+import { format, parseISO, parse } from "date-fns";
+import { useRouter } from "expo-router";
+import { theme } from "../utils/theme";
+import WorkoutChatbot from "../component/WorkoutChatbot";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+>>>>>>> 6dd479b (All workout page and progress page bug fixes)
 
 const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
@@ -39,7 +47,11 @@ const WorkoutsPage = () => {
     workouts: { name: string; sets: number; reps: number; weight: number; completed: boolean }[];
   } | null>(null);
 
+<<<<<<< HEAD
   const todayDate = format(new Date(), "MM-dd-yyyy"); // ISO format required by markedDates
+=======
+  const todayDate = format(new Date(), "yyyy-MM-dd"); // ISO format required by markedDates
+>>>>>>> 6dd479b (All workout page and progress page bug fixes)
   const [today, setToday] = useState(format(new Date(), "EEEE"));
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "MM-dd-yyyy"));
   const [calendarVisible, setCalendarVisible] = useState(false);
@@ -62,8 +74,8 @@ const WorkoutsPage = () => {
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [savedSplits, setSavedSplits] = useState<SavedSplit[]>([]);
 
-
   useEffect(() => {
+<<<<<<< HEAD
 <<<<<<< HEAD
     let unsubscribe: (() => void) | null = null;
 
@@ -141,13 +153,45 @@ const WorkoutsPage = () => {
 
     const userRef = doc(db, "users", userID, "workout", "currentWorkout");
 
+=======
+    if (!userID) return;
+    const unsubscribe = fetchWorkoutData(selectedDate);
+    const loadCompletedSets = async () => {
+      try {
+        const storageKey = `completedSets-${selectedDate}`;
+        const saved = await AsyncStorage.getItem(storageKey);
+        if (saved) {
+          setCompletedSets(JSON.parse(saved));
+        } else {
+          setCompletedSets({});
+        }
+      } catch (e) {
+        console.error('Failed to load completed sets', e);
+      }
+    };
+  
+    loadCompletedSets();
+    return () => {
+      unsubscribe(); // Clean up the listener
+    };
+  }, [userID, selectedDate]);
+  
+  const fetchWorkoutData = (date: string) => {
+    if (!userID) return () => {};
+  
+    const userRef = doc(db, "users", userID, "workout", "currentWorkout");
+  
+>>>>>>> 6dd479b (All workout page and progress page bug fixes)
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const [month, day, year] = date.split("-");
+<<<<<<< HEAD
         const formattedDate = `${month}-${day}-${year}`;
         //const dayKey = getDayKey(date); // e.g. "Day 1"
         const [year, month, day] = date.split('-');
+=======
+>>>>>>> 6dd479b (All workout page and progress page bug fixes)
         const formattedDate = `${month}-${day}-${year}`;
         const workoutDays = data.workout?.days || [];
         const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
@@ -179,6 +223,7 @@ const WorkoutsPage = () => {
         setWorkoutPlan(null);
       }
     });
+<<<<<<< HEAD
 
     return unsubscribe;
   };
@@ -283,6 +328,24 @@ const WorkoutsPage = () => {
       const updatedPlan = { ...prevPlan };
       const exercise = updatedPlan.workouts[exerciseIndex];
   
+=======
+  
+    return unsubscribe;
+  };  
+
+  const handleRatingChange = (exerciseIndex: number, setIndex: number, rating: number) => {
+    const key = `${exerciseIndex}-${setIndex}`;
+    const newRatings = { ...setRatings, [key]: rating };
+    setSetRatings(newRatings);
+  
+    // Immediately adjust the next sets in the workoutPlan
+    setWorkoutPlan(prevPlan => {
+      if (!prevPlan) return prevPlan;
+  
+      const updatedPlan = { ...prevPlan };
+      const exercise = updatedPlan.workouts[exerciseIndex];
+  
+>>>>>>> 6dd479b (All workout page and progress page bug fixes)
       // Only update NEXT sets, not past sets
       for (let nextSetIndex = setIndex + 1; nextSetIndex < exercise.sets; nextSetIndex++) {
         if (rating <= 2) {
@@ -297,6 +360,7 @@ const WorkoutsPage = () => {
       return updatedPlan;
     });
   
+<<<<<<< HEAD
 <<<<<<< HEAD
     // After rating is chosen, close the rating UI
     setActiveRatingSet(null);
@@ -352,6 +416,12 @@ const WorkoutsPage = () => {
     };
   }
 
+=======
+    // After rating is chosen, close the rating UI
+    setActiveRatingSet(null);
+  };  
+  
+>>>>>>> 6dd479b (All workout page and progress page bug fixes)
   const handleSetClick = async (exerciseIndex: number, setIndex: number) => {
     const key = `${exerciseIndex}-${setIndex}`;
     const isCurrentlyCompleted = completedSets[key];
@@ -567,11 +637,15 @@ const WorkoutsPage = () => {
               const newDate = format(parseISO(today.dateString), "MM-dd-yyyy");
               setToday(dayName); // Update the day name
               setSelectedDate(newDate); // format correctly
+<<<<<<< HEAD
               if (useAIWorkout) {
                 fetchAIWorkoutData(newDate);
               } else {
                 fetchUserWorkoutData(newDate);
               }
+=======
+              fetchWorkoutData(newDate); // Fetch workout data for the selected date
+>>>>>>> 6dd479b (All workout page and progress page bug fixes)
               setCalendarVisible(false);
             }}            
             markedDates={markedDates}
@@ -738,6 +812,7 @@ const WorkoutsPage = () => {
         </View>
       </Modal>
 <<<<<<< HEAD
+<<<<<<< HEAD
     <TouchableOpacity
       style={[styles.saveButton, { backgroundColor: theme.colors.warning }]}
       onPress={() => setShowFooterButtons(prev => !prev)}
@@ -865,6 +940,9 @@ const WorkoutsPage = () => {
 =======
 
       <TouchableOpacity style={styles.saveButton} onPress={saveToProgress}>
+=======
+      <TouchableOpacity style={styles.saveButton} onPress={() => saveToProgress(workoutPlan?.workouts || [])}>
+>>>>>>> 6dd479b (All workout page and progress page bug fixes)
         <Text style={styles.saveButtonText}> Save Completed Workouts</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.editButton} onPress={() => router.push("/component/splits")}>

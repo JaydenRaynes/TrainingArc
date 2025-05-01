@@ -5,7 +5,7 @@ import { fetchUserBiometrics, fetchUserGym } from "../Services/fetchUserData";
 =======
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal } from "react-native";
 // import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../Services/fetchUserData";
-import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
+import { fetchUserBiometrics, fetchUserGym } from "../Services/fetchUserData";
 //import { Preferences } from "../models/preferenceModel";
 >>>>>>> 8eb1fc3 (Update generateWorkout.tsx)
 import { Gym } from "../models/gymInfoModel";
@@ -25,7 +25,11 @@ import { SavedSplit } from '../models/savedWorkoutModel';
 type UserData = Biometric & Gym;
 
 const GenerateWorkoutScreen: React.FC = () => {
+<<<<<<< HEAD
   const localIP = "http://192.168.1.82:5000";
+=======
+  const localIP = "http://138.47.152.32:5000";
+>>>>>>> 6dd479b (All workout page and progress page bug fixes)
   
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
