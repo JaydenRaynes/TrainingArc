@@ -6,6 +6,7 @@ import { db, auth } from "../firebaseConfig";
 import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase/firestore";
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { format, parseISO, parse, addDays } from "date-fns";
 =======
 import { addDays, format, parse } from "date-fns";
@@ -31,6 +32,9 @@ import { Split, WorkoutDay } from "../models/splitModel";
 >>>>>>> d09f937 (got adding the saved exercises fully working)
 =======
 import { format, parseISO, parse } from "date-fns";
+=======
+import { format, parseISO, parse, addDays } from "date-fns";
+>>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 import WorkoutChatbot from "../component/WorkoutChatbot";
@@ -52,10 +56,14 @@ const WorkoutsPage = () => {
   } | null>(null);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   const todayDate = format(new Date(), "MM-dd-yyyy"); // ISO format required by markedDates
 =======
   const todayDate = format(new Date(), "yyyy-MM-dd"); // ISO format required by markedDates
 >>>>>>> 6dd479b (All workout page and progress page bug fixes)
+=======
+  const todayDate = format(new Date(), "MM-dd-yyyy"); // ISO format required by markedDates
+>>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
   const [today, setToday] = useState(format(new Date(), "EEEE"));
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "MM-dd-yyyy"));
   const [calendarVisible, setCalendarVisible] = useState(false);
@@ -84,6 +92,7 @@ const WorkoutsPage = () => {
 >>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
 
   useEffect(() => {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     let unsubscribe: (() => void) | null = null;
@@ -165,6 +174,8 @@ const WorkoutsPage = () => {
 =======
     if (!userID) return;
 
+=======
+>>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
     let unsubscribe: (() => void) | null = null;
 
     const loadWorkout = async () => {
@@ -193,6 +204,7 @@ const WorkoutsPage = () => {
     };
 
     loadCompletedSets();
+    fetchSavedSplits();
 
     return () => {
       if (unsubscribe) {
@@ -200,6 +212,19 @@ const WorkoutsPage = () => {
       }
     };
   }, [userID, selectedDate, useAIWorkout]);
+
+
+  const fetchSavedSplits = async () => {
+    if (!userID) return;
+    const userRef = doc(db, "users", userID, 'savedWorkouts', 'workouts');
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const splitsArray = data.workouts as SavedSplit[];
+      //console.log("fetched saved splits: ", splitsArray);
+      setSavedSplits(splitsArray);
+    }
+  };
 
   const fetchAIWorkoutData = (date: string) => {
     if (!userID) return () => {};
@@ -292,6 +317,7 @@ const WorkoutsPage = () => {
     }
   };
   
+<<<<<<< HEAD
   
   
 
@@ -372,6 +398,8 @@ const WorkoutsPage = () => {
     return unsubscribe;
   };
 
+=======
+>>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
   const fetchUserWorkoutData = async (date: string) => {
     if (!userID) return;
 
@@ -434,8 +462,7 @@ const WorkoutsPage = () => {
   };
   
   function redateSplit(split: SavedSplit, startDate: string): SavedSplit {
-    const baseDate = new Date(startDate);
-    console.log("baseDate: ", baseDate);
+    const baseDate = parse(startDate, "MM-dd-yyyy", new Date());
     const updatedDays = split.split.days.map((day, index) => {
       const newDate = addDays(baseDate, index);
       return {
@@ -453,7 +480,7 @@ const WorkoutsPage = () => {
     };
   }
 
-  const handleSetClick = (exerciseIndex: number, setIndex: number) => {
+  const handleSetClick = async (exerciseIndex: number, setIndex: number) => {
     const key = `${exerciseIndex}-${setIndex}`;
     setCompletedSets(prev => ({ ...prev, [key]: !prev[key] }));
   
@@ -901,9 +928,14 @@ const WorkoutsPage = () => {
       {showFooterButtons ? "Hide Options" : "Show Options"}
     </Text>
 <<<<<<< HEAD
+<<<<<<< HEAD
     </TouchableOpacity>
 
 <<<<<<< HEAD
+=======
+    </TouchableOpacity>
+
+>>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
     {/* Conditionally Render Footer Buttons and Chatbot */}
     {showFooterButtons && (
       <>
@@ -984,9 +1016,12 @@ const WorkoutsPage = () => {
                         onPress={() => {
                           const updatedSplit = redateSplit(split, selectedDate); // 'selectedDate' should be in MM-dd-yyyy format
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
                           console.log("newSplit: ", updatedSplit);
 >>>>>>> 3dd3b73 (got saved workouts to display)
+=======
+>>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
                           setNewWorkout(updatedSplit);
                           setSavedWorkoutModalVisible(false);
                         }}
@@ -1017,6 +1052,7 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 
@@ -1056,6 +1092,8 @@ const WorkoutsPage = () => {
   </>
 )}
 >>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
+=======
+>>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
     </View>
   );
 };

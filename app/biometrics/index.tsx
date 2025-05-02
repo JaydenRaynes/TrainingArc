@@ -28,7 +28,7 @@ const Biometrics = () => {
   const levels = ["Beginner", "Intermediate", "Advanced"];
   const locations = ["Gym", "Home", "No preference"];
   const timesOptions = ["1-2", "3-4", "5+"]; // The new multiple-choice options for workouts per week
-  const equipmentChoice = ["Barbell", "Dumbell", "Machine", "Body weight"];
+  const equipmentChoice = ["Barbell", "Dumbell", "Machine", "Body-weight", "Resistance Band", "Kettlebell"];
   const daysChoice = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
   const workoutGroupChoice = ["Arms","Chest","Back","Shoulder","Legs","Core","Cardio"]
 
@@ -112,10 +112,10 @@ const Biometrics = () => {
       <Text style={styles.label}>Age</Text>
       <TextInput style={styles.input} keyboardType="numeric" value={age} onChangeText={setAge} />
 
-      <Text style={styles.label}>Height (in ft/in)</Text>
+      <Text style={styles.label}>Height (ft/in)</Text>
       <TextInput style={styles.input} keyboardType="numeric" value={height} onChangeText={setHeight} />
 
-      <Text style={styles.label}>Weight (in lbs)</Text>
+      <Text style={styles.label}>Weight (lbs)</Text>
       <TextInput style={styles.input} keyboardType="numeric" value={weight} onChangeText={setWeight} />
 
       <Text style={styles.label}>How many times a week do you want to workout?</Text>
