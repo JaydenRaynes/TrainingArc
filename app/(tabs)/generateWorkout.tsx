@@ -572,15 +572,30 @@ const GenerateWorkoutScreen: React.FC = () => {
       }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       await setDoc(userRef, {
         workout
       });
 
 =======
+=======
+      let existingSavedWorkouts: SavedSplit[] = [];
+
+>>>>>>> 3dd3b73 (got saved workouts to display)
       if (!docSnapSavedWorkouts.exists()) {
       console.log("Workout does not exist, creating...");
+      existingSavedWorkouts = [];
       } else {
       console.log("Workout already exists, updating...");
+      
+      const data = docSnapSavedWorkouts.data();
+      if (Array.isArray(data.workouts)) {
+        existingSavedWorkouts = data.workouts;
+      } else {
+        console.warn("Unexpected type for 'workouts' in Firestore:", typeof data.workouts);
+        existingSavedWorkouts = [];
+      }
+
       }
 
       await setDoc(userRefCurrWorkout, {
@@ -588,9 +603,10 @@ const GenerateWorkoutScreen: React.FC = () => {
       });
 
       const generalizedSplit: SavedSplit = { name: workoutPresetName, split: generalizeWorkout(addToWorkout) }
+      const updatedWorkouts = [...existingSavedWorkouts, generalizedSplit];
 
       await setDoc(userRefSavedWorkouts, {
-        workouts: generalizedSplit
+        workouts: updatedWorkouts
       }, {merge: true});
 
       // Fetch the document again to confirm it was saved

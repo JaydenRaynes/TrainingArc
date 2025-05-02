@@ -4,7 +4,11 @@ import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { Calendar } from "react-native-calendars"; // Import Calendar
 import { db, auth } from "../firebaseConfig";
 import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase/firestore";
+<<<<<<< HEAD
 import { format, parseISO, parse, addDays } from "date-fns";
+=======
+import { addDays, format, parse } from "date-fns";
+>>>>>>> 3dd3b73 (got saved workouts to display)
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 import WorkoutChatbot from "../component/WorkoutChatbot";
@@ -12,10 +16,14 @@ import WorkoutChatbot from "../component/WorkoutChatbot";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WorkoutSourceToggle from "../component/changeWorkout";
 import { SavedSplit } from "../models/savedWorkoutModel";
+<<<<<<< HEAD
 import { Split, WorkoutDay } from "../models/splitModel";
 =======
 import { SavedSplit } from "../models/savedWorkoutModel";
 >>>>>>> c174b5b (added ability so save workout presets)
+=======
+import { Split } from "../models/splitModel";
+>>>>>>> 3dd3b73 (got saved workouts to display)
 
 const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
@@ -105,7 +113,8 @@ const WorkoutsPage = () => {
     const docSnap = await getDoc(userRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
-      const splitsArray = Object.values(data) as SavedSplit[];
+      const splitsArray = data.workouts as SavedSplit[];
+      //console.log("fetched saved splits: ", splitsArray);
       setSavedSplits(splitsArray);
     }
   };
@@ -172,6 +181,43 @@ const WorkoutsPage = () => {
 
   const setNewWorkout = async (presetSplit: SavedSplit) => {
     if (!userID) return;
+<<<<<<< HEAD
+=======
+  
+    try {
+      const userRefCurrWorkout = doc(db, "users", userID, "workout", "currentWorkout");
+  
+      // Step 1: Fetch current active workout data
+      const docSnap = await getDoc(userRefCurrWorkout);
+      const newSplit: Split = presetSplit.split;
+  
+      let existingWorkouts: Split[] = [];
+  
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (Array.isArray(data.workout)) {
+          existingWorkouts = data.workout as Split[];
+        } else {
+          console.warn("Expected 'workouts' to be an array.");
+        }
+      }
+  
+      // Step 2: Append the new workout
+      const updatedWorkouts = [...existingWorkouts, newSplit];
+  
+      // Step 3: Save back to Firestore
+      await setDoc(userRefCurrWorkout, { workout: updatedWorkouts }, { merge: true });
+  
+      console.log("New workout added successfully!");
+    } catch (error) {
+      console.error("Error adding new workout:", error);
+    }
+  };
+  
+
+  const adjustWorkoutBasedOnRatings = (plan: typeof workoutPlan | null) => {
+    if (!plan) return plan;
+>>>>>>> 3dd3b73 (got saved workouts to display)
   
     try {
       const userRefCurrWorkout = doc(db, "users", userID, "workout", "currentWorkout");
@@ -250,8 +296,40 @@ const WorkoutsPage = () => {
       return updatedPlan;
     });
   
+<<<<<<< HEAD
     // After rating is chosen, close the rating UI
     setActiveRatingSet(null);
+=======
+    return { ...plan, workouts: updatedWorkouts };
+  };
+  
+  function redateSplit(split: SavedSplit, startDate: string): SavedSplit {
+    const baseDate = new Date(startDate);
+    console.log("baseDate: ", baseDate);
+    const updatedDays = split.split.days.map((day, index) => {
+      const newDate = addDays(baseDate, index);
+      return {
+        ...day,
+        day: format(newDate, "MM-dd-yyyy"), // update the 'day' field with the new date
+      };
+    });
+  
+    return {
+      ...split,
+      split: {
+        ...split.split,
+        days: updatedDays,
+      },
+    };
+  }
+
+  const handleSetClick = (exerciseIndex: number, setIndex: number) => {
+    const key = `${exerciseIndex}-${setIndex}`;
+    setCompletedSets(prev => ({ ...prev, [key]: !prev[key] }));
+  
+    // Toggle rating view
+    setActiveRatingSet(prev => (prev === key ? null : key));
+>>>>>>> 3dd3b73 (got saved workouts to display)
   };  
   
   function redateSplit(split: SavedSplit, startDate: string): SavedSplit {
@@ -545,10 +623,14 @@ const WorkoutsPage = () => {
           onPress={() => setSavedWorkoutModalVisible(true)} // You'll define this modal separately
         >
 <<<<<<< HEAD
+<<<<<<< HEAD
           <Text style={styles.buttonText}>Choose from saved workouts</Text>
 =======
           <Text style={styles.buttonText}>View Saved Workouts</Text>
 >>>>>>> c174b5b (added ability so save workout presets)
+=======
+          <Text style={styles.buttonText}>Choose from saved workouts</Text>
+>>>>>>> 3dd3b73 (got saved workouts to display)
         </TouchableOpacity>
       </View>
       )}
@@ -664,6 +746,7 @@ const WorkoutsPage = () => {
     </Text>
     </TouchableOpacity>
 
+<<<<<<< HEAD
     {/* Conditionally Render Footer Buttons and Chatbot */}
     {showFooterButtons && (
       <>
@@ -690,6 +773,9 @@ const WorkoutsPage = () => {
 =======
 
 >>>>>>> c174b5b (added ability so save workout presets)
+=======
+      {/* Saved Workout Modal */}
+>>>>>>> 3dd3b73 (got saved workouts to display)
       <Modal visible={isSavedWorkoutModalVisible} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -732,11 +818,18 @@ const WorkoutsPage = () => {
                         </View>
                       ))}
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 3dd3b73 (got saved workouts to display)
 
                       {/* Select Workout Button */}
                       <TouchableOpacity
                         onPress={() => {
                           const updatedSplit = redateSplit(split, selectedDate); // 'selectedDate' should be in MM-dd-yyyy format
+<<<<<<< HEAD
+=======
+                          console.log("newSplit: ", updatedSplit);
+>>>>>>> 3dd3b73 (got saved workouts to display)
                           setNewWorkout(updatedSplit);
                           setSavedWorkoutModalVisible(false);
                         }}
@@ -750,8 +843,11 @@ const WorkoutsPage = () => {
                       >
                         <Text style={{ color: "#fff", fontWeight: "bold" }}>Select Workout</Text>
                       </TouchableOpacity>
+<<<<<<< HEAD
 =======
 >>>>>>> c174b5b (added ability so save workout presets)
+=======
+>>>>>>> 3dd3b73 (got saved workouts to display)
                     </View>
                   )}
                 </View>
