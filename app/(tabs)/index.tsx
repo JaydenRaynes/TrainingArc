@@ -4,11 +4,12 @@ import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { Calendar } from "react-native-calendars"; // Import Calendar
 import { db, auth } from "../firebaseConfig";
 import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase/firestore";
-import { format } from "date-fns";
+import { addDays, format, parse } from "date-fns";
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 import WorkoutChatbot from "../component/WorkoutChatbot";
 import { SavedSplit } from "../models/savedWorkoutModel";
+import { Split } from "../models/splitModel";
 
 const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
@@ -51,7 +52,8 @@ const WorkoutsPage = () => {
     const docSnap = await getDoc(userRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
-      const splitsArray = Object.values(data) as SavedSplit[];
+      const splitsArray = data.workouts as SavedSplit[];
+      //console.log("fetched saved splits: ", splitsArray);
       setSavedSplits(splitsArray);
     }
   };
@@ -90,6 +92,40 @@ const WorkoutsPage = () => {
     return () => unsubscribe();
   };
 
+  const setNewWorkout = async (presetSplit: SavedSplit) => {
+    if (!userID) return;
+  
+    try {
+      const userRefCurrWorkout = doc(db, "users", userID, "workout", "currentWorkout");
+  
+      // Step 1: Fetch current active workout data
+      const docSnap = await getDoc(userRefCurrWorkout);
+      const newSplit: Split = presetSplit.split;
+  
+      let existingWorkouts: Split[] = [];
+  
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (Array.isArray(data.workout)) {
+          existingWorkouts = data.workout as Split[];
+        } else {
+          console.warn("Expected 'workouts' to be an array.");
+        }
+      }
+  
+      // Step 2: Append the new workout
+      const updatedWorkouts = [...existingWorkouts, newSplit];
+  
+      // Step 3: Save back to Firestore
+      await setDoc(userRefCurrWorkout, { workout: updatedWorkouts }, { merge: true });
+  
+      console.log("New workout added successfully!");
+    } catch (error) {
+      console.error("Error adding new workout:", error);
+    }
+  };
+  
+
   const adjustWorkoutBasedOnRatings = (plan: typeof workoutPlan | null) => {
     if (!plan) return plan;
   
@@ -117,7 +153,26 @@ const WorkoutsPage = () => {
     return { ...plan, workouts: updatedWorkouts };
   };
   
+  function redateSplit(split: SavedSplit, startDate: string): SavedSplit {
+    const baseDate = new Date(startDate);
+    console.log("baseDate: ", baseDate);
+    const updatedDays = split.split.days.map((day, index) => {
+      const newDate = addDays(baseDate, index);
+      return {
+        ...day,
+        day: format(newDate, "MM-dd-yyyy"), // update the 'day' field with the new date
+      };
+    });
   
+    return {
+      ...split,
+      split: {
+        ...split.split,
+        days: updatedDays,
+      },
+    };
+  }
+
   const handleSetClick = (exerciseIndex: number, setIndex: number) => {
     const key = `${exerciseIndex}-${setIndex}`;
     setCompletedSets(prev => ({ ...prev, [key]: !prev[key] }));
@@ -314,7 +369,7 @@ const WorkoutsPage = () => {
           style={styles.viewSavedButton}
           onPress={() => setSavedWorkoutModalVisible(true)} // You'll define this modal separately
         >
-          <Text style={styles.buttonText}>View Saved Workouts</Text>
+          <Text style={styles.buttonText}>Choose from saved workouts</Text>
         </TouchableOpacity>
       </View>
       )}
@@ -425,6 +480,7 @@ const WorkoutsPage = () => {
         </View>
       </Modal>
 
+      {/* Saved Workout Modal */}
       <Modal visible={isSavedWorkoutModalVisible} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -466,6 +522,25 @@ const WorkoutsPage = () => {
                           )}
                         </View>
                       ))}
+
+                      {/* Select Workout Button */}
+                      <TouchableOpacity
+                        onPress={() => {
+                          const updatedSplit = redateSplit(split, selectedDate); // 'selectedDate' should be in MM-dd-yyyy format
+                          console.log("newSplit: ", updatedSplit);
+                          setNewWorkout(updatedSplit);
+                          setSavedWorkoutModalVisible(false);
+                        }}
+                        style={{
+                          marginTop: 10,
+                          backgroundColor: theme.colors.primary,
+                          padding: 10,
+                          borderRadius: 6,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text style={{ color: "#fff", fontWeight: "bold" }}>Select Workout</Text>
+                      </TouchableOpacity>
                     </View>
                   )}
                 </View>
