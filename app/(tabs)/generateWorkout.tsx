@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal } from "react-native";
-// import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../Services/fetchUserData";
-import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
-//import { Preferences } from "../models/preferenceModel";
+import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from "react-native";
+import { fetchUserBiometrics, fetchUserGym } from "../Services/fetchUserData";
 import { Gym } from "../models/gymInfoModel";
 import { Biometric } from "../models/biometricModel";
 import { Split, WorkoutDay } from "../models/splitModel";
@@ -10,63 +8,16 @@ import { Exercise } from "../models/exerciseModel";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { auth, db } from "../firebaseConfig";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { Picker } from "@react-native-picker/picker";
+import { Calendar } from "react-native-calendars";
+import { format } from "date-fns";
+import { theme } from "../utils/theme";
+import { useFocusEffect } from '@react-navigation/native';
+import { SavedSplit } from '../models/savedWorkoutModel';
 
-type Date = { startDate: string };
-// type UserData = Preferences & Biometric & Gym & Date;
-type UserData = Biometric & Gym & Date;
-
-// const normalizePreferences = (preferences: Preferences): Preferences => {
-//   return {
-//     ...preferences,
-//     activityLevel: {
-//       active: preferences.activityLevel?.active || false,
-//       notActive: preferences.activityLevel?.notActive || false,
-//       slightlyActive: preferences.activityLevel?.slightlyActive || false,
-//     },
-//     cardioPreferences: {
-//       cycling: preferences.cardioPreferences?.cycling || false,
-//       rowing: preferences.cardioPreferences?.rowing || false,
-//       running: preferences.cardioPreferences?.running || false,
-//       swimming: preferences.cardioPreferences?.swimming || false,
-//       walking: preferences.cardioPreferences?.walking || false,
-//     },
-//     equipmentPreference: {
-//       barbells: preferences.equipmentPreference?.barbells || false,
-//       dumbbells: preferences.equipmentPreference?.dumbbells || false,
-//       kettlebells: preferences.equipmentPreference?.kettlebells || false,
-//       none: preferences.equipmentPreference?.none || false,
-//       resistanceBands: preferences.equipmentPreference?.resistanceBands || false,
-//     },
-//     preferredWorkoutType: {
-//       bodyweight: preferences.preferredWorkoutType?.bodyweight || false,
-//       cardio: preferences.preferredWorkoutType?.cardio || false,
-//       hiit: preferences.preferredWorkoutType?.hiit || false,
-//       strength: preferences.preferredWorkoutType?.strength || false,
-//       yoga: preferences.preferredWorkoutType?.yoga || false,
-//     },
-//     timeOfDayPreference: {
-//       morning: preferences.timeOfDayPreference?.morning || false,
-//       afternoon: preferences.timeOfDayPreference?.afternoon || false,
-//       evening: preferences.timeOfDayPreference?.evening || false,
-//       night: preferences.timeOfDayPreference?.night || false,
-//       any: preferences.timeOfDayPreference?.any || false,
-//     },
-//     workoutEnvironment: {
-//       gym: preferences.workoutEnvironment?.gym || false,
-//       home: preferences.workoutEnvironment?.home || false,
-//       outdoor: preferences.workoutEnvironment?.outdoor || false,
-//     },
-//     workoutSplit: {
-//       fullBody: preferences.workoutSplit?.fullBody || false,
-//       targeted: preferences.workoutSplit?.targeted || false,
-//       weeklySplit: preferences.workoutSplit?.weeklySplit || false,
-//     },
-//   };
-// };
+type UserData = Biometric & Gym;
 
 const GenerateWorkoutScreen: React.FC = () => {
-  const localIP = "http://138.47.152.32:5000";
+  const localIP = "http://192.168.1.82:5000";
   
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -80,6 +31,18 @@ const GenerateWorkoutScreen: React.FC = () => {
   const [sets, setSets] = useState('');
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "MM-dd-yyyy"));
+  const [calendarVisible, setCalendarVisible] = useState(false);
+  const [isSaveWorkoutVisible, setSavedModalVisible] = useState(false);
+  const [workoutName, setWorkoutName] = useState('');
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setCalendarVisible(true); // open calendar whenever screen is focused
+    }, [])
+  );
 
   const handleAddExercise = (dayIndex: number) => {
     //console.log("Adding exercise");
@@ -90,18 +53,25 @@ const GenerateWorkoutScreen: React.FC = () => {
   const generateExercise = async (exercise: string) => {
     setLoading(true);
     try {
+
+      const requestBody = {
+        ...userPreferences,
+        startDate: selectedDate,
+      }
+
       const response = await fetch(`${localIP}/generate-exercise/${exercise}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userPreferences),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
-      console.log(data);
-      const reformattedData = data.workoutPlan.replace(/^```json|```/g, '').replace(/\s*```$/g, '').trim();
-      const newExercise: Exercise = JSON.parse(reformattedData);
+      //console.log("RESPONSE: ", data)
+      const reformattedData = JSON.parse(data.workoutPlan);
 
-      //console.log(workoutPlan);
+      const newExercise: Exercise = reformattedData.exercises[0];
+
+      //console.log("newExercise: ", newExercise);
       addExerciseToWorkout(newExercise || null);
 
     } catch (error) {
@@ -112,21 +82,27 @@ const GenerateWorkoutScreen: React.FC = () => {
     setAddModalVisible(false);
   };
   
-  const generateWorkout = async () => {
+  const generateWorkout = async (selectedDate: string) => {
     setLoading(true);
     try {
+
+      const requestBody = {
+        ...userPreferences,
+        startDate: selectedDate,
+      }
+
       const response = await fetch(`${localIP}/generate-workout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userPreferences),
+        body: JSON.stringify(requestBody),
       });
-
-      const data = await response.json();
-      //console.log(data);
-      const reformattedData = data.workoutPlan.replace(/^```json|```/g, '').replace(/\s*```$/g, '').trim();
-      const workoutPlan: Split = JSON.parse(reformattedData);
-
-      //console.log(workoutPlan);
+      
+      const data = await response.json(); // data.workoutPlan is still a string
+      const parsedPlan = JSON.parse(data.workoutPlan); // parsedPlan.Split.days
+      
+      // ✅ Extract the days and wrap them properly
+      const workoutPlan = { days: parsedPlan.Split.days };
+      
       setWorkout(workoutPlan || null);
 
     } catch (error) {
@@ -146,22 +122,12 @@ const GenerateWorkoutScreen: React.FC = () => {
     const biometrics = await fetchUserBiometrics();
     //const tempPreferences = await fetchUserPreferences();
     const gym = await fetchUserGym();
-    const startDate = "1-1-2000";
 
     if (!biometrics) {
       setWorkout(null);
       setLoading(false);
       return;
     }
-    // if (!tempPreferences) {
-    //   setWorkout(null);
-    //   setLoading(false);
-    //   return;
-    // }
-
-
-    // Normalize preferences to ensure all expected fields exist
-    //const preferences = normalizePreferences(tempPreferences);
 
     const defaultGym: Gym = {
       name: ["none"],
@@ -176,198 +142,249 @@ const GenerateWorkoutScreen: React.FC = () => {
       //...preferences,
       ...biometrics,
       ...(gym || defaultGym),
-      startDate,
     };
     setUserData(userInfo);
     setLoading(false);
   }
 
   const renderWorkout = () => {
+    const muscleGroups = ['Chest', 'Back', 'Legs', 'Shoulders', 'Abs', 'Arms'];
     if (!workout) return <Text>No workout plan available.</Text>;
   
-    return (      Array.isArray(workout.days) && workout.days.length > 0 ? (
-        workout.days.map((day, dayIndex) => (
-          <View key={dayIndex} style={styles.workoutDay}>
-            <Text style={styles.dayTitle}>{day.day}</Text>
-  
-            {/* Check if day.exercises is an array before mapping */}
-            {Array.isArray(day.exercises) && day.exercises.length > 0 ? (
-              day.exercises.map((exercise, exIndex) => (
-                <View key={exIndex} style={styles.exerciseContainer}>
-                  <Text style={styles.exerciseName}>{exercise.name}</Text>
+    return (
+      <View>
+        {Array.isArray(workout.days) && workout.days.length > 0 ? (
+          workout.days.map((day, dayIndex) => (
+            <View key={dayIndex} style={styles.workoutDay}>
+              <Text style={styles.dayTitle}>{day.day}</Text>
+    
+              {/* Check if day.exercises is an array before mapping */}
+              {Array.isArray(day.exercises) && day.exercises.length > 0 ? (
+                day.exercises.map((exercise, exIndex) => (
+                  <View key={exIndex} style={styles.exerciseContainer}>
+                    <Text style={styles.exerciseName}>{exercise.name}</Text>
 
-                  <View style={styles.muscleInputContainer}>
-                    <Text style={styles.muscleLabel}>Muscle Group: </Text>
-                    <Text style={styles.muscleInfo}>{exercise.muscle}</Text>
-                  </View>
+                    <View style={styles.muscleInputContainer}>
+                      <Text style={styles.muscleLabel}>Muscle Group: </Text>
+                      <Text style={styles.muscleInfo}>{exercise.muscle}</Text>
+                    </View>
 
-                  <View style={styles.equipmentInputContainer}>
-                    <Text style={styles.equipmentLabel}>Equipment: </Text>
-                    <Text style={styles.equipmentInfo}>{exercise.equipment}</Text>
-                  </View>
+                    <View style={styles.equipmentInputContainer}>
+                      <Text style={styles.equipmentLabel}>Equipment: </Text>
+                      <Text style={styles.equipmentInfo}>{exercise.equipment}</Text>
+                    </View>
 
-                  <View style={styles.equipmentInputContainer}>
-                    <Text style={styles.equipmentLabel}>Weight: </Text>
-                    <Text style={styles.equipmentInfo}>{exercise.weight}</Text>
-                  </View>
+                    <View style={styles.equipmentInputContainer}>
+                      <Text style={styles.equipmentLabel}>Weight: </Text>
+                      <Text style={styles.equipmentInfo}>
+                        {exercise.weight !== undefined && parseFloat(exercise.weight) === 0 
+                          ? "Body Weight" 
+                            : exercise.weight !== undefined && parseFloat(exercise.weight) > 0
+                              ? `${exercise.weight} lbs`
+                              : "Error"}
+                      </Text>
+                    </View>
 
-                  <View style={styles.equipmentInputContainer}>
-                    <Text style={styles.equipmentLabel}>Repetitions: </Text>
-                    <Text style={styles.equipmentInfo}>{exercise.reps}</Text>
-                  </View>
+                    <View style={styles.equipmentInputContainer}>
+                      <Text style={styles.equipmentLabel}>Repetitions: </Text>
+                      <Text style={styles.equipmentInfo}>{exercise.reps}</Text>
+                    </View>
 
-                  <View style={styles.equipmentInputContainer}>
-                    <Text style={styles.equipmentLabel}>Sets: </Text>
-                    <Text style={styles.equipmentInfo}>{exercise.sets}</Text>
-                  </View>
-                  <View style={styles.exerciseButtonsRow}>
-                    <TouchableOpacity
-                      style={styles.editExerciseButton}
-                      onPress={() => setEditModalVisible(true)}
-                    >
-                      <Text style={styles.buttonSmallText}>Edit</Text>
-                    </TouchableOpacity>
-                    <Modal
-                      visible={isEditModalVisible}
-                      animationType="slide"
-                      transparent
-                      onRequestClose={() => setEditModalVisible(false)} // for Android back button
-                    >
-                      <View style={styles.modalOverlay}>
-                        <View style={styles.modalContainer}>
-                          <Text>Edit Exercise</Text>
-                          <View>
-                            <Text>Weight:</Text>
-                            <TextInput
-                              value={weight}
-                              onChangeText={setWeight}
-                              placeholder="Weight (lbs/kg)"
-                              keyboardType="numeric"
-                              style={styles.input}
-                            />
-                          </View>
-                          <View>
-                          <Text>Sets:</Text>
-                            <TextInput
-                              value={sets}
-                              onChangeText={setSets}
-                              placeholder="Sets"
-                              keyboardType="numeric"
-                              style={styles.input}
-                            />
-                          </View>
-                          <View>
-                            <Text>Reps:</Text>
-                            <TextInput
-                              value={reps}
-                              onChangeText={setReps}
-                              placeholder="Reps"
-                              keyboardType="numeric"
-                              style={styles.input}
-                            />
-                          </View>
-
-                          <TouchableOpacity
-                            onPress={() => {
-                              const updatedExercise = {
-                                ...editExercise,
-                                sets: sets,
-                                reps: reps,
-                                weight: weight,
-                              };
-                              exercise.sets = updatedExercise.sets;
-                              exercise.reps = updatedExercise.reps;
-                              exercise.weight = updatedExercise.weight;
-                              // Then close modal
-                              setEditModalVisible(false);
-                            }}
-                          >
-                            <Text>Save</Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-                            <Text>Cancel</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </Modal>
-
-                    <TouchableOpacity
-                      style={styles.removeExerciseButton}
-                      onPress={() => removeExercise(dayIndex, exIndex)}
-                    >
-                      <Text style={styles.buttonSmallText}>Remove</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.label}>No exercises available for this day</Text> // Optional fallback if exercises are empty
-            )}
-            <View>
-              <TouchableOpacity style={styles.addExerciseButton} onPress={() => handleAddExercise(dayIndex)}>
-                <Text style={styles.buttonText}>+ Add Exercise</Text>
-              </TouchableOpacity>
-
-              {/* Modal for Exercise Input */}
-              <Modal
-                visible={isAddModalVisible}
-                animationType="slide"
-                transparent
-                onRequestClose={() => setAddModalVisible(false)} // for Android back button
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.modalContainer}>
-                    <ScrollView contentContainerStyle={styles.scrollContent}>
-                      <Text style={styles.modalTitle}>Select Muscle Group</Text>
-
-                      <Picker
-                        selectedValue={selectedMuscleGroup}
-                        onValueChange={(itemValue) => setSelectedMuscleGroup(itemValue)}
-                        style={{ height: 50, width: '100%' }}
-                      >
-                        <Picker.Item label="Chest" value="chest" />
-                        <Picker.Item label="Back" value="back" />
-                        <Picker.Item label="Legs" value="legs" />
-                        <Picker.Item label="Shoulders" value="shoulder" />
-                        <Picker.Item label="Abs" value="abs" />
-                        <Picker.Item label="Arms" value="arms" />
-                      </Picker>
-
-                      <TouchableOpacity onPress={() => generateExercise(selectedMuscleGroup)}>
-                        <Text>Generate Exercise for Selected Muscle Group</Text>
-                      </TouchableOpacity>
-
-                      <Text>Or Enter Exercise Name</Text>
-                      <TextInput
-                        value={exerciseName}
-                        onChangeText={setExerciseName}
-                        placeholder="Type exercise name"
-                        style={styles.input}
-                      />
+                    <View style={styles.equipmentInputContainer}>
+                      <Text style={styles.equipmentLabel}>Sets: </Text>
+                      <Text style={styles.equipmentInfo}>{exercise.sets}</Text>
+                    </View>
+                    <View style={styles.exerciseButtonsRow}>
                       <TouchableOpacity
-                        onPress={() => generateExercise(exerciseName)}
-                        style={styles.saveButton}
+                        style={styles.editExerciseButton}
+                        onPress={() => {
+                          setSelectedExercise(exercise);
+                          setWeight(exercise.weight || "");
+                          setSets(exercise.sets || "");
+                          setReps(exercise.reps || "");
+                          setSelectedDayIndex(dayIndex);
+                          setSelectedExerciseIndex(exIndex);
+                          setEditModalVisible(true);
+                          setEditModalVisible(true);
+                        }}
                       >
-                        <Text>Create New Exercise</Text>
+                        <Text style={styles.buttonSmallText}>Edit</Text>
                       </TouchableOpacity>
-
                       <TouchableOpacity
-                        onPress={() => setAddModalVisible(false)}
-                        style={styles.closeButton}
+                        style={styles.removeExerciseButton}
+                        onPress={() => removeExercise(dayIndex, exIndex)}
                       >
-                        <Text>Close</Text>
+                        <Text style={styles.buttonSmallText}>Remove</Text>
                       </TouchableOpacity>
-                    </ScrollView>
+                    </View>
                   </View>
-                </View>
-              </Modal>
+                ))
+
+              ) : (
+                <Text style={styles.label}>No exercises available for this day</Text> // Optional fallback if exercises are empty
+              )}
+              <View>
+                <TouchableOpacity style={styles.addExerciseButton} onPress={() => handleAddExercise(dayIndex)}>
+                  <Text style={styles.buttonText}>+ Add Exercise</Text>
+                </TouchableOpacity>                
+              </View>
             </View>
-          </View>
-        ))
-      ) : (
-        <Text>No workout days available</Text> // Fallback if workout.days is empty or not an array
-      )
+          ))
+          
+        ) : (
+          <Text>No workout days available</Text> // Fallback if workout.days is empty or not an array
+        )}
+        
+        {/* Modal for Add Exercise Input */}
+        {isAddModalVisible && (
+          <Modal
+            visible={isAddModalVisible}
+            animationType="slide"
+            transparent
+            onRequestClose={() => setAddModalVisible(false)} // for Android back button
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.editModalContainer}>
+                <Text style={styles.modalTitle}>Add a New Exercise</Text>
+
+                <TouchableOpacity onPress={() => generateExercise(selectedMuscleGroup)}>
+                  <Text>Generate Exercise for Selected Muscle Group</Text>
+                </TouchableOpacity>
+
+
+                <FlatList
+                  key={'muscle-group-2-columns'}
+                  data={muscleGroups}
+                  keyExtractor={(item) => item}
+                  numColumns={2}
+                  contentContainerStyle={{ paddingBottom: 20 }}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={{
+                        flex: 1,
+                        margin: 8,
+                        padding: 15,
+                        paddingVertical: 12,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: 10,
+                        backgroundColor: selectedMuscleGroup === item.toLowerCase() ? '#ddd' : '#fff',
+                        borderWidth: 1,
+                        borderColor: '#ccc',
+                      }}
+                      onPress={() => setSelectedMuscleGroup(item.toLowerCase())}
+                    >
+                      <Text style={{ fontSize: 16, textAlign: 'center' }}>{item}</Text>
+                    </TouchableOpacity>
+                  )}
+                />
+
+                <TouchableOpacity
+                  onPress={() => generateExercise(selectedMuscleGroup)}
+                  style={styles.addGenButton}
+                >
+                  <Text>Create New Exercise</Text>
+                </TouchableOpacity>
+
+                <Text>Or Enter Exercise Name</Text>
+                <TextInput
+                  value={exerciseName}
+                  onChangeText={setExerciseName}
+                  placeholder="Type exercise name"
+                  style={styles.input}
+                />
+                <TouchableOpacity
+                  onPress={() => generateExercise(exerciseName)}
+                  style={styles.addGenButton}
+                >
+                  <Text>Create New Exercise</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setAddModalVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <Text>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        )}
+
+        {isEditModalVisible && selectedExercise !== null && (
+          <Modal
+            visible={isEditModalVisible}
+            animationType="slide"
+            transparent
+            onRequestClose={() => setEditModalVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.editModalContainer}>
+                <Text>Edit Exercise</Text>
+
+                {/* Weight */}
+                <Text>Weight:</Text>
+                <TextInput
+                  value={weight}
+                  onChangeText={setWeight}
+                  placeholder="Weight (lbs/kg)"
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+
+                {/* Sets */}
+                <Text>Sets:</Text>
+                <TextInput
+                  value={sets}
+                  onChangeText={setSets}
+                  placeholder="Sets"
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+
+                {/* Reps */}
+                <Text>Reps:</Text>
+                <TextInput
+                  value={reps}
+                  onChangeText={setReps}
+                  placeholder="Reps"
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+
+                {/* Save */}
+                <TouchableOpacity
+                  onPress={() => {
+                    if (
+                      currDay !== null &&
+                      selectedExerciseIndex !== null &&
+                      workout.days[currDay]?.exercises[selectedExerciseIndex]
+                    ) {
+                      workout.days[currDay].exercises[selectedExerciseIndex] = {
+                        ...workout.days[currDay].exercises[selectedExerciseIndex],
+                        sets,
+                        reps,
+                        weight,
+                      };
+                    }
+
+                    setEditModalVisible(false);
+                    setSelectedExercise(null);
+                  }}
+                >
+                  <Text>Save</Text>
+                </TouchableOpacity>
+
+                {/* Cancel */}
+                <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                  <Text>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        )}
+      </View>
     );
   };
   
@@ -380,6 +397,16 @@ const GenerateWorkoutScreen: React.FC = () => {
     });
   };
   
+  function generalizeWorkout(split: Split): Split {
+    const updatedDays = split.days.map((day, index) => ({
+      ...day,
+      day: `day${index + 1}`, // Replace actual date with "day1", "day2", ...
+    }));
+  
+    return { days: updatedDays };
+  }
+  
+
   const addExerciseToWorkout = (exercise: Exercise) => {
     if (currDay === null) return;
 
@@ -417,30 +444,58 @@ const GenerateWorkoutScreen: React.FC = () => {
     setEditModalVisible(true);
   };
 
-  const handleSaveWorkoutPlan = async () => {
+  const handleSaveWorkoutPlan = async (addToWorkout: Split, workoutPresetName: string) => {
     const user = auth.currentUser;
     if (!user) {
       Alert.alert("Error", "You must be logged in to save your data.");
       return;
     }
     try {
-      const userRef = doc(db, 'users', user.uid, 'workout', 'currentWorkout');
-      const docSnap = await getDoc(userRef);
+      const userRefCurrWorkout = doc(db, 'users', user.uid, 'workout', 'currentWorkout');
+      const docSnapCurrWorkout = await getDoc(userRefCurrWorkout);
+      const userRefSavedWorkouts = doc(db, 'users', user.uid, 'savedWorkouts', 'workouts');
+      const docSnapSavedWorkouts = await getDoc(userRefSavedWorkouts);
 
-      if (!docSnap.exists()) {
+      if (!docSnapCurrWorkout.exists()) {
       console.log("Workout does not exist, creating...");
       } else {
       console.log("Workout already exists, updating...");
       }
 
-      await setDoc(userRef, {
-      workout
+      let existingSavedWorkouts: SavedSplit[] = [];
+
+      if (!docSnapSavedWorkouts.exists()) {
+      console.log("Workout does not exist, creating...");
+      existingSavedWorkouts = [];
+      } else {
+      console.log("Workout already exists, updating...");
+      
+      const data = docSnapSavedWorkouts.data();
+      if (Array.isArray(data.workouts)) {
+        existingSavedWorkouts = data.workouts;
+      } else {
+        console.warn("Unexpected type for 'workouts' in Firestore:", typeof data.workouts);
+        existingSavedWorkouts = [];
+      }
+
+      }
+
+      await setDoc(userRefCurrWorkout, {
+        workout: addToWorkout
       });
 
+      const generalizedSplit: SavedSplit = { name: workoutPresetName, split: generalizeWorkout(addToWorkout) }
+      const updatedWorkouts = [...existingSavedWorkouts, generalizedSplit];
+
+      await setDoc(userRefSavedWorkouts, {
+        workouts: updatedWorkouts
+      }, {merge: true});
+
       // Fetch the document again to confirm it was saved
-      const savedDoc = await getDoc(userRef);
-      if (savedDoc.exists()) {
-      console.log("Workout successfully saved:", savedDoc.data());
+      const savedDocCurrWorkout = await getDoc(userRefCurrWorkout);
+      const savedDocSavedWorkouts = await getDoc(userRefSavedWorkouts);
+      if (savedDocCurrWorkout.exists() && savedDocSavedWorkouts.exists()) {
+      console.log("Workout successfully saved:", savedDocCurrWorkout.data(), savedDocSavedWorkouts.data());
       Alert.alert('Success', 'Workout saved!');
       } else {
       console.error("Failed to confirm workout save.");
@@ -468,36 +523,110 @@ return (
           style={styles.scrollContainer}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]} // Add padding here
         >
-          {/* Date Input */}
-          <Text style={styles.label}>Select Start Date</Text>
-          <TextInput
-            onChangeText={(text) => {
-              setUserData((prev) => {
-                if (!prev) return prev; // or return a default object if needed
-                return {
-                  ...prev,
-                  startDate: text,
-                };
-              });
-            }}
-            placeholder="MM-DD-YYYY"
-            placeholderTextColor="#888"
-          />
+          {/* Calendar Modal */}
+          <Modal visible={calendarVisible} transparent={true} animationType="slide">
+            <View style={styles.modalContainer}>
+              <View style={styles.calenderModalContent}>
+                <Text style={styles.label}>Please select your preferred start day:</Text>
+                <Calendar
+                  onDayPress={(day) => {
+                  setSelectedDate(day.dateString);
+                  setCalendarVisible(false);
+                  generateWorkout(day.dateString);
+                  }}
+                  markedDates={{
+                    [selectedDate]: { selected: true, selectedColor: theme.colors.primary },
+                  }}
+                  theme={{
+                    calendarBackground: theme.colors.cardBackground,
+                    textSectionTitleColor: theme.colors.textSecondary,
+                    selectedDayBackgroundColor: theme.colors.primary,
+                    selectedDayTextColor: theme.colors.blackText,
+                    todayTextColor: theme.colors.warning,
+                    dayTextColor: theme.colors.text,
+                    monthTextColor: theme.colors.text,
+                    arrowColor: theme.colors.primary,
+                    textDisabledColor: "#555",
+                    textDayFontSize: theme.fontSize.medium,
+                    textMonthFontSize: theme.fontSize.large,
+                    textDayHeaderFontSize: theme.fontSize.small,
+                  }}
+                />
+                <TouchableOpacity
+                  onPress={() => setCalendarVisible(false)}
+                  style={{
+                    backgroundColor: theme.colors.secondary,
+                    paddingVertical: theme.spacing.small,
+                    paddingHorizontal: theme.spacing.large,
+                    borderRadius: theme.borderRadius.medium,
+                    marginTop: theme.spacing.medium,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: "#FFA500", fontWeight: "bold", fontSize: theme.fontSize.medium }}>
+                    Close
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
           {renderWorkout()}
         </ScrollView>
       )}
 
       {/* Buttons at bottom */}
       <View style={styles.floatingButtonContainer}>
-        <TouchableOpacity style={styles.genButton} onPress={generateWorkout}>
+        <TouchableOpacity style={styles.genButton} onPress={() => setCalendarVisible(true)}>
           <Text style={styles.buttonText}>Generate</Text>
         </TouchableOpacity>
 
         {workout != null && (
-          <TouchableOpacity style={styles.saveButton} onPress={handleSaveWorkoutPlan}>
-            <Text style={styles.buttonText}>Save Workout</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={() => setSavedModalVisible(true)}
+            >
+              <Text style={styles.buttonText}>Save Workout</Text>
+            </TouchableOpacity>
+
+            <Modal
+              visible={isSaveWorkoutVisible}
+              transparent
+              animationType="slide"
+              onRequestClose={() => setSavedModalVisible(false)}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                  <Text style={styles.modalTitle}>Name Your Workout</Text>
+                  <TextInput
+                    value={workoutName}
+                    onChangeText={setWorkoutName}
+                    placeholder="Enter workout name"
+                    style={styles.input}
+                  />
+                  <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={() => {
+                      handleSaveWorkoutPlan(workout, workoutName); // Call your save logic here
+                      setSavedModalVisible(false);
+                      setWorkoutName('');
+                    }}
+                  >
+                    <Text style={styles.buttonText}>Confirm</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => setSavedModalVisible(false)}
+                  >
+                    <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          </>
         )}
+
       </View>
     </View>
   </KeyboardAvoidingView>
@@ -507,12 +636,28 @@ return (
 };
 
 const styles = StyleSheet.create({
-  picker: {
-    height: 50,
-    width: '100%', // Ensure it takes the full width of the container
-    marginBottom: 15, // Add spacing around the picker
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    padding: 5,
   },
-
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center", // centers vertically
+    alignItems: "center",     // centers horizontally
+    backgroundColor: "rgba(0,0,0,0.5)", // semi-transparent backdrop
+  },
+  confirmButton: {
+    backgroundColor: "#4CAF50",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  cancelButton: {
+    backgroundColor: "#f44336",
+    padding: 10,
+    borderRadius: 8,
+  },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -521,7 +666,21 @@ const styles = StyleSheet.create({
     color: '#333',
   },
 
-  modalContainer: {
+  calenderModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)', // optional: darken background
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  editModalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    width: "80%",
+  },
+
+  editModalContainer: {
     width: '90%',
     backgroundColor: 'white',
     borderRadius: 10, // Rounded corners for a softer look
@@ -593,13 +752,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     zIndex: 1000,
   },  
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 15,
-    backgroundColor: "#F8F9FA",
-  },
 
   title: {
     fontSize: 22,
@@ -624,7 +776,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#2C2C38",
     padding: 15,
     borderRadius: 12,
-    width: "95%",
+    width: 360, // or try 360 if you want fixed
+    alignSelf: "center", // centers the container
     marginVertical: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -663,7 +816,7 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 18,  // Make the exercise name larger
     fontWeight: 'bold',  // Makes it bold to stand out
-    color: '#666',  // Set a color that contrasts with the rest
+    color: "#FFA500",  // Set a color that contrasts with the rest
   },
   muscleInfo: {
     fontSize: 14,  // Slightly smaller font size for muscle
@@ -732,18 +885,33 @@ const styles = StyleSheet.create({
     marginTop: 10,
     alignSelf: 'flex-start',
   },
-  modalContent: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    width: "80%",
+  calenderModalContent: {
+    width: '90%', // Or fixed like 300
+    backgroundColor: theme.colors.cardBackground, // or 'white'
+    padding: theme.spacing.large,
+    borderRadius: theme.borderRadius.large,
+    alignItems: 'center', // center everything inside
+    elevation: 5, // for Android shadow
+    shadowColor: '#000', // for iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
+  
   closeButton: {
     backgroundColor: "#dc3545",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",
   },
+
+  addGenButton: {
+    backgroundColor: "#32CD32",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  }
+  
 });
 
 
