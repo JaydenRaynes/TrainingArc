@@ -43,53 +43,77 @@ app.post("/generate-workout", async (req, res) => {
     // };
 
     const formattedUserData = `
-    📌 **User Biometrics:**
-    - **Age:** ${userData.age || "N/A"}
-    - **Height:** ${userData.height ? `${userData.height} cm` : "N/A"}
-    - **Weight:** ${userData.weight ? `${userData.weight} kg` : "N/A"}
-    - **Goal:** ${userData.fitnessGoal || "N/A"}
-    - **Activity Level:** ${userData.activityLevel || "N/A"}
-    - **Start Date:** ${userData.startDate || "N/A"} ** formatted as MM-DD-YYYY **
-
-    📌 **User Preferences:**
-    - **Experience Level:** ${userData.experienceLevel || "N/A"}
-    - **Workout Frequency in times per week:** ${userData.timesPerWeek || "N/A"} ** This will dictate how many rest days are in the workout ie days with no exercises **
-        Working out 1-2 times a week will require either 1 day with exercises and 6 rest days or 2 days with exercises and 5 rest days.
-        Working out 3-4 times a week will require either 3 day with exercises and 4 rest days or 4 days with exercises and 3 rest days.
-        Working out 5+ times a week will require at least 5 days with exercise, and the remaining number of days as rest days
-    - **Workout Location:** ${userData.workoutPreference || "home"}
-
-       **IMPORTANT NOTE (Please make sure that any movements/exercises don't interfere with the following):**
-    - **Limitations:** ${userData.limitations || "none"} 
-
-    📌 **Gym Preferences if Workout Location is set to gym (otherwise, ignore):**
-    ${userData.gym ? `- **Nearby Gyms:** ${userData.gym.name?.join(", ")}\n- **Equipment Available:** ${userData.gym.equipment?.join(", ")}` : "User has no gym preferences."}
-
-    🔹 **Format Instructions:**
-    - Format each individual exercise to fit the following structure:
-        export interface Exercise {
-          name: string; // Name of the exercise
-          muscle: string; // Target muscle group
-          equipment: string;  // Equipment needed to do it (default to "none" if no equipment)
-          weight: number;  // Recommended weight for the user based off of experience and preferences (provide a number)
-          reps: number;  // Recommended number of repetitions for the user
-          sets: number;  // Recommended number of sets for the user
-          instructions?: string;  // Any optional notes
-        }
-    - Format each workout for the day to fit the following structure:
-        export interface WorkoutDay {
-          day: string;  // Start with the start date given above, where it is formatted as MM-DD-YYYY
-          exercises: Exercise[]; // Add the exercises for the respective days
-        }
-    - Format the entire split to fit the following structure:
-        export interface Split {
-          days: WorkoutDay[]; // Group the days into one split
-        }
-    - Respond with the split already in JSON format ** DO NOT INCLUDE any additional text, explanations, or comments **
-    - Generate a **7-day workout plan** based off of what the client wants or perfers. Rest days will still count as a day.
+    📌 USER BIOMETRICS
+    - Age: ${userData.age || "N/A"} years
+    - Height: ${userData.height || "N/A"}
+    - Weight: ${userData.weight || "N/A"}
+    - Goal: ${userData.fitnessGoal || "N/A"}
+    - Activity Level: ${userData.activityLevel || "N/A"}
+    - Start Date: ${userData.startDate || "N/A"} (format: MM-DD-YYYY)
+    
+    📌 USER PREFERENCES
+    - Experience Level: ${userData.experienceLevel || "Intermediate"}
+    - Workout Frequency (times/week): ${userData.timesPerWeek || "N/A"}
+    - Workout Days: ${userData.dayPreferences?.join(", ") || "Every day works"} (Only these days may include workouts — others must be rest)
+    - Location: ${userData.workoutPreference || "No preference"}
+    - Preferred Equipment: ${userData.equipmentPreference?.join(", ") || "None"}
+    - Preferred Muscle Groups: ${userData.workoutGroupPreference?.join(", ") || "None"}
+    
+    🚫 NON-FLEXIBLE LIMITATIONS
+    - Medical/Physical Restrictions: ${userData.limitations || "None"} (Absolutely avoid incompatible exercises)
+    - Rest Days: Must leave all non-preferred days blank (no exercises)
+    
+    🏋️ GYM SETTINGS (only if location is 'Gym')
+    ${userData.workoutPreference === "Gym" && userData.gym ? `- Gym(s): ${userData.gym.name?.join(", ") || "N/A"}
+    - Equipment at Gym: ${userData.gym.equipment?.join(", ") || "N/A"}` : "Ignore — user is not training at a gym."}
+    
+    📏 WORKOUT STRUCTURE
+    - Generate a workout plan for 7 consecutive days (starting on the start date)
+    - Use only preferred workout days; others are rest days (include empty "exercises": [])
+    - Do not exceed 60 minutes of total volume per workout
+    - Avoid repeating exercises on consecutive days
+    - Ensure rest between training the same muscle groups
+    - 50–60% of exercises each week should target preferred muscle groups
+    
+    💡 INSTRUCTIONS
+    - Use only equipment the user has access to
+    - Replace exercises that conflict with limitations
+    - Begin sessions with compound movements; isolate second if needed
+    - Match weights to user experience (set to 0 for bodyweight)
+    - For each exercise, the weight value must always be a number. Use 0 for bodyweight exercises. Do not use descriptive terms like "light", "moderate", or "heavy". Stick to numerical values only
+    
+    🧾 FORMAT REQUIREMENTS — RETURN STRICT JSON ONLY
+    - The response MUST be a single JSON object using the structure below.
+    - DO NOT include any extra text, comments, markdown, or formatting.
+    - DO NOT wrap in triple backticks or quote blocks.
+    - Respond ONLY with:
+    
+    {
+      "Split": {
+        "days": [
+          {
+            "day": "MM-DD-YYYY",
+            "exercises": [
+              {
+                "name": "Push-Up",
+                "muscle": "Chest",
+                "equipment": "Body-weight",
+                "weight": 0,
+                "reps": 12,
+                "sets": 3,
+                "instructions": "Maintain straight body, lower to ground."
+              }
+            ]
+          },
+          {
+            "day": "MM-DD-YYYY",
+            "exercises": []
+          }
+        ]
+      }
+    }
     `;
-
-
+    
     const response = await axios.post(
       OPENAI_URL,
       {
@@ -198,38 +222,58 @@ app.post("/generate-exercise/:exercise", async (req, res) => {
     // };
 
     const formattedUserData = `
-    📌 **User Biometrics:**
-    - **Age:** ${userData.age || "N/A"}
-    - **Height:** ${userData.height ? `${userData.height} cm` : "N/A"}
-    - **Weight:** ${userData.weight ? `${userData.weight} kg` : "N/A"}
-    - **Goal:** ${userData.fitnessGoal || "N/A"}
-    - **Activity Level:** ${userData.activityLevel || "N/A"}
+    📌 USER BIOMETRICS
+    - Age: ${userData.age || "N/A"} years
+    - Height: ${userData.height || "N/A"}
+    - Weight: ${userData.weight || "N/A"}
+    - Goal: ${userData.fitnessGoal || "N/A"}
+    - Activity Level: ${userData.activityLevel || "N/A"}
+    
+    📌 USER PREFERENCES
+    - Experience Level: ${userData.experienceLevel || "Intermediate"}
+    - Location: ${userData.workoutPreference || "No preference"}
+    - Preferred Equipment: ${userData.equipmentPreference?.join(", ") || "None"}
+    
+    🚫 NON-FLEXIBLE LIMITATIONS
+    - Medical/Physical Restrictions: ${userData.limitations || "None"} (Absolutely avoid incompatible exercises)
+    - Rest Days: Must leave all non-preferred days blank (no exercises)
+    
+    🏋️ GYM SETTINGS (only if location is 'Gym')
+    ${userData.workoutPreference === "Gym" && userData.gym ? `- Gym(s): ${userData.gym.name?.join(", ") || "N/A"}
+    - Equipment at Gym: ${userData.gym.equipment?.join(", ") || "N/A"}` : "Ignore — user is not training at a gym."}
+    
+    📏 WORKOUT STRUCTURE
+    - Generate a single exercise that is similar to ${exercise} or targets ${exercise} muscle group
+    - Avoid repeating exercises on consecutive days
+    
+    💡 INSTRUCTIONS
+    - Use only equipment the user has access to
+    - Match weights to user experience (set to 0 for bodyweight)
+    - For exercise, the weight value must always be a number. Use 0 for bodyweight exercises. Do not use descriptive terms like "light", "moderate", or "heavy". Stick to numerical values only
+    
+    🧾 FORMAT REQUIREMENTS — RETURN STRICT JSON ONLY
+    - The response MUST be a single JSON object using the structure below.
+    - DO NOT include any extra text, comments, markdown, or formatting.
+    - DO NOT wrap in triple backticks or quote blocks.
+    - Respond ONLY with:
 
-    📌 **User Preferences:**
-    - **Experience Level:** ${userData.experienceLevel || "N/A"}
-    - **Workout Location:** ${userData.workoutPreference || "home"}
-
-       **IMPORTANT NOTE (Please make sure that any movements/exercises don't interfere with the following):**
-    - **Limitations:** ${userData.limitations || "none"} 
-
-    📌 **Gym Preferences if Workout Location is set to gym (otherwise, ignore):**
-    ${userData.gym ? `- **Nearby Gyms:** ${userData.gym.name?.join(", ")}\n- **Equipment Available:** ${userData.gym.equipment?.join(", ")}` : "User has no gym preferences."}
-
-    🔹 **Format Instructions:**
-    - Format one exercise with the name ${exercise} or of type ${exercise} to fit the following structure:
-        export interface Exercise {
-          name: string; // Name of the exercise
-          muscle: string; // Target muscle group
-          equipment: string;  // Equipment needed to do it (default to "none" if no equipment)
-          weight: number;  // Recommended weight for the user based off of experience and preferences (provide a number)
-          reps: number;  // Recommended number of repetitions for the user
-          sets: number;  // Recommended number of sets for the user ()
-          instructions?: string;  // Any optional notes
+    {
+      "exercises": [
+        {
+          "name": "Push-Up",
+          "muscle": "Chest",
+          "equipment": "Body-weight",
+          "weight": 0,
+          "reps": 12,
+          "sets": 3,
+          "instructions": "Maintain straight body, lower to ground."
         }
-    - Respond with the exercise already in JSON format, without any additional text or explanations
-    - Generate ONE exercise based on the user's preferences.
+      ]
+    }
+
     `;
 
+    //console.log("formatted data: ", formattedUserData);
 
     const response = await axios.post(
       OPENAI_URL,
