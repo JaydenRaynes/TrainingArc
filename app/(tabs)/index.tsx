@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import WorkoutSourceToggle from "../component/changeWorkout";
 import { SavedSplit } from "../models/savedWorkoutModel";
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { Split, WorkoutDay } from "../models/splitModel";
 =======
 import { SavedSplit } from "../models/savedWorkoutModel";
@@ -24,6 +25,9 @@ import { SavedSplit } from "../models/savedWorkoutModel";
 =======
 import { Split } from "../models/splitModel";
 >>>>>>> 3dd3b73 (got saved workouts to display)
+=======
+import { Split, WorkoutDay } from "../models/splitModel";
+>>>>>>> d09f937 (got adding the saved exercises fully working)
 
 const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
@@ -187,32 +191,29 @@ const WorkoutsPage = () => {
     try {
       const userRefCurrWorkout = doc(db, "users", userID, "workout", "currentWorkout");
   
-      // Step 1: Fetch current active workout data
       const docSnap = await getDoc(userRefCurrWorkout);
       const newSplit: Split = presetSplit.split;
   
-      let existingWorkouts: Split[] = [];
+      let existingDays: WorkoutDay[] = [];
   
       if (docSnap.exists()) {
         const data = docSnap.data();
-        if (Array.isArray(data.workout)) {
-          existingWorkouts = data.workout as Split[];
-        } else {
-          console.warn("Expected 'workouts' to be an array.");
-        }
+        existingDays = data?.workout?.days || [];
       }
   
-      // Step 2: Append the new workout
-      const updatedWorkouts = [...existingWorkouts, newSplit];
+      const updatedDays = [...existingDays, ...newSplit.days];
   
-      // Step 3: Save back to Firestore
-      await setDoc(userRefCurrWorkout, { workout: updatedWorkouts }, { merge: true });
+      await setDoc(userRefCurrWorkout, {
+        workout: { days: updatedDays }
+      }, { merge: true });
   
       console.log("New workout added successfully!");
     } catch (error) {
       console.error("Error adding new workout:", error);
     }
   };
+  
+  
   
 
   const adjustWorkoutBasedOnRatings = (plan: typeof workoutPlan | null) => {
