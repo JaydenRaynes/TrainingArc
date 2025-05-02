@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Switch, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { scheduleNotification, requestNotificationPermission, sendTestNotification } from "../utils/notifications";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function NotificationsSettings({ isNotificationsEnabled, setIsNotificationsEnabled }: any) { 
   const [loading, setLoading] = useState(false);
@@ -9,18 +10,31 @@ export default function NotificationsSettings({ isNotificationsEnabled, setIsNot
   const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
-    const checkPermissions = async () => {
+    const loadState = async () => {
+      const savedTime = await AsyncStorage.getItem("selected_notification_time");
+      if (savedTime) {
+        setSelectedTime(new Date(savedTime));
+      }
+  
+      const savedToggle = await AsyncStorage.getItem("notifications_enabled");
+      if (savedToggle !== null) {
+        setIsNotificationsEnabled(savedToggle === "true");
+      }
+  
       const granted = await requestNotificationPermission();
       if (!granted) {
         setIsNotificationsEnabled(false);
       }
     };
-    checkPermissions();
+  
+    loadState();
   }, []);
+  
 
   const handleNotificationToggle = async (value: boolean) => {
     setIsNotificationsEnabled(value);
-
+    await AsyncStorage.setItem("notifications_enabled", value.toString());
+  
     if (value) {
       setLoading(true);
       try {
@@ -40,6 +54,7 @@ export default function NotificationsSettings({ isNotificationsEnabled, setIsNot
       Alert.alert("Notifications Disabled", "You will no longer receive reminders.");
     }
   };
+  
 
   return (
     <View style={styles.section}>
@@ -66,10 +81,13 @@ export default function NotificationsSettings({ isNotificationsEnabled, setIsNot
               value={selectedTime || new Date()}
               mode="time"
               display="spinner"
-              onChange={(event, date) => {
+              onChange={async (event, date) => {
                 setShowPicker(false);
                 if (date) {
                   setSelectedTime(date);
+                  await AsyncStorage.setItem("selected_notification_time", date.toISOString());
+                  await scheduleNotification(date);
+                  Alert.alert("Notification Updated", "Reminder time has been updated!");
                 }
               }}
             />

@@ -17,6 +17,7 @@ const Biometrics = () => {
   const [workoutPreference, setWorkoutPreference] = useState("");
   const [equipmentPreference, setEquipmentPreference] = useState<string[]>([]);
   const [daysPreference, setDaysPreference] = useState<string[]>([]);
+  const [workoutGroupPreference, setWorkoutGroupPreference] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(false);
   const auth = getAuth();
@@ -27,8 +28,10 @@ const Biometrics = () => {
   const levels = ["Beginner", "Intermediate", "Advanced"];
   const locations = ["Gym", "Home", "No preference"];
   const timesOptions = ["1-2", "3-4", "5+"]; // The new multiple-choice options for workouts per week
-  const equipmentChoice = ["Barbell", "Dumbell", "Machine", "Body weight", "Any"];
+  const equipmentChoice = ["Barbell", "Dumbell", "Machine", "Body weight"];
   const daysChoice = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+  const workoutGroupChoice = ["Arms","Chest","Back","Shoulder","Legs","Core","Cardio"]
+
 
   const handleSubmit = async () => {
     if (!age || !height || !weight || !timesPerWeek || !fitnessGoal || !experienceLevel || !workoutPreference) {
@@ -50,6 +53,7 @@ const Biometrics = () => {
       limitations,
       workoutPreference,
       equipmentPreference,
+      workoutGroupPreference,
       biometricsComplete: true,
     };
 
@@ -139,6 +143,9 @@ const Biometrics = () => {
 
       <Text style={styles.label}>Preferred Equipment</Text>
       {renderMultiSelectButtons(equipmentChoice, equipmentPreference, setEquipmentPreference)}
+
+      <Text style={styles.label}>Preferred Targeted Areas</Text>
+      {renderMultiSelectButtons(workoutGroupChoice, workoutGroupPreference, setWorkoutGroupPreference)}
 
       <Button title={loading ? "Submitting..." : "Submit"} onPress={handleSubmit} disabled={loading} />
     </ScrollView>
