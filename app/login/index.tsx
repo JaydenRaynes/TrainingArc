@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { ScrollView } from "react-native";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -22,6 +23,15 @@ export default function Login() {
   
           if (docSnap.exists()) {
             const userData = docSnap.data();
+
+            // if (!user.emailVerified) {
+            //   Alert.alert(
+            //     "Email Not Verified",
+            //     "Please verify your email address before logging in."
+            //   );
+            //   await auth.signOut(); // Log them out immediately
+            //   return;
+            // }
   
             // Store the next destination based on whether it's the first login
             const nextScreen = userData.isFirstLogin ? "/biometrics" : "/(tabs)";
@@ -46,6 +56,14 @@ export default function Login() {
 
   return (
     <LinearGradient colors={["#0D0D0D", "#191a2f"]} style={styles.background}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={{flexGrow: 1, justifyContent: 'center'}}
+          keyboardShouldPersistTaps="handled"
+        >
       <View style={styles.container}>
         {/* Animated Logo */}
         <Animated.Image
@@ -97,6 +115,8 @@ export default function Login() {
         </Animated.Text>
 
       </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }
