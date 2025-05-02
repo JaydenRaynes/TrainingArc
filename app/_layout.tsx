@@ -1,6 +1,11 @@
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
+import { setupNotificationHandler } from './utils/notifications-setup';
 
 export default function RootLayout() {
+  useEffect(() => {
+    setupNotificationHandler();
+  }, []);
   return (
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />

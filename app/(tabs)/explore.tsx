@@ -17,6 +17,8 @@ const GymMapScreen: React.FC = () => {
   const [popupVisible, setPopupVisible] = useState(false); // Manage visibility of the popup
   const { location, error: locationError } = useUserLocation();
 
+  const mapRef = React.useRef<MapView>(null);
+
   useFocusEffect(
     useCallback(() => {
       if (location) {
@@ -191,7 +193,8 @@ const GymMapScreen: React.FC = () => {
 
   const handleMarkerPress = (gym: Gym) => {
     setSelectedGym(gym);
-    setRegion({
+    setPopupVisible(true); // Show the popup when a gym marker is pressed
+    mapRef.current?.animateToRegion({
       latitude: gym.geometry.location.latitude,
       longitude: gym.geometry.location.longitude,
       latitudeDelta: 0.01,
@@ -229,18 +232,22 @@ const GymMapScreen: React.FC = () => {
         </View>
       )}
       <MapView
+        ref={mapRef}
         key={gyms.length} 
         style={styles.map}
-        region={region || {
+        initialRegion={{
           latitude: location.latitude,
           longitude: location.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.0121,
         }}
+        showsUserLocation={true}
+        
       >
-        <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }}>
+        
+        {/* <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }}>
           <MaterialCommunityIcons name="map-marker" size={40} color="white" />
-        </Marker>
+        </Marker> */}
 
         {gyms.map((gym, index) => (
           <Marker
@@ -251,7 +258,7 @@ const GymMapScreen: React.FC = () => {
             }}
             onPress={() => handleMarkerPress(gym)}
           >
-            <MaterialCommunityIcons name="map-marker" size={50} color="red" />
+            <MaterialCommunityIcons name="dumbbell" size={40} color="white" />
           </Marker>
         ))}
       </MapView>
@@ -325,26 +332,34 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.4)', // Transparent overlay
   },
-  gymPopup: {
-    position: 'absolute',
-    bottom: 80, // Added gap between the popup and tab bar
-    left: 10,
-    right: 10,
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    elevation: 5,
-    zIndex: 10,
-  },
-  gymName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
+gymPopup: {
+  position: 'absolute',
+  bottom: 0,  // Attach to very bottom
+  left: 0,
+  right: 0,
+  backgroundColor: 'white',
+  padding: 20,
+  borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+  elevation: 10,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+  maxHeight: '50%',
+},
+gymName: {
+  fontSize: 22,
+  fontWeight: 'bold',
+  color: '#222',
+  textAlign: 'center',
+  marginBottom: 8,
+},
   gymDetails: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#555',
+    textAlign: 'center',
+    marginBottom: 5,
     marginVertical: 2,
   },
   equipmentContainer: {
@@ -352,28 +367,36 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   equipmentTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 5,
+    textAlign: 'left',
   },
   equipmentList: {
-    maxHeight: 100,
+    maxHeight: 150,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    padding: 10,
   },
   equipmentItem: {
     fontSize: 14,
     color: '#555',
+    marginVertical: 2,
   },
   customButton: {
     backgroundColor: 'green',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginTop: 10,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 15,
+    width: '100%',        // Full width
+    alignItems: 'center',
   },
   buttonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });

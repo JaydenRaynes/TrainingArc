@@ -4,10 +4,13 @@ import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { Calendar } from "react-native-calendars"; // Import Calendar
 import { db, auth } from "../firebaseConfig";
 import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase/firestore";
+import { format, parseISO, parse } from "date-fns";
 import { addDays, format, parse } from "date-fns";
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 import WorkoutChatbot from "../component/WorkoutChatbot";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import WorkoutSourceToggle from "../component/changeWorkout";
 import { SavedSplit } from "../models/savedWorkoutModel";
 import { Split, WorkoutDay } from "../models/splitModel";
 
@@ -21,8 +24,9 @@ const WorkoutsPage = () => {
     workouts: { name: string; sets: number; reps: number; weight: number; completed: boolean }[];
   } | null>(null);
 
-  const [today, setToday] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "mm-dd-yyyy"));
+  const todayDate = format(new Date(), "yyyy-MM-dd"); // ISO format required by markedDates
+  const [today, setToday] = useState(format(new Date(), "EEEE"));
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "MM-dd-yyyy"));
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [timerModalVisible, setTimerModalVisible] = useState(false);
   const [activeWorkout, setActiveWorkout] = useState<string | null>(null);
@@ -34,6 +38,8 @@ const WorkoutsPage = () => {
   const [completedSets, setCompletedSets] = useState<{ [key: string]: boolean }>({});
   const [activeRatingSet, setActiveRatingSet] = useState<string | null>(null);
   const [setRatings, setSetRatings] = useState<{ [key: string]: number }>({});
+  const [showFooterButtons, setShowFooterButtons] = useState(false);
+  const [useAIWorkout, setUseAIWorkout] = useState(true);
   const [isSavedWorkoutModalVisible, setSavedWorkoutModalVisible] = useState(false);
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [savedSplits, setSavedSplits] = useState<SavedSplit[]>([]);
@@ -60,16 +66,56 @@ const WorkoutsPage = () => {
 
   const fetchWorkoutData = (date: string) => {
     if (!userID) return;
-  
-    const userRef = doc(db, "users", userID, 'workout', 'currentWorkout');
+
+    let unsubscribe: (() => void) | null = null;
+
+    const loadWorkout = async () => {
+      setWorkoutPlan(null); // Reset workout plan when loading new data
+
+      if (useAIWorkout) {
+        unsubscribe = fetchAIWorkoutData(selectedDate);
+      } else {
+        await fetchUserWorkoutData(selectedDate);
+        // Since fetchUserWorkoutData is a one-time fetch, set unsubscribe to null
+        unsubscribe = null;
+      }
+    };
+
+    loadWorkout(); // Call loadWorkout whenever dependencies change
+
+    // Load completed sets (this should likely only depend on selectedDate)
+    const loadCompletedSets = async () => {
+      try {
+        const storageKey = `completedSets-${selectedDate}`;
+        const saved = await AsyncStorage.getItem(storageKey);
+        setCompletedSets(saved ? JSON.parse(saved) : {});
+      } catch (e) {
+        console.error('Failed to load completed sets', e);
+      }
+    };
+
+    loadCompletedSets();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe(); // Clean up AI workout listener
+      }
+    };
+  }, [userID, selectedDate, useAIWorkout]);
+
+  const fetchAIWorkoutData = (date: string) => {
+    if (!userID) return () => {};
+
+    const userRef = doc(db, "users", userID, "workout", "currentWorkout");
+
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        //const dayKey = getDayKey(date); // e.g. "Day 1"
-        const [year, month, day] = date.split('-');
+        const [month, day, year] = date.split("-");
         const formattedDate = `${month}-${day}-${year}`;
         const workoutDays = data.workout?.days || [];
         const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
+
         if (matchedDay) {
           setWorkoutPlan({
             split: formattedDate,
@@ -88,8 +134,8 @@ const WorkoutsPage = () => {
         setWorkoutPlan(null);
       }
     });
-  
-    return () => unsubscribe();
+
+    return unsubscribe;
   };
 
   const setNewWorkout = async (presetSplit: SavedSplit) => {
@@ -123,33 +169,63 @@ const WorkoutsPage = () => {
   
   
 
-  const adjustWorkoutBasedOnRatings = (plan: typeof workoutPlan | null) => {
-    if (!plan) return plan;
+  const fetchUserWorkoutData = async (date: string) => {
+    if (!userID) return;
+
+    const userRef = doc(db, "users", userID);
+    const docSnap = await getDoc(userRef);
+    if (!docSnap.exists()) return;
+
+    const data = docSnap.data();
+    const workoutDay = format(parse(date, "MM-dd-yyyy", new Date()), "EEEE"); // "Monday", etc.
+
+    const plan = data?.workoutPlans?.[workoutDay]?.workouts || [];
+
+    const formattedWorkout = {
+      split: workoutDay,
+      workouts: plan.map((w: any) => ({
+        name: w.name,
+        sets: w.sets,
+        reps: w.reps,
+        weight: w.weight,
+        completed: false,
+      })),
+    };
+
+    setWorkoutPlan(formattedWorkout);
+  };
   
-    const updatedWorkouts = plan.workouts.map((exercise, exIndex) => {
-      const updatedExercise = { ...exercise };
+  const handleRatingChange = (exerciseIndex: number, setIndex: number, rating: number) => {
+    const key = `${exerciseIndex}-${setIndex}`;
+    const newRatings = { ...setRatings, [key]: rating };
+    setSetRatings(newRatings);
   
-      for (let setIndex = 0; setIndex < exercise.sets; setIndex++) {
-        const key = `${exIndex}-${setIndex}`;
-        const rating = setRatings[key];
+    // Immediately adjust the next sets in the workoutPlan
+    setWorkoutPlan(prevPlan => {
+      if (!prevPlan) return prevPlan;
   
-        if (rating) {
-          if (rating <= 2) {
-            updatedExercise.reps += 2;
-            updatedExercise.weight += 5;
-          } else if (rating >= 4) {
-            updatedExercise.reps = Math.max(1, updatedExercise.reps - 2);
-            updatedExercise.weight = Math.max(0, updatedExercise.weight - 5);
-          }
+      const updatedPlan = { ...prevPlan };
+      const exercise = updatedPlan.workouts[exerciseIndex];
+  
+      // Only update NEXT sets, not past sets
+      for (let nextSetIndex = setIndex + 1; nextSetIndex < exercise.sets; nextSetIndex++) {
+        if (rating <= 2) {
+          exercise.reps += 2;
+          exercise.weight += 5;
+        } else if (rating >= 4) {
+          exercise.reps = Math.max(1, exercise.reps - 2);
+          exercise.weight = Math.max(0, exercise.weight - 5);
         }
       }
   
-      return updatedExercise;
+      return updatedPlan;
     });
   
-    return { ...plan, workouts: updatedWorkouts };
-  };
+    // After rating is chosen, close the rating UI
+    setActiveRatingSet(null);
+  };  
   
+  const handleSetClick = async (exerciseIndex: number, setIndex: number) => {
   function redateSplit(split: SavedSplit, startDate: string): SavedSplit {
     const baseDate = new Date(startDate);
     console.log("baseDate: ", baseDate);
@@ -172,11 +248,32 @@ const WorkoutsPage = () => {
 
   const handleSetClick = (exerciseIndex: number, setIndex: number) => {
     const key = `${exerciseIndex}-${setIndex}`;
-    setCompletedSets(prev => ({ ...prev, [key]: !prev[key] }));
+    const isCurrentlyCompleted = completedSets[key];
+    const updated = { ...completedSets, [key]: !isCurrentlyCompleted };
+    setCompletedSets(updated);
   
-    // Toggle rating view
-    setActiveRatingSet(prev => (prev === key ? null : key));
-  };  
+    // Save to AsyncStorage
+    try {
+      const storageKey = `completedSets-${selectedDate}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save completed sets', e);
+    }
+  
+    // Get exercise to check how many sets there are
+    const exercise = workoutPlan?.workouts[exerciseIndex];
+    if (!exercise) return;
+  
+    const isLastSet = setIndex === exercise.sets - 1;
+  
+    // ✅ Only show the rating container if the set was just checked
+    if (!isCurrentlyCompleted && !isLastSet) {
+      setActiveRatingSet(key);
+    } else {
+      setActiveRatingSet(null); // hide on uncheck or last set
+    }
+  };
+    
 
   const getDayKey = (dateStr: string): string => {
     const dayIndex = new Date(dateStr).getDay(); // 0 (Sun) to 6 (Sat)
@@ -197,33 +294,59 @@ const WorkoutsPage = () => {
     setWorkoutPlan({ ...workoutPlan, workouts: updatedWorkouts });
   };
 
-  const saveToProgress = async (completedWorkouts: any) => {
-    if (!completedWorkouts || completedWorkouts.length === 0) return;
-    if (!userID) return;
-
-    const progressRef = doc(db, "users", userID, "progress", selectedDate);
-
-    const adjustedPlan = adjustWorkoutBasedOnRatings(workoutPlan);
-    setWorkoutPlan(adjustedPlan); // Update the state with adjusted plan
-    const progressData = {
-      date: selectedDate,
-      workouts: adjustedPlan?.workouts || [],
-    };
-
+  const saveToProgress = async () => {
+    if (!userID || !selectedDate || !workoutPlan || !workoutPlan.workouts) return;
+  
     try {
-      const docSnap = await getDoc(progressRef);
-      if (docSnap.exists()) {
-        await updateDoc(progressRef, { workouts: arrayUnion(...progressData.workouts) });
-      } else {
-        await setDoc(progressRef, progressData);
+      for (let i = 0; i < workoutPlan.workouts.length; i++) {
+        const workout = workoutPlan.workouts[i];
+        const completedSetIndices: number[] = [];
+  
+        for (let j = 0; j < workout.sets; j++) {
+          const key = `${i}-${j}`;
+          if (completedSets[key]) {
+            completedSetIndices.push(j);
+          }
+        }
+  
+        // Skip if no sets were completed
+        if (completedSetIndices.length === 0) continue;
+  
+        const setCount = completedSetIndices.length;
+        const reps = workout.reps;
+        const weight = workout.weight;
+        const exerciseName = workout.name;
+  
+        const newEntry = {
+          date: selectedDate,
+          sets: setCount,
+          reps,
+          weight,
+        };
+  
+        const exerciseRef = doc(db, "users", userID, "progress", exerciseName);
+        const docSnap = await getDoc(exerciseRef);
+  
+        if (docSnap.exists()) {
+          await updateDoc(exerciseRef, {
+            history: arrayUnion(newEntry),
+          });
+        } else {
+          await setDoc(exerciseRef, {
+            history: [newEntry],
+          });
+        }
       }
-      setCompletedSets({}); // Reset completed sets after saving
-      setSetRatings({}); // Reset ratings after saving
-      Alert.alert("Success", "Workouts saved successfully!");
+  
+      //setCompletedSets({});
+      setSetRatings({});
+      Alert.alert("Success", "Completed Exercises Saved!");
     } catch (error) {
       console.error("Error saving progress:", error);
+      Alert.alert("Error", "Failed to save workouts.");
     }
   };
+  
 
   const openTimerModal = (workoutName: string) => {
     setActiveWorkout(workoutName);
@@ -300,7 +423,22 @@ const WorkoutsPage = () => {
   
     setLoadingCalories((prev) => ({ ...prev, [exercise]: false }));
   };
+
+  const selectedDateForCalendar = format(parse(selectedDate, "MM-dd-yyyy", new Date()), "yyyy-MM-dd");
   
+  const markedDates = {
+    [todayDate]: {
+      customStyles: {
+        container: { backgroundColor: theme.colors.warning },
+        text: { color: theme.colors.blackText },
+      },
+    },
+    [selectedDateForCalendar]: {
+      selected: true,
+      selectedColor: theme.colors.primary,
+      selectedTextColor: theme.colors.blackText,
+    },
+  };
 
 
   return (
@@ -317,14 +455,20 @@ const WorkoutsPage = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
           <Calendar
-            onDayPress={(day) => {
-            setSelectedDate(day.dateString);
-            setCalendarVisible(false);
-            fetchWorkoutData(day.dateString);
-            }}
-            markedDates={{
-              [selectedDate]: { selected: true, selectedColor: theme.colors.primary },
-            }}
+            onDayPress={(today) => {
+              const selectedDay = parseISO(today.dateString);
+              const dayName = format(selectedDay, "EEEE");
+              const newDate = format(parseISO(today.dateString), "MM-dd-yyyy");
+              setToday(dayName); // Update the day name
+              setSelectedDate(newDate); // format correctly
+              if (useAIWorkout) {
+                fetchAIWorkoutData(newDate);
+              } else {
+                fetchUserWorkoutData(newDate);
+              }
+              setCalendarVisible(false);
+            }}            
+            markedDates={markedDates}
             theme={{
               calendarBackground: theme.colors.cardBackground,
               textSectionTitleColor: theme.colors.textSecondary,
@@ -358,6 +502,10 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
+      <WorkoutSourceToggle
+        useAIWorkout={useAIWorkout}
+        setUseAIWorkout={setUseAIWorkout}
+      />
       
       {(!workoutPlan?.workouts || workoutPlan.workouts.length === 0) && (
       <View style={{ alignItems: "center", marginVertical: 20 }}>
@@ -405,12 +553,7 @@ const WorkoutsPage = () => {
                         key={rating}
                         style={styles.ratingButton}
                         activeOpacity={0.8}
-                        onPress={() => {
-                          const newRatings = { ...setRatings, [key]: rating };
-                          setSetRatings(newRatings);
-                          console.log(`Set ${key} rated as ${rating}`);
-                          setActiveRatingSet(null); // hide after selection
-                        }}
+                        onPress={() => handleRatingChange(exerciseIndex, setIndex, rating)}
                       >
                         <Text style={styles.ratingText}>{rating}</Text>
                       </TouchableOpacity>
@@ -476,6 +619,36 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
+    <TouchableOpacity
+      style={[styles.saveButton, { backgroundColor: theme.colors.warning }]}
+      onPress={() => setShowFooterButtons(prev => !prev)}
+    >
+    <Text style={styles.saveButtonText}>
+      {showFooterButtons ? "Hide Options" : "Show Options"}
+    </Text>
+  </TouchableOpacity>
+
+{/* Conditionally Render Footer Buttons and Chatbot */}
+{showFooterButtons && (
+  <>
+    <TouchableOpacity
+      style={styles.saveButton}
+      onPress={() => saveToProgress(workoutPlan?.workouts || [])}
+    >
+      <Text style={styles.saveButtonText}>Save Completed Workouts</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={styles.editButton}
+      onPress={() => router.push("/component/splits")}
+    >
+      <Text style={styles.editButtonText}>Edit Splits Page</Text>
+    </TouchableOpacity>
+
+    {/* Chatbot appears with options */}
+    <WorkoutChatbot />
+  </>
+)}
 
       {/* Saved Workout Modal */}
       <Modal visible={isSavedWorkoutModalVisible} animationType="slide" transparent>
