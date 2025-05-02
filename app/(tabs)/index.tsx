@@ -4,8 +4,7 @@ import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { Calendar } from "react-native-calendars"; // Import Calendar
 import { db, auth } from "../firebaseConfig";
 import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase/firestore";
-import { format, parseISO, parse } from "date-fns";
-import { addDays, format, parse } from "date-fns";
+import { format, parseISO, parse, addDays } from "date-fns";
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 import WorkoutChatbot from "../component/WorkoutChatbot";
@@ -24,7 +23,7 @@ const WorkoutsPage = () => {
     workouts: { name: string; sets: number; reps: number; weight: number; completed: boolean }[];
   } | null>(null);
 
-  const todayDate = format(new Date(), "yyyy-MM-dd"); // ISO format required by markedDates
+  const todayDate = format(new Date(), "MM-dd-yyyy"); // ISO format required by markedDates
   const [today, setToday] = useState(format(new Date(), "EEEE"));
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "MM-dd-yyyy"));
   const [calendarVisible, setCalendarVisible] = useState(false);
@@ -46,27 +45,6 @@ const WorkoutsPage = () => {
 
 
   useEffect(() => {
-    const currentDay = format(new Date(), "EEEE");
-    setToday(currentDay);
-    fetchWorkoutData(selectedDate);
-    fetchSavedSplits();
-  }, [userID, selectedDate]);
-
-  const fetchSavedSplits = async () => {
-    if (!userID) return;
-    const userRef = doc(db, "users", userID, 'savedWorkouts', 'workouts');
-    const docSnap = await getDoc(userRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      const splitsArray = data.workouts as SavedSplit[];
-      //console.log("fetched saved splits: ", splitsArray);
-      setSavedSplits(splitsArray);
-    }
-  };
-
-  const fetchWorkoutData = (date: string) => {
-    if (!userID) return;
-
     let unsubscribe: (() => void) | null = null;
 
     const loadWorkout = async () => {
@@ -95,6 +73,7 @@ const WorkoutsPage = () => {
     };
 
     loadCompletedSets();
+    fetchSavedSplits();
 
     return () => {
       if (unsubscribe) {
@@ -102,6 +81,19 @@ const WorkoutsPage = () => {
       }
     };
   }, [userID, selectedDate, useAIWorkout]);
+
+
+  const fetchSavedSplits = async () => {
+    if (!userID) return;
+    const userRef = doc(db, "users", userID, 'savedWorkouts', 'workouts');
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const splitsArray = data.workouts as SavedSplit[];
+      //console.log("fetched saved splits: ", splitsArray);
+      setSavedSplits(splitsArray);
+    }
+  };
 
   const fetchAIWorkoutData = (date: string) => {
     if (!userID) return () => {};
@@ -166,9 +158,6 @@ const WorkoutsPage = () => {
     }
   };
   
-  
-  
-
   const fetchUserWorkoutData = async (date: string) => {
     if (!userID) return;
 
@@ -225,10 +214,8 @@ const WorkoutsPage = () => {
     setActiveRatingSet(null);
   };  
   
-  const handleSetClick = async (exerciseIndex: number, setIndex: number) => {
   function redateSplit(split: SavedSplit, startDate: string): SavedSplit {
-    const baseDate = new Date(startDate);
-    console.log("baseDate: ", baseDate);
+    const baseDate = parse(startDate, "MM-dd-yyyy", new Date());
     const updatedDays = split.split.days.map((day, index) => {
       const newDate = addDays(baseDate, index);
       return {
@@ -246,7 +233,7 @@ const WorkoutsPage = () => {
     };
   }
 
-  const handleSetClick = (exerciseIndex: number, setIndex: number) => {
+  const handleSetClick = async (exerciseIndex: number, setIndex: number) => {
     const key = `${exerciseIndex}-${setIndex}`;
     const isCurrentlyCompleted = completedSets[key];
     const updated = { ...completedSets, [key]: !isCurrentlyCompleted };
@@ -626,29 +613,29 @@ const WorkoutsPage = () => {
     <Text style={styles.saveButtonText}>
       {showFooterButtons ? "Hide Options" : "Show Options"}
     </Text>
-  </TouchableOpacity>
-
-{/* Conditionally Render Footer Buttons and Chatbot */}
-{showFooterButtons && (
-  <>
-    <TouchableOpacity
-      style={styles.saveButton}
-      onPress={() => saveToProgress(workoutPlan?.workouts || [])}
-    >
-      <Text style={styles.saveButtonText}>Save Completed Workouts</Text>
     </TouchableOpacity>
 
-    <TouchableOpacity
-      style={styles.editButton}
-      onPress={() => router.push("/component/splits")}
-    >
-      <Text style={styles.editButtonText}>Edit Splits Page</Text>
-    </TouchableOpacity>
+    {/* Conditionally Render Footer Buttons and Chatbot */}
+    {showFooterButtons && (
+      <>
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={() => saveToProgress()}
+        >
+          <Text style={styles.saveButtonText}>Save Completed Workouts</Text>
+        </TouchableOpacity>
 
-    {/* Chatbot appears with options */}
-    <WorkoutChatbot />
-  </>
-)}
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => router.push("/component/splits")}
+        >
+          <Text style={styles.editButtonText}>Edit Splits Page</Text>
+        </TouchableOpacity>
+
+        {/* Chatbot appears with options */}
+        <WorkoutChatbot />
+      </>
+      )}
 
       {/* Saved Workout Modal */}
       <Modal visible={isSavedWorkoutModalVisible} animationType="slide" transparent>
@@ -697,7 +684,6 @@ const WorkoutsPage = () => {
                       <TouchableOpacity
                         onPress={() => {
                           const updatedSplit = redateSplit(split, selectedDate); // 'selectedDate' should be in MM-dd-yyyy format
-                          console.log("newSplit: ", updatedSplit);
                           setNewWorkout(updatedSplit);
                           setSavedWorkoutModalVisible(false);
                         }}
@@ -723,14 +709,6 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
-
-      <TouchableOpacity style={styles.saveButton} onPress={saveToProgress}>
-        <Text style={styles.saveButtonText}> Save Completed Workouts</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.editButton} onPress={() => router.push("/component/splits")}>
-        <Text style={styles.editButtonText}> Edit Splits Page</Text>
-      </TouchableOpacity>
-      <WorkoutChatbot />
     </View>
   );
 };
