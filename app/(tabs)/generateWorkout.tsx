@@ -958,7 +958,7 @@ return (
               onRequestClose={() => setSavedModalVisible(false)}
             >
               <View style={styles.modalOverlay}>
-                <View style={styles.modalContainer}>
+                <View style={styles.editModalContainer}>
                   <Text style={styles.modalTitle}>Name Your Workout</Text>
                   <TextInput
                     value={workoutName}
