@@ -258,7 +258,7 @@ const GymMapScreen: React.FC = () => {
             }}
             onPress={() => handleMarkerPress(gym)}
           >
-            <MaterialCommunityIcons name="dumbbell" size={40} color="white" />
+            <MaterialCommunityIcons name="dumbbell" size={40} color="orange" />
           </Marker>
         ))}
       </MapView>
