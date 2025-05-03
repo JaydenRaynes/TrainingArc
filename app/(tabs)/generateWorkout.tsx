@@ -1,18 +1,6 @@
 import React, { useState, useEffect } from "react";
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from "react-native";
 import { fetchUserBiometrics, fetchUserGym } from "../Services/fetchUserData";
-=======
-import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal } from "react-native";
-// import { fetchUserBiometrics, fetchUserGym, fetchUserPreferences } from "../Services/fetchUserData";
-import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
-//import { Preferences } from "../models/preferenceModel";
->>>>>>> 8eb1fc3 (Update generateWorkout.tsx)
-=======
-import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from "react-native";
-import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
->>>>>>> d2f527c (Pulling changes)
 import { Gym } from "../models/gymInfoModel";
 import { Biometric } from "../models/biometricModel";
 import { Split, WorkoutDay } from "../models/splitModel";
@@ -29,11 +17,7 @@ import { SavedSplit } from '../models/savedWorkoutModel';
 type UserData = Biometric & Gym;
 
 const GenerateWorkoutScreen: React.FC = () => {
-<<<<<<< HEAD
   const localIP = "http://192.168.1.82:5000";
-=======
-  const localIP = "http://138.47.152.32:5000";
->>>>>>> 6dd479b (All workout page and progress page bug fixes)
   
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -49,21 +33,10 @@ const GenerateWorkoutScreen: React.FC = () => {
   const [weight, setWeight] = useState('');
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "MM-dd-yyyy"));
   const [calendarVisible, setCalendarVisible] = useState(false);
-<<<<<<< HEAD
-<<<<<<< HEAD
   const [isSaveWorkoutVisible, setSavedModalVisible] = useState(false);
   const [workoutName, setWorkoutName] = useState('');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
-<<<<<<< HEAD
-=======
->>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
-=======
-  const [isSaveWorkoutVisible, setSavedModalVisible] = useState(false);
-  const [workoutName, setWorkoutName] = useState('');
->>>>>>> c174b5b (added ability so save workout presets)
-=======
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
 
   useFocusEffect(
     React.useCallback(() => {
@@ -148,7 +121,6 @@ const GenerateWorkoutScreen: React.FC = () => {
     setLoading(true);
     const biometrics = await fetchUserBiometrics();
     //const tempPreferences = await fetchUserPreferences();
-    //const tempPreferences = await fetchUserPreferences();
     const gym = await fetchUserGym();
 
     if (!biometrics) {
@@ -168,31 +140,10 @@ const GenerateWorkoutScreen: React.FC = () => {
 
     const userInfo: UserData = {
       //...preferences,
-      //...preferences,
       ...biometrics,
       ...(gym || defaultGym),
     };
-
-    try {
-      const response = await fetch("http://192.168.1.207:5000/generate-workout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userInfo),
-      });
-
-      const data = await response.json();
-      //console.log(data);
-      const reformattedData = data.workoutPlan.replace(/^```json|```/g, '').replace(/\s*```$/g, '').trim();
-      const workoutPlan: Split = JSON.parse(reformattedData);
-
-      //console.log(workoutPlan);
-      setWorkout(workoutPlan || null);
-
-    } catch (error) {
-      console.error("Error generating workout:", error);
-      setWorkout(null);
-    }
-
+    setUserData(userInfo);
     setLoading(false);
   }
 
@@ -200,33 +151,7 @@ const GenerateWorkoutScreen: React.FC = () => {
     const muscleGroups = ['Chest', 'Back', 'Legs', 'Shoulders', 'Abs', 'Arms'];
     if (!workout) return <Text>No workout plan available.</Text>;
   
-<<<<<<< HEAD
-    return (      <View>
-        {Array.isArray(workout.days) && workout.days.length > 0 ? (
-          workout.days.map((day, dayIndex) => (
-            <View key={dayIndex} style={styles.workoutDay}>
-              <Text style={styles.dayTitle}>{day.day}</Text>
-    
-              {/* Check if day.exercises is an array before mapping */}
-              {Array.isArray(day.exercises) && day.exercises.length > 0 ? (
-                day.exercises.map((exercise, exIndex) => (
-                  <View key={exIndex} style={styles.exerciseContainer}>
-                    <Text style={styles.exerciseName}>{exercise.name}</Text>
-=======
     return (
-<<<<<<< HEAD
-      Array.isArray(workout.days) && workout.days.length > 0 ? (
-        workout.days.map((day, dayIndex) => (
-          <View key={dayIndex} style={styles.workoutDay}>
-            <Text style={styles.dayTitle}>{day.day}</Text>
-  
-            {/* Check if day.exercises is an array before mapping */}
-            {Array.isArray(day.exercises) && day.exercises.length > 0 ? (
-              day.exercises.map((exercise, exIndex) => (
-                <View key={exIndex} style={styles.exerciseContainer}>
-                  <Text style={styles.exerciseName}>{exercise.name}</Text>
->>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
-=======
       <View>
         {Array.isArray(workout.days) && workout.days.length > 0 ? (
           workout.days.map((day, dayIndex) => (
@@ -238,270 +163,11 @@ const GenerateWorkoutScreen: React.FC = () => {
                 day.exercises.map((exercise, exIndex) => (
                   <View key={exIndex} style={styles.exerciseContainer}>
                     <Text style={styles.exerciseName}>{exercise.name}</Text>
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
 
                     <View style={styles.muscleInputContainer}>
                       <Text style={styles.muscleLabel}>Muscle Group: </Text>
                       <Text style={styles.muscleInfo}>{exercise.muscle}</Text>
                     </View>
-<<<<<<< HEAD
-
-                    <View style={styles.equipmentInputContainer}>
-                      <Text style={styles.equipmentLabel}>Equipment: </Text>
-                      <Text style={styles.equipmentInfo}>{exercise.equipment}</Text>
-                    </View>
-
-<<<<<<< HEAD
-                    <View style={styles.equipmentInputContainer}>
-                      <Text style={styles.equipmentLabel}>Weight: </Text>
-                      <Text style={styles.equipmentInfo}>
-                        {exercise.weight !== undefined && parseFloat(exercise.weight) === 0 
-                          ? "Body Weight" 
-                            : exercise.weight !== undefined && parseFloat(exercise.weight) > 0
-                              ? `${exercise.weight} lbs`
-                              : "Error"}
-                      </Text>
-                    </View>
-=======
-                  <View style={styles.equipmentInputContainer}>
-                    <Text style={styles.equipmentLabel}>Weight: </Text>
-                    <Text style={styles.equipmentInfo}>
-                      {exercise.weight !== undefined && parseFloat(exercise.weight) === 0 
-                        ? "Body Weight" 
-                        : exercise.weight || "Error"}
-                    </Text>
-                  </View>
->>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
-
-                    <View style={styles.equipmentInputContainer}>
-                      <Text style={styles.equipmentLabel}>Repetitions: </Text>
-                      <Text style={styles.equipmentInfo}>{exercise.reps}</Text>
-                    </View>
-
-                  <View style={styles.equipmentInputContainer}>
-                    <Text style={styles.equipmentLabel}>Sets: </Text>
-                    <Text style={styles.equipmentInfo}>{exercise.sets}</Text>
-                  </View>
-                  <View style={styles.exerciseButtonsRow}>
-                    <TouchableOpacity
-                      style={styles.editExerciseButton}
-                      onPress={() => setEditModalVisible(true)}
-                    >
-                      <Text style={styles.buttonSmallText}>Edit</Text>
-                    </TouchableOpacity>
-                    <Modal
-                      visible={isEditModalVisible}
-                      animationType="slide"
-                      transparent
-                      onRequestClose={() => setEditModalVisible(false)} // for Android back button
-                    >
-                      <View style={styles.modalOverlay}>
-                        <View style={styles.editModalContainer}>
-                          <Text>Edit Exercise</Text>
-                          <View>
-                            <Text>Weight:</Text>
-                            <TextInput
-                              value={weight}
-                              onChangeText={setWeight}
-                              placeholder="Weight (lbs/kg)"
-                              keyboardType="numeric"
-                              style={styles.input}
-                            />
-                          </View>
-                          <View>
-                          <Text>Sets:</Text>
-                            <TextInput
-                              value={sets}
-                              onChangeText={setSets}
-                              placeholder="Sets"
-                              keyboardType="numeric"
-                              style={styles.input}
-                            />
-                          </View>
-                          <View>
-                            <Text>Reps:</Text>
-                            <TextInput
-                              value={reps}
-                              onChangeText={setReps}
-                              placeholder="Reps"
-                              keyboardType="numeric"
-                              style={styles.input}
-                            />
-                          </View>
-
-                          <TouchableOpacity
-                            onPress={() => {
-                              const updatedExercise = {
-                                ...editExercise,
-                                sets: sets,
-                                reps: reps,
-                                weight: weight,
-                              };
-                              exercise.sets = updatedExercise.sets;
-                              exercise.reps = updatedExercise.reps;
-                              exercise.weight = updatedExercise.weight;
-                              // Then close modal
-                              setEditModalVisible(false);
-                            }}
-                          >
-                            <Text>Save</Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-                            <Text>Cancel</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </Modal>
-
-                    <TouchableOpacity
-                      style={styles.removeExerciseButton}
-                      onPress={() => removeExercise(dayIndex, exIndex)}
-                    >
-                      <Text style={styles.buttonSmallText}>Remove</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.label}>No exercises available for this day</Text> // Optional fallback if exercises are empty
-            )}
-            <View>
-              <TouchableOpacity style={styles.addExerciseButton} onPress={() => handleAddExercise(dayIndex)}>
-                <Text style={styles.buttonText}>+ Add Exercise</Text>
-              </TouchableOpacity>
-
-              {/* Modal for Exercise Input */}
-              <Modal
-                visible={isAddModalVisible}
-                animationType="slide"
-                transparent
-                onRequestClose={() => setAddModalVisible(false)} // for Android back button
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.editModalContainer}>
-                    <Text style={styles.modalTitle}>Add a New Exercise</Text>
-
-                    <TouchableOpacity onPress={() => generateExercise(selectedMuscleGroup)}>
-                      <Text>Generate Exercise for Selected Muscle Group</Text>
-                    </TouchableOpacity>
-
-<<<<<<< HEAD
-                <TouchableOpacity onPress={() => generateExercise(selectedMuscleGroup)}>
-                  <Text>Generate Exercise for Selected Muscle Group</Text>
-                </TouchableOpacity>
-
-
-                <FlatList
-                  key={'muscle-group-2-columns'}
-                  data={muscleGroups}
-                  keyExtractor={(item) => item}
-                  numColumns={2}
-                  contentContainerStyle={{ paddingBottom: 20 }}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={{
-                        flex: 1,
-                        margin: 8,
-                        padding: 15,
-                        paddingVertical: 12,
-                        borderRadius: 8,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: 10,
-                        backgroundColor: selectedMuscleGroup === item.toLowerCase() ? '#ddd' : '#fff',
-                        borderWidth: 1,
-                        borderColor: '#ccc',
-                      }}
-                      onPress={() => setSelectedMuscleGroup(item.toLowerCase())}
-                    >
-                      <Text style={{ fontSize: 16, textAlign: 'center' }}>{item}</Text>
-                    </TouchableOpacity>
-                  )}
-                />
-
-                <TouchableOpacity
-                  onPress={() => generateExercise(selectedMuscleGroup)}
-                  style={styles.addGenButton}
-                >
-                  <Text>Create New Exercise</Text>
-                </TouchableOpacity>
-
-                <Text>Or Enter Exercise Name</Text>
-                <TextInput
-                  value={exerciseName}
-                  onChangeText={setExerciseName}
-                  placeholder="Type exercise name"
-                  style={styles.input}
-                />
-                <TouchableOpacity
-                  onPress={() => generateExercise(exerciseName)}
-                  style={styles.addGenButton}
-                >
-                  <Text>Create New Exercise</Text>
-                </TouchableOpacity>
-=======
-
-                    <FlatList
-                      key={'muscle-group-2-columns'}
-                      data={muscleGroups}
-                      keyExtractor={(item) => item}
-                      numColumns={2}
-                      contentContainerStyle={{ paddingBottom: 20 }}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          style={{
-                            flex: 1,
-                            margin: 8,
-                            padding: 15,
-                            paddingVertical: 12,
-                            borderRadius: 8,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: 10,
-                            backgroundColor: selectedMuscleGroup === item.toLowerCase() ? '#ddd' : '#fff',
-                            borderWidth: 1,
-                            borderColor: '#ccc',
-                          }}
-                          onPress={() => setSelectedMuscleGroup(item.toLowerCase())}
-                        >
-                          <Text style={{ fontSize: 16, textAlign: 'center' }}>{item}</Text>
-                        </TouchableOpacity>
-                      )}
-                    />
->>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
-
-                    <TouchableOpacity
-                      onPress={() => generateExercise(selectedMuscleGroup)}
-                      style={styles.saveButton}
-                    >
-                      <Text>Create New Exercise</Text>
-                    </TouchableOpacity>
-
-                    <Text>Or Enter Exercise Name</Text>
-                    <TextInput
-                      value={exerciseName}
-                      onChangeText={setExerciseName}
-                      placeholder="Type exercise name"
-                      style={styles.input}
-                    />
-                    <TouchableOpacity
-                      onPress={() => generateExercise(exerciseName)}
-                      style={styles.saveButton}
-                    >
-                      <Text>Create New Exercise</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => setAddModalVisible(false)}
-                      style={styles.closeButton}
-                    >
-                      <Text>Close</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </Modal>
-=======
 
                     <View style={styles.equipmentInputContainer}>
                       <Text style={styles.equipmentLabel}>Equipment: </Text>
@@ -562,7 +228,6 @@ const GenerateWorkoutScreen: React.FC = () => {
                   <Text style={styles.buttonText}>+ Add Exercise</Text>
                 </TouchableOpacity>                
               </View>
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
             </View>
           ))
           
@@ -791,28 +456,14 @@ const GenerateWorkoutScreen: React.FC = () => {
       const userRefSavedWorkouts = doc(db, 'users', user.uid, 'savedWorkouts', 'workouts');
       const docSnapSavedWorkouts = await getDoc(userRefSavedWorkouts);
 
-<<<<<<< HEAD
-      if (!docSnap.exists()) {
-        console.log("Workout does not exist, creating...");
-=======
       if (!docSnapCurrWorkout.exists()) {
       console.log("Workout does not exist, creating...");
->>>>>>> c174b5b (added ability so save workout presets)
       } else {
       console.log("Workout already exists, updating...");
       }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-      await setDoc(userRef, {
-        workout
-      });
-
-=======
-=======
       let existingSavedWorkouts: SavedSplit[] = [];
 
->>>>>>> 3dd3b73 (got saved workouts to display)
       if (!docSnapSavedWorkouts.exists()) {
       console.log("Workout does not exist, creating...");
       existingSavedWorkouts = [];
@@ -845,7 +496,6 @@ const GenerateWorkoutScreen: React.FC = () => {
       const savedDocSavedWorkouts = await getDoc(userRefSavedWorkouts);
       if (savedDocCurrWorkout.exists() && savedDocSavedWorkouts.exists()) {
       console.log("Workout successfully saved:", savedDocCurrWorkout.data(), savedDocSavedWorkouts.data());
->>>>>>> c174b5b (added ability so save workout presets)
       Alert.alert('Success', 'Workout saved!');
       } else {
       console.error("Failed to confirm workout save.");
@@ -875,15 +525,7 @@ return (
         >
           {/* Calendar Modal */}
           <Modal visible={calendarVisible} transparent={true} animationType="slide">
-<<<<<<< HEAD
-<<<<<<< HEAD
             <View style={styles.modalContainer}>
-=======
-            <View style={styles.calenderModalContainer}>
->>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
-=======
-            <View style={styles.modalContainer}>
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
               <View style={styles.calenderModalContent}>
                 <Text style={styles.label}>Please select your preferred start day:</Text>
                 <Calendar
@@ -921,15 +563,7 @@ return (
                     alignItems: "center",
                   }}
                 >
-<<<<<<< HEAD
-<<<<<<< HEAD
                   <Text style={{ color: "#FFA500", fontWeight: "bold", fontSize: theme.fontSize.medium }}>
-=======
-                  <Text style={{ color: theme.colors.buttonText, fontWeight: "bold", fontSize: theme.fontSize.medium }}>
->>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
-=======
-                  <Text style={{ color: "#FFA500", fontWeight: "bold", fontSize: theme.fontSize.medium }}>
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
                     Close
                   </Text>
                 </TouchableOpacity>
@@ -1002,10 +636,6 @@ return (
 };
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -1017,11 +647,6 @@ const styles = StyleSheet.create({
     alignItems: "center",     // centers horizontally
     backgroundColor: "rgba(0,0,0,0.5)", // semi-transparent backdrop
   },
-<<<<<<< HEAD
-=======
->>>>>>> c174b5b (added ability so save workout presets)
-=======
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
   confirmButton: {
     backgroundColor: "#4CAF50",
     padding: 10,
@@ -1032,18 +657,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f44336",
     padding: 10,
     borderRadius: 8,
-<<<<<<< HEAD
-=======
   },
-<<<<<<< HEAD
-  picker: {
-    height: 50,
-    width: '100%', // Ensure it takes the full width of the container
-    marginBottom: 15, // Add spacing around the picker
->>>>>>> c174b5b (added ability so save workout presets)
-  },
-=======
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -1290,10 +904,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
 
   addGenButton: {
     backgroundColor: "#32CD32",
@@ -1301,11 +911,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   }
-<<<<<<< HEAD
-=======
->>>>>>> 9c1e6cf (updated generating workouts, added calender, fixed issues)
-=======
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
   
 });
 

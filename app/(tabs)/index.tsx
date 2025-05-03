@@ -4,46 +4,14 @@ import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { Calendar } from "react-native-calendars"; // Import Calendar
 import { db, auth } from "../firebaseConfig";
 import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, setDoc } from "firebase/firestore";
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { format, parseISO, parse, addDays } from "date-fns";
-=======
-import { addDays, format, parse } from "date-fns";
->>>>>>> 3dd3b73 (got saved workouts to display)
-import { useRouter } from "expo-router";
-import { theme } from "../utils/theme";
-import WorkoutChatbot from "../component/WorkoutChatbot";
-<<<<<<< HEAD
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import WorkoutSourceToggle from "../component/changeWorkout";
-import { SavedSplit } from "../models/savedWorkoutModel";
-<<<<<<< HEAD
-<<<<<<< HEAD
-import { Split, WorkoutDay } from "../models/splitModel";
-=======
-import { SavedSplit } from "../models/savedWorkoutModel";
->>>>>>> c174b5b (added ability so save workout presets)
-=======
-import { Split } from "../models/splitModel";
->>>>>>> 3dd3b73 (got saved workouts to display)
-=======
-import { Split, WorkoutDay } from "../models/splitModel";
->>>>>>> d09f937 (got adding the saved exercises fully working)
-=======
-import { format, parseISO, parse } from "date-fns";
-=======
-import { format, parseISO, parse, addDays } from "date-fns";
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
 import { useRouter } from "expo-router";
 import { theme } from "../utils/theme";
 import WorkoutChatbot from "../component/WorkoutChatbot";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-<<<<<<< HEAD
->>>>>>> 6dd479b (All workout page and progress page bug fixes)
-=======
 import WorkoutSourceToggle from "../component/changeWorkout";
->>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
+import { SavedSplit } from "../models/savedWorkoutModel";
+import { Split, WorkoutDay } from "../models/splitModel";
 
 const API_KEY = "2VhN5ZCAl1Drgyx6t9tb5w==7Uv8h7cd6WmVkAqP"; // Replace with your API Key
 
@@ -55,15 +23,7 @@ const WorkoutsPage = () => {
     workouts: { name: string; sets: number; reps: number; weight: number; completed: boolean }[];
   } | null>(null);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
   const todayDate = format(new Date(), "MM-dd-yyyy"); // ISO format required by markedDates
-=======
-  const todayDate = format(new Date(), "yyyy-MM-dd"); // ISO format required by markedDates
->>>>>>> 6dd479b (All workout page and progress page bug fixes)
-=======
-  const todayDate = format(new Date(), "MM-dd-yyyy"); // ISO format required by markedDates
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
   const [today, setToday] = useState(format(new Date(), "EEEE"));
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "MM-dd-yyyy"));
   const [calendarVisible, setCalendarVisible] = useState(false);
@@ -77,112 +37,14 @@ const WorkoutsPage = () => {
   const [completedSets, setCompletedSets] = useState<{ [key: string]: boolean }>({});
   const [activeRatingSet, setActiveRatingSet] = useState<string | null>(null);
   const [setRatings, setSetRatings] = useState<{ [key: string]: number }>({});
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> d2f527c (Pulling changes)
   const [showFooterButtons, setShowFooterButtons] = useState(false);
   const [useAIWorkout, setUseAIWorkout] = useState(true);
-=======
->>>>>>> c174b5b (added ability so save workout presets)
   const [isSavedWorkoutModalVisible, setSavedWorkoutModalVisible] = useState(false);
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [savedSplits, setSavedSplits] = useState<SavedSplit[]>([]);
-<<<<<<< HEAD
-=======
-  const [showFooterButtons, setShowFooterButtons] = useState(false);
-  const [useAIWorkout, setUseAIWorkout] = useState(true);
->>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
-=======
 
->>>>>>> d2f527c (Pulling changes)
 
   useEffect(() => {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-    let unsubscribe: (() => void) | null = null;
-
-    const loadWorkout = async () => {
-      setWorkoutPlan(null); // Reset workout plan when loading new data
-
-      if (useAIWorkout) {
-        unsubscribe = fetchAIWorkoutData(selectedDate);
-      } else {
-        await fetchUserWorkoutData(selectedDate);
-        // Since fetchUserWorkoutData is a one-time fetch, set unsubscribe to null
-        unsubscribe = null;
-      }
-    };
-
-    loadWorkout(); // Call loadWorkout whenever dependencies change
-
-    // Load completed sets (this should likely only depend on selectedDate)
-    const loadCompletedSets = async () => {
-      try {
-        const storageKey = `completedSets-${selectedDate}`;
-        const saved = await AsyncStorage.getItem(storageKey);
-        setCompletedSets(saved ? JSON.parse(saved) : {});
-      } catch (e) {
-        console.error('Failed to load completed sets', e);
-      }
-    };
-
-    loadCompletedSets();
-    fetchSavedSplits();
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe(); // Clean up AI workout listener
-      }
-    };
-  }, [userID, selectedDate, useAIWorkout]);
-
-
-  const fetchSavedSplits = async () => {
-=======
-    const currentDay = format(new Date(), "EEEE");
-    setToday(currentDay);
-    fetchWorkoutData(selectedDate);
-    fetchSavedSplits();
-  }, [userID, selectedDate]);
-
-  const fetchSavedSplits = async () => {
-    if (!userID) return;
-    const userRef = doc(db, "users", userID, 'savedWorkouts', 'workouts');
-    const docSnap = await getDoc(userRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      const splitsArray = data.workouts as SavedSplit[];
-      //console.log("fetched saved splits: ", splitsArray);
-      setSavedSplits(splitsArray);
-    }
-  };
-
-  const fetchWorkoutData = (date: string) => {
->>>>>>> c174b5b (added ability so save workout presets)
-    if (!userID) return;
-    const userRef = doc(db, "users", userID, 'savedWorkouts', 'workouts');
-    const docSnap = await getDoc(userRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      const splitsArray = data.workouts as SavedSplit[];
-      //console.log("fetched saved splits: ", splitsArray);
-      setSavedSplits(splitsArray);
-    }
-  };
-
-  const fetchAIWorkoutData = (date: string) => {
-    if (!userID) return () => {};
-
-    const userRef = doc(db, "users", userID, "workout", "currentWorkout");
-
-=======
-    if (!userID) return;
-
-=======
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
     let unsubscribe: (() => void) | null = null;
 
     const loadWorkout = async () => {
@@ -237,53 +99,23 @@ const WorkoutsPage = () => {
     if (!userID) return () => {};
 
     const userRef = doc(db, "users", userID, "workout", "currentWorkout");
-<<<<<<< HEAD
-  
->>>>>>> 6dd479b (All workout page and progress page bug fixes)
-=======
 
->>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const [month, day, year] = date.split("-");
-<<<<<<< HEAD
-<<<<<<< HEAD
-        const formattedDate = `${month}-${day}-${year}`;
-        //const dayKey = getDayKey(date); // e.g. "Day 1"
-        const [year, month, day] = date.split('-');
-=======
->>>>>>> 6dd479b (All workout page and progress page bug fixes)
-=======
->>>>>>> d2f527c (Pulling changes)
         const formattedDate = `${month}-${day}-${year}`;
         const workoutDays = data.workout?.days || [];
         const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-        const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
-  
-=======
->>>>>>> c174b5b (added ability so save workout presets)
-=======
-
->>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
         if (matchedDay) {
           setWorkoutPlan({
-            split: formattedDate,
             split: formattedDate,
             workouts: matchedDay.exercises.map((ex: any) => ({
               name: ex.name,
               sets: ex.sets,
               reps: ex.reps,
               weight: ex.weight,
-<<<<<<< HEAD
-              sets: ex.sets,
-              reps: ex.reps,
-              weight: ex.weight,
-=======
->>>>>>> d2f527c (Pulling changes)
               completed: false,
             })),
           });
@@ -294,49 +126,12 @@ const WorkoutsPage = () => {
         setWorkoutPlan(null);
       }
     });
-<<<<<<< HEAD
-<<<<<<< HEAD
 
     return unsubscribe;
   };
 
   const setNewWorkout = async (presetSplit: SavedSplit) => {
     if (!userID) return;
-<<<<<<< HEAD
-=======
-  
-    try {
-      const userRefCurrWorkout = doc(db, "users", userID, "workout", "currentWorkout");
-  
-      const docSnap = await getDoc(userRefCurrWorkout);
-      const newSplit: Split = presetSplit.split;
-  
-      let existingDays: WorkoutDay[] = [];
-  
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        existingDays = data?.workout?.days || [];
-      }
-  
-      const updatedDays = [...existingDays, ...newSplit.days];
-  
-      await setDoc(userRefCurrWorkout, {
-        workout: { days: updatedDays }
-      }, { merge: true });
-  
-      console.log("New workout added successfully!");
-    } catch (error) {
-      console.error("Error adding new workout:", error);
-    }
-  };
-  
-<<<<<<< HEAD
-  
-  
-
-  const adjustWorkoutBasedOnRatings = (plan: typeof workoutPlan | null) => {
-    if (!plan) return plan;
->>>>>>> 3dd3b73 (got saved workouts to display)
   
     try {
       const userRefCurrWorkout = doc(db, "users", userID, "workout", "currentWorkout");
@@ -401,57 +196,6 @@ const WorkoutsPage = () => {
       const updatedPlan = { ...prevPlan };
       const exercise = updatedPlan.workouts[exerciseIndex];
   
-=======
-  
-    return unsubscribe;
-  };  
-=======
->>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
-
-    return unsubscribe;
-  };
-
-=======
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
-  const fetchUserWorkoutData = async (date: string) => {
-    if (!userID) return;
-
-    const userRef = doc(db, "users", userID);
-    const docSnap = await getDoc(userRef);
-    if (!docSnap.exists()) return;
-
-    const data = docSnap.data();
-    const workoutDay = format(parse(date, "MM-dd-yyyy", new Date()), "EEEE"); // "Monday", etc.
-
-    const plan = data?.workoutPlans?.[workoutDay]?.workouts || [];
-
-    const formattedWorkout = {
-      split: workoutDay,
-      workouts: plan.map((w: any) => ({
-        name: w.name,
-        sets: w.sets,
-        reps: w.reps,
-        weight: w.weight,
-        completed: false,
-      })),
-    };
-
-    setWorkoutPlan(formattedWorkout);
-  };
-  
-  const handleRatingChange = (exerciseIndex: number, setIndex: number, rating: number) => {
-    const key = `${exerciseIndex}-${setIndex}`;
-    const newRatings = { ...setRatings, [key]: rating };
-    setSetRatings(newRatings);
-  
-    // Immediately adjust the next sets in the workoutPlan
-    setWorkoutPlan(prevPlan => {
-      if (!prevPlan) return prevPlan;
-  
-      const updatedPlan = { ...prevPlan };
-      const exercise = updatedPlan.workouts[exerciseIndex];
-  
->>>>>>> 6dd479b (All workout page and progress page bug fixes)
       // Only update NEXT sets, not past sets
       for (let nextSetIndex = setIndex + 1; nextSetIndex < exercise.sets; nextSetIndex++) {
         if (rating <= 2) {
@@ -466,40 +210,8 @@ const WorkoutsPage = () => {
       return updatedPlan;
     });
   
-<<<<<<< HEAD
-<<<<<<< HEAD
     // After rating is chosen, close the rating UI
     setActiveRatingSet(null);
-=======
-    return { ...plan, workouts: updatedWorkouts };
-  };
-  
-  function redateSplit(split: SavedSplit, startDate: string): SavedSplit {
-    const baseDate = parse(startDate, "MM-dd-yyyy", new Date());
-    const updatedDays = split.split.days.map((day, index) => {
-      const newDate = addDays(baseDate, index);
-      return {
-        ...day,
-        day: format(newDate, "MM-dd-yyyy"), // update the 'day' field with the new date
-      };
-    });
-  
-    return {
-      ...split,
-      split: {
-        ...split.split,
-        days: updatedDays,
-      },
-    };
-  }
-
-  const handleSetClick = async (exerciseIndex: number, setIndex: number) => {
-    const key = `${exerciseIndex}-${setIndex}`;
-    setCompletedSets(prev => ({ ...prev, [key]: !prev[key] }));
-  
-    // Toggle rating view
-    setActiveRatingSet(prev => (prev === key ? null : key));
->>>>>>> 3dd3b73 (got saved workouts to display)
   };  
   
   function redateSplit(split: SavedSplit, startDate: string): SavedSplit {
@@ -521,12 +233,6 @@ const WorkoutsPage = () => {
     };
   }
 
-=======
-    // After rating is chosen, close the rating UI
-    setActiveRatingSet(null);
-  };  
-  
->>>>>>> 6dd479b (All workout page and progress page bug fixes)
   const handleSetClick = async (exerciseIndex: number, setIndex: number) => {
     const key = `${exerciseIndex}-${setIndex}`;
     const isCurrentlyCompleted = completedSets[key];
@@ -742,21 +448,11 @@ const WorkoutsPage = () => {
               const newDate = format(parseISO(today.dateString), "MM-dd-yyyy");
               setToday(dayName); // Update the day name
               setSelectedDate(newDate); // format correctly
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 969f85b (fixed error forgetting to update calender for both workout fetches)
               if (useAIWorkout) {
                 fetchAIWorkoutData(newDate);
               } else {
                 fetchUserWorkoutData(newDate);
               }
-<<<<<<< HEAD
-=======
-              fetchWorkoutData(newDate); // Fetch workout data for the selected date
->>>>>>> 6dd479b (All workout page and progress page bug fixes)
-=======
->>>>>>> 969f85b (fixed error forgetting to update calender for both workout fetches)
               setCalendarVisible(false);
             }}            
             markedDates={markedDates}
@@ -793,17 +489,10 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
       <WorkoutSourceToggle
         useAIWorkout={useAIWorkout}
         setUseAIWorkout={setUseAIWorkout}
       />
-<<<<<<< HEAD
-=======
->>>>>>> c174b5b (added ability so save workout presets)
       
       {(!workoutPlan?.workouts || workoutPlan.workouts.length === 0) && (
       <View style={{ alignItems: "center", marginVertical: 20 }}>
@@ -812,31 +501,17 @@ const WorkoutsPage = () => {
           style={styles.viewSavedButton}
           onPress={() => setSavedWorkoutModalVisible(true)} // You'll define this modal separately
         >
-<<<<<<< HEAD
-<<<<<<< HEAD
           <Text style={styles.buttonText}>Choose from saved workouts</Text>
-=======
-          <Text style={styles.buttonText}>View Saved Workouts</Text>
->>>>>>> c174b5b (added ability so save workout presets)
-=======
-          <Text style={styles.buttonText}>Choose from saved workouts</Text>
->>>>>>> 3dd3b73 (got saved workouts to display)
         </TouchableOpacity>
       </View>
       )}
 
-<<<<<<< HEAD
-=======
->>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
-=======
->>>>>>> d2f527c (Pulling changes)
       <FlatList
         data={workoutPlan?.workouts || []}
         keyExtractor={(item, index) => `${item.name}-${index}`}
         renderItem={({ item, index: exerciseIndex }) => (
         <View style={styles.workoutItem}>
           <Text style={styles.headerText}>
-            {item.name} - {item.sets}x{item.reps} @ {item.weight}
             {item.name} - {item.sets}x{item.reps} @ {item.weight}
           </Text>
 
@@ -931,11 +606,6 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
     <TouchableOpacity
       style={[styles.saveButton, { backgroundColor: theme.colors.warning }]}
       onPress={() => setShowFooterButtons(prev => !prev)}
@@ -943,15 +613,8 @@ const WorkoutsPage = () => {
     <Text style={styles.saveButtonText}>
       {showFooterButtons ? "Hide Options" : "Show Options"}
     </Text>
-<<<<<<< HEAD
-<<<<<<< HEAD
     </TouchableOpacity>
 
-<<<<<<< HEAD
-=======
-    </TouchableOpacity>
-
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
     {/* Conditionally Render Footer Buttons and Chatbot */}
     {showFooterButtons && (
       <>
@@ -975,12 +638,6 @@ const WorkoutsPage = () => {
       )}
 
       {/* Saved Workout Modal */}
-=======
-
->>>>>>> c174b5b (added ability so save workout presets)
-=======
-      {/* Saved Workout Modal */}
->>>>>>> 3dd3b73 (got saved workouts to display)
       <Modal visible={isSavedWorkoutModalVisible} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -1022,22 +679,11 @@ const WorkoutsPage = () => {
                           )}
                         </View>
                       ))}
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 3dd3b73 (got saved workouts to display)
 
                       {/* Select Workout Button */}
                       <TouchableOpacity
                         onPress={() => {
                           const updatedSplit = redateSplit(split, selectedDate); // 'selectedDate' should be in MM-dd-yyyy format
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-                          console.log("newSplit: ", updatedSplit);
->>>>>>> 3dd3b73 (got saved workouts to display)
-=======
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
                           setNewWorkout(updatedSplit);
                           setSavedWorkoutModalVisible(false);
                         }}
@@ -1051,11 +697,6 @@ const WorkoutsPage = () => {
                       >
                         <Text style={{ color: "#fff", fontWeight: "bold" }}>Select Workout</Text>
                       </TouchableOpacity>
-<<<<<<< HEAD
-=======
->>>>>>> c174b5b (added ability so save workout presets)
-=======
->>>>>>> 3dd3b73 (got saved workouts to display)
                     </View>
                   )}
                 </View>
@@ -1068,48 +709,6 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
-      <TouchableOpacity style={styles.saveButton} onPress={saveToProgress}>
-=======
-      <TouchableOpacity style={styles.saveButton} onPress={() => saveToProgress(workoutPlan?.workouts || [])}>
->>>>>>> 6dd479b (All workout page and progress page bug fixes)
-        <Text style={styles.saveButtonText}> Save Completed Workouts</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.editButton} onPress={() => router.push("/component/splits")}>
-        <Text style={styles.editButtonText}> Edit Splits Page</Text>
-      </TouchableOpacity>
-      <WorkoutChatbot />
->>>>>>> c174b5b (added ability so save workout presets)
-=======
-  </TouchableOpacity>
-
-{/* Conditionally Render Footer Buttons and Chatbot */}
-{showFooterButtons && (
-  <>
-    <TouchableOpacity
-      style={styles.saveButton}
-      onPress={() => saveToProgress(workoutPlan?.workouts || [])}
-    >
-      <Text style={styles.saveButtonText}>Save Completed Workouts</Text>
-    </TouchableOpacity>
-
-    <TouchableOpacity
-      style={styles.editButton}
-      onPress={() => router.push("/component/splits")}
-    >
-      <Text style={styles.editButtonText}>Edit Splits Page</Text>
-    </TouchableOpacity>
-
-    {/* Chatbot appears with options */}
-    <WorkoutChatbot />
-  </>
-)}
->>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
-=======
->>>>>>> c40e9ea (Reworked the context for AI, bug fixes, added updated biometrics)
     </View>
   );
 };
