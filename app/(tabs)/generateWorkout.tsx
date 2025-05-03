@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from "react-native";
 import { fetchUserBiometrics, fetchUserGym } from "../Services/fetchUserData";
 =======
@@ -8,6 +9,10 @@ import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity
 import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
 //import { Preferences } from "../models/preferenceModel";
 >>>>>>> 8eb1fc3 (Update generateWorkout.tsx)
+=======
+import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from "react-native";
+import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
+>>>>>>> d2f527c (Pulling changes)
 import { Gym } from "../models/gymInfoModel";
 import { Biometric } from "../models/biometricModel";
 import { Split, WorkoutDay } from "../models/splitModel";

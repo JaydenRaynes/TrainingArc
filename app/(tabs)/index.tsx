@@ -79,6 +79,9 @@ const WorkoutsPage = () => {
   const [setRatings, setSetRatings] = useState<{ [key: string]: number }>({});
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> d2f527c (Pulling changes)
   const [showFooterButtons, setShowFooterButtons] = useState(false);
   const [useAIWorkout, setUseAIWorkout] = useState(true);
 =======
@@ -86,10 +89,14 @@ const WorkoutsPage = () => {
   const [isSavedWorkoutModalVisible, setSavedWorkoutModalVisible] = useState(false);
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
   const [savedSplits, setSavedSplits] = useState<SavedSplit[]>([]);
+<<<<<<< HEAD
 =======
   const [showFooterButtons, setShowFooterButtons] = useState(false);
   const [useAIWorkout, setUseAIWorkout] = useState(true);
 >>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
+=======
+
+>>>>>>> d2f527c (Pulling changes)
 
   useEffect(() => {
 <<<<<<< HEAD
@@ -241,11 +248,14 @@ const WorkoutsPage = () => {
         const data = docSnap.data();
         const [month, day, year] = date.split("-");
 <<<<<<< HEAD
+<<<<<<< HEAD
         const formattedDate = `${month}-${day}-${year}`;
         //const dayKey = getDayKey(date); // e.g. "Day 1"
         const [year, month, day] = date.split('-');
 =======
 >>>>>>> 6dd479b (All workout page and progress page bug fixes)
+=======
+>>>>>>> d2f527c (Pulling changes)
         const formattedDate = `${month}-${day}-${year}`;
         const workoutDays = data.workout?.days || [];
         const matchedDay = workoutDays.find((d: any) => d.day === formattedDate);
@@ -268,9 +278,12 @@ const WorkoutsPage = () => {
               sets: ex.sets,
               reps: ex.reps,
               weight: ex.weight,
+<<<<<<< HEAD
               sets: ex.sets,
               reps: ex.reps,
               weight: ex.weight,
+=======
+>>>>>>> d2f527c (Pulling changes)
               completed: false,
             })),
           });
@@ -812,8 +825,11 @@ const WorkoutsPage = () => {
       </View>
       )}
 
+<<<<<<< HEAD
 =======
 >>>>>>> 467bac0 (Created a component to swap between AI and user workout. added button and functionailty to workout page)
+=======
+>>>>>>> d2f527c (Pulling changes)
       <FlatList
         data={workoutPlan?.workouts || []}
         keyExtractor={(item, index) => `${item.name}-${index}`}
