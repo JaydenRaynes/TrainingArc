@@ -119,7 +119,7 @@ const Biometrics = () => {
       <TextInput style={styles.input} keyboardType="numeric" value={weight} onChangeText={setWeight} />
 
       <Text style={styles.label}>How many times a week do you want to workout?</Text>
-      {renderOptionButtons(timesOptions, timesPerWeek, setTimesPerWeek)} {/* Render the multiple-choice options */}
+      {renderOptionButtons(timesOptions, timesPerWeek, setTimesPerWeek)} 
 
       <Text style={styles.label}>What days of the week can you workout?</Text>
       {renderMultiSelectButtons(daysChoice, daysPreference, setDaysPreference)}
