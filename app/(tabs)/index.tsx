@@ -430,12 +430,21 @@ const WorkoutsPage = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerText}>{today}'s Workout</Text>
+      <View style={styles.headerRow}>
+        {/* Left Button */}
+        <TouchableOpacity style={styles.sideButton} onPress={() => setCalendarVisible(true)}>
+          <Text style={styles.sideButtonText}>📅</Text>
+        </TouchableOpacity>
 
-      {/* Button to open calendar */}
-      <TouchableOpacity style={styles.calendarButton} onPress={() => setCalendarVisible(true)}>
-        <Text style={styles.calendarButtonText}>Pick a Date</Text>
-      </TouchableOpacity>
+        {/* Center Title */}
+        <Text style={styles.headerText}>{today}'s Workout</Text>
+
+        {/* Right Toggle */}
+        <WorkoutSourceToggle
+          useAIWorkout={useAIWorkout}
+          setUseAIWorkout={setUseAIWorkout}
+        />
+      </View>
 
       {/* Calendar Modal */}
       <Modal visible={calendarVisible} transparent={true} animationType="slide">
@@ -489,10 +498,6 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
-      <WorkoutSourceToggle
-        useAIWorkout={useAIWorkout}
-        setUseAIWorkout={setUseAIWorkout}
-      />
       
       {(!workoutPlan?.workouts || workoutPlan.workouts.length === 0) && (
       <View style={{ alignItems: "center", marginVertical: 20 }}>
@@ -606,36 +611,26 @@ const WorkoutsPage = () => {
           </View>
         </View>
       </Modal>
-    <TouchableOpacity
-      style={[styles.saveButton, { backgroundColor: theme.colors.warning }]}
-      onPress={() => setShowFooterButtons(prev => !prev)}
-    >
-    <Text style={styles.saveButtonText}>
-      {showFooterButtons ? "Hide Options" : "Show Options"}
-    </Text>
-    </TouchableOpacity>
 
     {/* Conditionally Render Footer Buttons and Chatbot */}
-    {showFooterButtons && (
-      <>
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={() => saveToProgress()}
-        >
-          <Text style={styles.saveButtonText}>Save Completed Workouts</Text>
-        </TouchableOpacity>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 10, position: "absolute", bottom: 0, left: 0, right: 0, paddingVertical: 10, paddingHorizontal: 10, backgroundColor: "black" }}>
+      <TouchableOpacity
+        style={[styles.saveButton, { flex: 1 }]}
+        onPress={() => saveToProgress()}
+      >
+        <Text style={styles.saveButtonText}>Save Workout</Text>
+      </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => router.push("/component/splits")}
-        >
-          <Text style={styles.editButtonText}>Edit Splits Page</Text>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.editButton, { flex: 1 }]}
+        onPress={() => router.push("/component/splits")}
+      >
+        <Text style={styles.editButtonText}>Edit Splits</Text>
+      </TouchableOpacity>
+    </View>
 
-        {/* Chatbot appears with options */}
-        <WorkoutChatbot />
-      </>
-      )}
+    {/* Chatbot appears with options */}
+    <WorkoutChatbot />
 
       {/* Saved Workout Modal */}
       <Modal visible={isSavedWorkoutModalVisible} animationType="slide" transparent>
@@ -717,7 +712,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    padding: theme.spacing.medium,
+    paddingBottom: theme.spacing.medium,
   },
   modalContainer: {
     flex: 1,
@@ -783,7 +778,6 @@ const styles = StyleSheet.create({
     flexShrink: 1, // Prevents hidden content
     minHeight: 100, // Ensures item doesn't collapse
   },
-    
   checkboxText: {
     fontSize: theme.fontSize.medium,
     color: theme.colors.text,
@@ -801,7 +795,6 @@ const styles = StyleSheet.create({
   color: theme.colors.primary,
   textAlign: "center",
 },
-
 timerDisplay: {
   fontSize: 48,
   fontWeight: "bold",
@@ -814,7 +807,6 @@ timerButtonsContainer: {
   alignItems: "center",
   gap: 12,
 },
-
 timerButton: {
   width: "80%",
   paddingVertical: 12,
@@ -826,7 +818,6 @@ timerButton: {
   shadowRadius: 3,
   elevation: 2,
 },
-
 buttonText: {
   color: "#fff",
   fontWeight: "600",
@@ -841,7 +832,6 @@ actionButton: {
   justifyContent: "center",
   minWidth: 100,
 },
-
 actionButtonText: {
   color: theme.colors.buttonText,
   fontSize: theme.fontSize.medium,
@@ -859,9 +849,7 @@ saveButton: {
   paddingVertical: theme.spacing.medium,
   borderRadius: theme.borderRadius.medium,
   alignItems: "center",
-  marginTop: theme.spacing.large,
 },
-
 saveButtonText: {
   color: theme.colors.buttonText,
   fontSize: theme.fontSize.medium,
@@ -872,10 +860,8 @@ editButton: {
   paddingVertical: theme.spacing.medium,
   borderRadius: theme.borderRadius.medium,
   alignItems: "center",
-  marginTop: theme.spacing.small,
 },
 editButtonText: {
-  color: theme.colors.buttonText,
   fontSize: theme.fontSize.medium,
   fontWeight: "bold",
   color: theme.colors.text,
@@ -891,7 +877,6 @@ ratingButtons: {
   justifyContent: "space-between",
   marginTop: 8,
 },
-
 ratingButton: {
   backgroundColor: theme.colors.primary,
   paddingVertical: 8,
@@ -909,6 +894,22 @@ setsContainer: {
   marginTop: theme.spacing.small,
   marginBottom: theme.spacing.medium,
   paddingHorizontal: theme.spacing.small,
+},
+headerRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingHorizontal: 16,
+  marginTop: 0,
+  marginBottom: 10,
+},
+sideButton: {
+  width: 40,
+  height: 40,
+  backgroundColor: theme.colors.primary,
+  borderRadius: 100,
+  alignItems: 'center',
+  justifyContent: 'center',
 },
 });
 

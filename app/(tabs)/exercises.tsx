@@ -85,6 +85,7 @@ const Index = () => {
       <TextInput
         style={styles.searchBar}
         placeholder="Search exercises..."
+        placeholderTextColor="gray"
         value={searchTerm}
         onChangeText={setSearchTerm}
         onSubmitEditing={handleSearch} // Trigger search when pressing "Enter"

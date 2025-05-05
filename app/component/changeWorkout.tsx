@@ -19,9 +19,7 @@ const WorkoutSourceToggle: React.FC<Props> = ({ useAIWorkout, setUseAIWorkout })
       onPress={() => setUseAIWorkout(prev => !prev)}
     >
       <Text style={styles.toggleText}>
-        {useAIWorkout
-          ? "Using: AI Workout (Switch to My Plan)"
-          : "Using: My Plan (Switch to AI Workout)"}
+        {useAIWorkout ? "AI" : "Split"}
       </Text>
     </TouchableOpacity>
   );
@@ -29,11 +27,14 @@ const WorkoutSourceToggle: React.FC<Props> = ({ useAIWorkout, setUseAIWorkout })
 
 const styles = StyleSheet.create({
   toggleButton: {
-    paddingVertical: theme.spacing.medium,
-    borderRadius: theme.borderRadius.medium,
-    alignItems: "center",
-    marginBottom: theme.spacing.medium,
-  },
+    width: 40,
+    height: 40,
+    borderWidth: 2,
+    borderColor: 'orange',
+    borderRadius: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },  
   toggleText: {
     color: theme.colors.buttonText,
     fontWeight: "bold",

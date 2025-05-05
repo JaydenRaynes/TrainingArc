@@ -109,6 +109,15 @@ export default function ProfilePage() {
         <Text style={styles.settingsText}>View My Progress</Text>
       </TouchableOpacity>
 
+      {/* Set Biometrics Button */}
+      <TouchableOpacity
+        style={[styles.actionButton]}
+        onPress={() => router.push("/biometrics")}
+      >
+        <Feather name="list" size={20} color="white" style={{ marginRight: 8 }} />
+        <Text style={[styles.settingsText]}>Update Biometrics</Text>
+      </TouchableOpacity>
+
       {/* Settings Button */}
       <TouchableOpacity
         style={styles.actionButton}
