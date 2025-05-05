@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from "react-native";
-import { fetchUserBiometrics, fetchUserGym } from "../Services/fetchUserData";
+import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
 import { Gym } from "../models/gymInfoModel";
 import { Biometric } from "../models/biometricModel";
 import { Split, WorkoutDay } from "../models/splitModel";
@@ -17,8 +17,7 @@ import { SavedSplit } from '../models/savedWorkoutModel';
 type UserData = Biometric & Gym;
 
 const GenerateWorkoutScreen: React.FC = () => {
-  const localIP = "http://192.168.1.82:5000";
-  
+  const localIP = "http://10.0.0.16:5000"; // Replace with your local IP
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [isAddModalVisible, setAddModalVisible] = useState(false);  // to toggle modal visibility

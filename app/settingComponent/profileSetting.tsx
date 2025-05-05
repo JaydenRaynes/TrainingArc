@@ -90,16 +90,6 @@ export default function ProfileSettings({
             <TouchableOpacity style={styles.button} onPress={handleSaveProfile}>
               <Text style={styles.buttonText}>Save Profile</Text>
             </TouchableOpacity>
-
-            {/* Set Biometrics Button */}
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={() => router.push("/biometrics")}
-            >
-              <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-                Update Biometrics
-              </Text>
-            </TouchableOpacity>
           </View>
         )}
       </Animated.View>
