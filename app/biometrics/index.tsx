@@ -107,6 +107,9 @@ const Biometrics = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 20 }}>
+        <Text style={{ color: "white", fontSize: 25 }}>←</Text>
+      </TouchableOpacity>
       <Text style={styles.header}>Your Fitness Profile</Text>
 
       <Text style={styles.label}>Age</Text>

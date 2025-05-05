@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from "react-native";
 import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
-import { fetchUserBiometrics, fetchUserGym } from "../services/fetchUserData";
 import { Gym } from "../models/gymInfoModel";
 import { Biometric } from "../models/biometricModel";
 import { Split, WorkoutDay } from "../models/splitModel";

@@ -25,8 +25,10 @@ export default function ProfilePage() {
     if (!user) return;
   
     const userRef = doc(db, "users", user.uid);
+    const biometricsRef = doc(db, "users", user.uid, "newBiometrics", "data");
     const unsubscribe = onSnapshot(userRef, async (userSnap) => {
       let gymName = "None";
+      let fitnessGoal = "Not set";
   
       try {
         const gymSnapshot = await getDocs(collection(db, "users", user.uid, "gym"));
@@ -34,6 +36,11 @@ export default function ProfilePage() {
           const firstGym = gymSnapshot.docs[0].data();
           gymName = firstGym.name?.[0] || "None";
         }
+        const bioSnap = await getDoc(biometricsRef);
+      if (bioSnap.exists()) {
+        const bioData = bioSnap.data();
+        fitnessGoal = bioData.fitnessGoal || "Not set";
+      }
       } catch (err) {
         console.warn("Could not fetch gym info:", err.message || err);
       }
@@ -44,8 +51,8 @@ export default function ProfilePage() {
           name: userData.name || "",
           username: userData.username || "",
           email: user.email || "",
-          location: gymName,
-          joined: userData.joined || "",
+          location: userData.preferredGymName || "None",
+          joined: fitnessGoal,
           photoURL: userData.photoURL || "https://i.pravatar.cc/300",
         });
       }
@@ -83,7 +90,6 @@ export default function ProfilePage() {
           style={styles.profileImage}
         />
       </TouchableOpacity>
-
       {/* User Info */}
       <Text style={styles.name}>{profileData.name}</Text>
       <Text style={styles.username}>@{profileData.username}</Text>
@@ -96,7 +102,7 @@ export default function ProfilePage() {
         <Text style={styles.infoLabel}>Preferred Gym:</Text>
         <Text style={styles.infoValue}>{profileData.location}</Text>
 
-        <Text style={styles.infoLabel}>Joined:</Text>
+        <Text style={styles.infoLabel}>Fitness Goal:</Text>
         <Text style={styles.infoValue}>{profileData.joined}</Text>
       </View>
 
