@@ -72,7 +72,23 @@ function TabLayout() {
   }, [copilotEvents]);
 
   return (
-      <Tabs screenOptions={{ headerShown: false }}>
+    <Tabs
+    screenOptions={{
+      headerShown: false,
+      tabBarStyle: {
+        backgroundColor: "#000", // black background
+        borderTopColor: "transparent",
+        borderTopWidth: 0,
+        elevation: 0,
+        shadowOpacity: 0,
+      },
+      tabBarActiveTintColor: "#FFA500", // white for active icon/text
+      tabBarInactiveTintColor: "#AAAAAA", // grey for inactive icon/text
+      tabBarLabelStyle: {
+        fontSize: 11,
+      },
+    }}
+  >
         {/* Progress Tab */}
         <Tabs.Screen
           name="progress"

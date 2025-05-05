@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,6 +23,7 @@ export default function Login() {
   
           if (docSnap.exists()) {
             const userData = docSnap.data();
+            console.log("isFirstLogin:", userData.isFirstLogin);
 
             // if (!user.emailVerified) {
             //   Alert.alert(
@@ -34,7 +35,19 @@ export default function Login() {
             // }
   
             // Store the next destination based on whether it's the first login
-            const nextScreen = userData.isFirstLogin ? "/biometrics" : "/(tabs)";
+            if (userData.isFirstLogin) {
+              // Update the user's first login status in Firestore
+              await updateDoc(docRef, { isFirstLogin: false });
+  
+              // Navigate to the biometrics screen
+              router.replace({
+                pathname: "/Animation/animation",
+                params: {
+                  nextScreen: "/biometrics", 
+                  animationKey: Date.now().toString(),
+                },
+              });
+            } else {
   
             // Navigate to animation screen with the nextScreen as a parameter
             router.replace({
@@ -43,7 +56,7 @@ export default function Login() {
                 nextScreen: "/(tabs)/shop", 
                 animationKey: Date.now().toString() }, // Pass the next screen destination and force screen refresh
             });
-          }
+          }}
         })
         .catch((error) => {
           Alert.alert("Error", error.message);

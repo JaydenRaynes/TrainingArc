@@ -9,9 +9,16 @@ const AnimationScreen: React.FC = () => {
   const { nextScreen, animationKey } = useLocalSearchParams();
 
   // Ensure nextScreen is always a string
-  const destination: string = Array.isArray(nextScreen)
-    ? nextScreen[0]
-    : nextScreen || "/(tabs)/shop";
+  let destination = "/(tabs)/shop"; // default fallback
+
+if (typeof nextScreen === "string") {
+  destination = nextScreen;
+} else if (Array.isArray(nextScreen) && nextScreen.length > 0) {
+  destination = nextScreen[0];
+}
+
+console.log("AnimationScreen → Navigating to:", destination);
+
 
     const handleAnimationFinish = () => {
       router.replace(destination);

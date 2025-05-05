@@ -150,7 +150,15 @@ const Biometrics = () => {
       <Text style={styles.label}>Preferred Targeted Areas</Text>
       {renderMultiSelectButtons(workoutGroupChoice, workoutGroupPreference, setWorkoutGroupPreference)}
 
-      <Button title={loading ? "Submitting..." : "Submit"} onPress={handleSubmit} disabled={loading} />
+      <TouchableOpacity
+        style={[styles.submitButton, loading && styles.disabledButton]}
+        onPress={handleSubmit}
+        disabled={loading}
+      >
+        <Text style={styles.submitButtonText}>
+          {loading ? "Submitting..." : "Submit"}
+        </Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };
@@ -198,4 +206,28 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.medium,
     color: theme.colors.text,
   },
+  submitButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: theme.borderRadius.medium,
+    alignItems: "center",
+    marginTop: theme.spacing.large,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  
+  disabledButton: {
+    backgroundColor: "#888", // or use theme.colors.disabled if defined
+  },
+  
+  submitButtonText: {
+    color: "#0D0D0D", // or theme.colors.textDark if defined
+    fontSize: theme.fontSize.medium,
+    fontWeight: "bold",
+  },
+  
 });
