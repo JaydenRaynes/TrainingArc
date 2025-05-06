@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { getAuth } from "firebase/auth";
 import { doc, getDoc, updateDoc, getDocs, collection  } from "firebase/firestore";
 import { db } from "../firebaseConfig";
+import { onSnapshot } from "firebase/firestore";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -21,26 +22,27 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    const fetchProfileData = async () => {
-      if (!user) return;
+    if (!user) return;
   
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-  
+    const userRef = doc(db, "users", user.uid);
+    const biometricsRef = doc(db, "users", user.uid, "newBiometrics", "data");
+    const unsubscribe = onSnapshot(userRef, async (userSnap) => {
       let gymName = "None";
+      let fitnessGoal = "Not set";
+  
       try {
-        // Get the first gym document from the subcollection
         const gymSnapshot = await getDocs(collection(db, "users", user.uid, "gym"));
         if (!gymSnapshot.empty) {
           const firstGym = gymSnapshot.docs[0].data();
           gymName = firstGym.name?.[0] || "None";
         }
+        const bioSnap = await getDoc(biometricsRef);
+      if (bioSnap.exists()) {
+        const bioData = bioSnap.data();
+        fitnessGoal = bioData.fitnessGoal || "Not set";
+      }
       } catch (err) {
-        if (err instanceof Error) {
-          console.warn("Could not fetch gym info:", err.message);
-        } else {
-          console.warn("Could not fetch gym info:", err);
-        }
+        console.warn("Could not fetch gym info:", err.message || err);
       }
   
       if (userSnap.exists()) {
@@ -49,14 +51,14 @@ export default function ProfilePage() {
           name: userData.name || "",
           username: userData.username || "",
           email: user.email || "",
-          location: gymName,
-          joined: userData.joined || "",
+          location: userData.preferredGymName || "None",
+          joined: fitnessGoal,
           photoURL: userData.photoURL || "https://i.pravatar.cc/300",
         });
       }
-    };
+    });
   
-    fetchProfileData();
+    return () => unsubscribe();
   }, [user]);
   
 
@@ -88,7 +90,6 @@ export default function ProfilePage() {
           style={styles.profileImage}
         />
       </TouchableOpacity>
-
       {/* User Info */}
       <Text style={styles.name}>{profileData.name}</Text>
       <Text style={styles.username}>@{profileData.username}</Text>
@@ -101,7 +102,7 @@ export default function ProfilePage() {
         <Text style={styles.infoLabel}>Preferred Gym:</Text>
         <Text style={styles.infoValue}>{profileData.location}</Text>
 
-        <Text style={styles.infoLabel}>Joined:</Text>
+        <Text style={styles.infoLabel}>Fitness Goal:</Text>
         <Text style={styles.infoValue}>{profileData.joined}</Text>
       </View>
 
