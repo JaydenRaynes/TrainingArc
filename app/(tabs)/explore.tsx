@@ -8,6 +8,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import useUserLocation from '../mapFunctions/userLocation';
 import fetchNearbyGyms from '../mapFunctions/nearbyGyms';
 import { Gym } from '../models/gymInfoModel';
+import mapStyle from '../utils/mapStyle';
 
 const GymMapScreen: React.FC = () => {
   const [gyms, setGyms] = useState<Gym[]>([]);
@@ -16,6 +17,7 @@ const GymMapScreen: React.FC = () => {
   const [region, setRegion] = useState<any>(null);
   const [popupVisible, setPopupVisible] = useState(false); // Manage visibility of the popup
   const { location, error: locationError } = useUserLocation();
+
 
   const mapRef = React.useRef<MapView>(null);
 
@@ -151,6 +153,68 @@ const GymMapScreen: React.FC = () => {
             "Gymnastics Rings",
             "Pull-Up Bars"
             ]
+          },
+          {
+            "name": ["Paradigm gym"],
+            "geometry": {
+              "location": {
+                "latitude": 32.514755886807,
+                "longitude": -92.6917803387104
+              }
+            },
+            "types": ["gym", "sports_club"],
+            "vicinity": "138 Shaman Rd, Ruston, LA 71270",
+            "place_id": "paradigmGym",
+            "equipment": [
+              "Deadlift Platforms",
+              "Battle Ropes",
+              "Spin Bikes",
+              "Treadmills",
+              "Ellipticals",
+              "Rowing Machines",
+              "Dumbbells",
+              "Barbells",
+              "Weight Machines",
+              "Resistance Bands",
+              "Squat Racks",
+              "Plyometric Boxes",
+              "Sled Push Tracks",
+              "Stretching Mats",
+              "Jump Ropes",
+              "Foam Rollers",
+              "Cable Machines"
+            ]
+          },
+          {
+            "name": ["Crossfit gym"],
+            "geometry": {
+              "location": {
+                "latitude": 32.50387181018226,
+                "longitude":-92.59101510388295
+              }
+            },
+            "types": ["gym", "sports_club"],
+            "vicinity": "138 Shaman Rd, Ruston, LA 71270",
+            "place_id": "crossfitGym",
+            "equipment": [
+              "Sled Push Tracks",
+              "Stretching Mats",
+              "Jump Ropes",
+              "Foam Rollers",
+              "Cable Machines",
+              "Deadlift Platforms",
+              "Battle Ropes",
+              "Spin Bikes",
+              "Treadmills",
+              "Ellipticals",
+              "Rowing Machines",
+              "Dumbbells",
+              "Barbells",
+              "Weight Machines",
+              "Resistance Bands",
+              "Squat Racks",
+              "Plyometric Boxes"
+            ]
           }
         ];
         setGyms(testGym);
@@ -240,7 +304,7 @@ const GymMapScreen: React.FC = () => {
       )}
       <MapView
         ref={mapRef}
-        key={gyms.length} 
+        key={gyms.length}
         style={styles.map}
         initialRegion={{
           latitude: location.latitude,
@@ -248,8 +312,8 @@ const GymMapScreen: React.FC = () => {
           latitudeDelta: 0.015,
           longitudeDelta: 0.0121,
         }}
+        customMapStyle={mapStyle}
         showsUserLocation={true}
-        
       >
         
         {/* <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }}>
