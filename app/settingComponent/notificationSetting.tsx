@@ -94,10 +94,6 @@ export default function NotificationsSettings({ isNotificationsEnabled, setIsNot
               }}
             />
           )}
-
-          <TouchableOpacity style={styles.button} onPress={sendTestNotification}>
-            <Text style={styles.buttonText}>Send Test Notification</Text>
-          </TouchableOpacity>
         </>
       )}
 

@@ -86,10 +86,6 @@ export default function PrivacySecurity({ setModalVisible }: any) {
         <Text style={styles.buttonText}>Change Password</Text>
       </TouchableOpacity>
   
-      <TouchableOpacity style={styles.button} onPress={() => Alert.alert("Coming soon!")}>
-        <Text style={styles.buttonText}>Two-Factor Authentication</Text>
-      </TouchableOpacity>
-  
       <TouchableOpacity style={[styles.button, styles.secondaryButton]} onPress={handleSignOut}>
         <Text style={[styles.buttonText, styles.secondaryButtonText]}>Sign Out</Text>
       </TouchableOpacity>

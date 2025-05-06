@@ -500,15 +500,18 @@ const WorkoutsPage = () => {
       </Modal>
       
       {(!workoutPlan?.workouts || workoutPlan.workouts.length === 0) && (
-      <View style={{ alignItems: "center", marginVertical: 20 }}>
-        <Text style={styles.label}>No exercises available for this day</Text>
-        <TouchableOpacity
-          style={styles.viewSavedButton}
-          onPress={() => setSavedWorkoutModalVisible(true)} // You'll define this modal separately
-        >
-          <Text style={styles.buttonText}>Choose from saved workouts</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={{ alignItems: "center", marginVertical: 20 }}>
+          {useAIWorkout ? (
+            <TouchableOpacity
+              style={styles.viewSavedButton}
+              onPress={() => setSavedWorkoutModalVisible(true)}
+            >
+              <Text style={styles.buttonText}>Choose from saved workouts</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.buttonText}>No Workout Created</Text>
+          )}
+        </View>
       )}
 
       <FlatList
@@ -530,7 +533,7 @@ const WorkoutsPage = () => {
             <View key={key} style={{ marginBottom: 10 }}>
               <BouncyCheckbox
                 isChecked={!!completedSets[key]}
-                text={`Set ${setIndex + 1} - 1 x ${item.reps} @ ${item.weight} lbs`}
+                text={`Set ${setIndex + 1} x ${item.reps} Reps @ ${item.weight} lbs`}
                 textStyle={{
                 textDecorationLine: completedSets[key] ? "line-through" : "none",
                 color: "white", // make sure it's readable too

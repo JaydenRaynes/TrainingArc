@@ -27,7 +27,7 @@ const WorkoutChatbot = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://192.168.1.207:5000/chat", {
+      const response = await fetch("http://138.47.138.205:5000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: newMessages }),

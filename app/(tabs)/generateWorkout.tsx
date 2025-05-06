@@ -9,7 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { auth, db } from "../firebaseConfig";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { Calendar } from "react-native-calendars";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { theme } from "../utils/theme";
 import { useFocusEffect } from '@react-navigation/native';
 import { SavedSplit } from '../models/savedWorkoutModel';
@@ -17,7 +17,7 @@ import { SavedSplit } from '../models/savedWorkoutModel';
 type UserData = Biometric & Gym;
 
 const GenerateWorkoutScreen: React.FC = () => {
-  const localIP = "http://10.0.0.16:5000"; // Replace with your local IP
+  const localIP = "http://138.47.158.133:5000"; // Replace with your local IP
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [isAddModalVisible, setAddModalVisible] = useState(false);  // to toggle modal visibility
@@ -90,7 +90,11 @@ const GenerateWorkoutScreen: React.FC = () => {
         startDate: selectedDate,
       }
 
-      const response = await fetch(`${localIP}/generate-workout`, {
+      const date = format(new Date(), selectedDate);
+      const dayName = format(parseISO(date), "EEEE"); // Get the day name from the selected date
+      console.log("Selected day:", dayName);
+
+      const response = await fetch(`${localIP}/generate-workout/${dayName}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
@@ -244,10 +248,10 @@ const GenerateWorkoutScreen: React.FC = () => {
           >
             <View style={styles.modalOverlay}>
               <View style={styles.editModalContainer}>
-                <Text style={styles.modalTitle}>Add a New Exercise</Text>
+                <Text style={styles.editexerciseName}>Add a New Exercise</Text>
 
                 <TouchableOpacity onPress={() => generateExercise(selectedMuscleGroup)}>
-                  <Text>Generate Exercise for Selected Muscle Group</Text>
+                  <Text style={styles.generateName}>Generate Exercise for Selected Muscle Group</Text>
                 </TouchableOpacity>
 
 
@@ -268,7 +272,7 @@ const GenerateWorkoutScreen: React.FC = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         marginBottom: 10,
-                        backgroundColor: selectedMuscleGroup === item.toLowerCase() ? '#ddd' : '#fff',
+                        backgroundColor: selectedMuscleGroup === item.toLowerCase() ? '#b0b0b0' : '#f0f0f0',
                         borderWidth: 1,
                         borderColor: '#ccc',
                       }}
@@ -283,28 +287,29 @@ const GenerateWorkoutScreen: React.FC = () => {
                   onPress={() => generateExercise(selectedMuscleGroup)}
                   style={styles.addGenButton}
                 >
-                  <Text>Create New Exercise</Text>
+                  <Text style={styles.createExercise}>Create New Exercise</Text>
                 </TouchableOpacity>
 
-                <Text>Or Enter Exercise Name</Text>
+                <Text style={styles.generateName}>Or Enter Exercise Name</Text>
                 <TextInput
                   value={exerciseName}
                   onChangeText={setExerciseName}
                   placeholder="Type exercise name"
+                  placeholderTextColor={theme.colors.textSecondary}
                   style={styles.input}
                 />
                 <TouchableOpacity
                   onPress={() => generateExercise(exerciseName)}
                   style={styles.addGenButton}
                 >
-                  <Text>Create New Exercise</Text>
+                  <Text style={styles.createExercise}>Create New Exercise</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => setAddModalVisible(false)}
                   style={styles.closeButton}
                 >
-                  <Text>Close</Text>
+                  <Text style={styles.createExercise}>Close</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -320,65 +325,73 @@ const GenerateWorkoutScreen: React.FC = () => {
           >
             <View style={styles.modalOverlay}>
               <View style={styles.editModalContainer}>
-                <Text>Edit Exercise</Text>
+                <Text style={styles.editexerciseName}>Edit Exercise</Text>
 
                 {/* Weight */}
-                <Text>Weight:</Text>
+                <Text style={styles.equipmentLabel}>Weight:</Text>
                 <TextInput
                   value={weight}
                   onChangeText={setWeight}
-                  placeholder="Weight (lbs/kg)"
+                  placeholder="Weight (lbs)"
+                  placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="numeric"
                   style={styles.input}
                 />
 
                 {/* Sets */}
-                <Text>Sets:</Text>
+                <Text style={styles.equipmentLabel}>Sets:</Text>
                 <TextInput
                   value={sets}
                   onChangeText={setSets}
                   placeholder="Sets"
+                  placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="numeric"
                   style={styles.input}
                 />
 
                 {/* Reps */}
-                <Text>Reps:</Text>
+                <Text style={styles.equipmentLabel}>Reps:</Text>
                 <TextInput
                   value={reps}
                   onChangeText={setReps}
                   placeholder="Reps"
+                  placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="numeric"
                   style={styles.input}
                 />
 
                 {/* Save */}
-                <TouchableOpacity
-                  onPress={() => {
-                    if (
-                      currDay !== null &&
-                      selectedExerciseIndex !== null &&
-                      workout.days[currDay]?.exercises[selectedExerciseIndex]
-                    ) {
-                      workout.days[currDay].exercises[selectedExerciseIndex] = {
-                        ...workout.days[currDay].exercises[selectedExerciseIndex],
-                        sets,
-                        reps,
-                        weight,
-                      };
-                    }
+                <View style={styles.exerciseButtonsRow}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (
+                        currDay !== null &&
+                        selectedExerciseIndex !== null &&
+                        workout.days[currDay]?.exercises[selectedExerciseIndex]
+                      ) {
+                        workout.days[currDay].exercises[selectedExerciseIndex] = {
+                          ...workout.days[currDay].exercises[selectedExerciseIndex],
+                          sets,
+                          reps,
+                          weight,
+                        };
+                      }
 
-                    setEditModalVisible(false);
-                    setSelectedExercise(null);
-                  }}
-                >
-                  <Text>Save</Text>
-                </TouchableOpacity>
+                      setEditModalVisible(false);
+                      setSelectedExercise(null);
+                    }}
+                    style={styles.editExerciseButton}
+                  >
+                    <Text style={styles.buttonSmallText}>Save</Text>
+                  </TouchableOpacity>
 
-                {/* Cancel */}
-                <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-                  <Text>Cancel</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setEditModalVisible(false)}
+                    style={styles.removeExerciseButton}
+                  >
+                    <Text style={styles.buttonSmallText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </Modal>
@@ -597,11 +610,12 @@ return (
             >
               <View style={styles.modalOverlay}>
                 <View style={styles.editModalContainer}>
-                  <Text style={styles.modalTitle}>Name Your Workout</Text>
+                  <Text style={styles.editexerciseName}>Name Your Workout</Text>
                   <TextInput
                     value={workoutName}
                     onChangeText={setWorkoutName}
                     placeholder="Enter workout name"
+                    placeholderTextColor={theme.colors.textSecondary}
                     style={styles.input}
                   />
                   <TouchableOpacity
@@ -664,7 +678,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#333',
   },
-
+  editexerciseName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+    color: '#FFA500',
+  },
+  generateName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    margin: 5,
+    textAlign: 'center',
+    color: 'white',
+  },
+  createExercise: { 
+    fontSize: 16,
+    fontWeight: 'bold',
+    margin: 5,
+    textAlign: 'center',
+    color: 'black',
+  },
   calenderModalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)', // optional: darken background
@@ -681,7 +715,7 @@ const styles = StyleSheet.create({
 
   editModalContainer: {
     width: '90%',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.cardBackground,
     borderRadius: 10, // Rounded corners for a softer look
     padding: 20,
     elevation: 5, // Add shadow for elevation (Android)
@@ -905,10 +939,12 @@ const styles = StyleSheet.create({
   },
 
   addGenButton: {
-    backgroundColor: "#32CD32",
+    backgroundColor: "#FFA500",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",
+    color: "white",
+    marginBottom: 10,
   }
   
 });

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Button, StyleSheet, Alert } from "react-native";
 import { getAuth } from "firebase/auth";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "expo-router";
 import { Biometric } from "../models/biometricModel";
 import { theme } from "../utils/theme"
@@ -46,7 +46,7 @@ const Biometrics = () => {
       age: parseInt(age),
       height,
       weight,
-      timesPerWeek, // Storing the selected multiple-choice value
+      timesPerWeek: "7",
       daysPreference,
       fitnessGoal,
       experienceLevel,
@@ -67,6 +67,39 @@ const Biometrics = () => {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    const loadBiometrics = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+  
+      try {
+        const docRef = doc(db, "users", user.uid, "newBiometrics", "data");
+        const docSnap = await getDoc(docRef);
+  
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+  
+          setAge(data.age?.toString() || "");
+          setHeight(data.height || "");
+          setWeight(data.weight || "");
+          setTimesPerWeek(data.timesPerWeek || "");
+          setDaysPreference(data.daysPreference || []);
+          setFitnessGoal(data.fitnessGoal || "");
+          setExperienceLevel(data.experienceLevel || "");
+          setLimitations(data.limitations || "");
+          setWorkoutPreference(data.workoutPreference || "");
+          setEquipmentPreference(data.equipmentPreference || []);
+          setWorkoutGroupPreference(data.workoutGroupPreference || []);
+        }
+      } catch (error) {
+        console.error("Error loading biometrics:", error);
+        Alert.alert("Failed to load saved biometrics.");
+      }
+    };
+  
+    loadBiometrics();
+  }, []);  
 
   const renderOptionButtons = (options, selected, onSelect) =>
     options.map((option) => (
@@ -115,14 +148,11 @@ const Biometrics = () => {
       <Text style={styles.label}>Age</Text>
       <TextInput style={styles.input} keyboardType="numeric" value={age} onChangeText={setAge} />
 
-      <Text style={styles.label}>Height (ft/in)</Text>
+      <Text style={styles.label}>Height (ft'in")</Text>
       <TextInput style={styles.input} keyboardType="numeric" value={height} onChangeText={setHeight} />
 
       <Text style={styles.label}>Weight (lbs)</Text>
       <TextInput style={styles.input} keyboardType="numeric" value={weight} onChangeText={setWeight} />
-
-      <Text style={styles.label}>How many times a week do you want to workout?</Text>
-      {renderOptionButtons(timesOptions, timesPerWeek, setTimesPerWeek)} 
 
       <Text style={styles.label}>What days of the week can you workout?</Text>
       {renderMultiSelectButtons(daysChoice, daysPreference, setDaysPreference)}

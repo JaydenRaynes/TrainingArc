@@ -15,8 +15,9 @@ const APININJA_API_KEY = "F1MrXYbs75rYDmGS8V9GQw==nADb7j66vFLL1qmo";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-app.post("/generate-workout", async (req, res) => {
+app.post("/generate-workout/:day", async (req, res) => {
   const userData = req.body;
+  const day = req.params.day; // Get the day from the URL parameter
 
   if (!userData) {
     return res.status(400).json({ error: "Missing user data" });
@@ -49,12 +50,11 @@ app.post("/generate-workout", async (req, res) => {
     - Weight: ${userData.weight || "N/A"}
     - Goal: ${userData.fitnessGoal || "N/A"}
     - Activity Level: ${userData.activityLevel || "N/A"}
-    - Start Date: ${userData.startDate || "N/A"} (format: MM-DD-YYYY)
+    - Start Date: ${userData.startDate || "N/A"} (which is a ${day || "Monday"})(format: YYYY-MM-DD)
     
     📌 USER PREFERENCES
     - Experience Level: ${userData.experienceLevel || "Intermediate"}
-    - Workout Frequency (times/week): ${userData.timesPerWeek || "N/A"}
-    - Workout Days: ${userData.dayPreferences?.join(", ") || "Every day works"} (Only these days may include workouts — others must be rest)
+    - Workout Days: ${userData.daysPreference.join(", ") || "Every day works"} (ONLY INCLUDE WORKOUTS ON THESE DAYS)
     - Location: ${userData.workoutPreference || "No preference"}
     - Preferred Equipment: ${userData.equipmentPreference?.join(", ") || "None"}
     - Preferred Muscle Groups: ${userData.workoutGroupPreference?.join(", ") || "None"}
@@ -136,6 +136,9 @@ app.post("/generate-workout", async (req, res) => {
         },
       }
     );
+
+    console.log("user days:", userData.daysPreference); // ✅ Log user days
+    console.log("Formatted User Data:", formattedUserData); // ✅ Log formatted user data
     console.log("OpenAI Raw Response:", response.data); // ✅ Log entire response
 
     const aiMessage = response.data?.choices?.[0]?.message?.content;

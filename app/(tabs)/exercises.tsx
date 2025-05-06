@@ -118,7 +118,9 @@ const Index = () => {
             onChangeText={setSearchTerm}
             onSubmitEditing={handleSearch}
           />
-          <Button title="Search" onPress={handleSearch} color={theme.colors.primary} />
+          <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
+            <Text style={styles.searchText}>Search</Text>
+          </TouchableOpacity>
         </>
       }
       ListEmptyComponent={
@@ -143,6 +145,19 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.medium,
     textAlign: 'center',
     color: theme.colors.primary,
+  },
+  searchButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 20, // Rounded corners
+    alignItems: 'center',
+    marginBottom: theme.spacing.medium,
+  },
+  searchText: { 
+    color: 'black', 
+    fontSize: 20, 
+    fontWeight: 'bold' 
   },
   searchBar: {
     height: 40,
