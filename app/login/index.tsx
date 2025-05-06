@@ -127,6 +127,15 @@ export default function Login() {
           Don't have an account? <Text style={{ color: "#FFA500" }}>Sign up</Text>
         </Animated.Text>
 
+        {/* Forgot Password Link */}
+        <Animated.Text
+          style={styles.link}
+          onPress={() => router.push("./component/forgotPassword")}
+          entering={FadeInDown.duration(1000).delay(800)}
+        >
+          <Text style={{ color: "#FFA500" }}>Forgot Password?</Text>
+        </Animated.Text>
+
       </View>
         </ScrollView>
       </KeyboardAvoidingView>
