@@ -514,7 +514,7 @@ const WorkoutsPage = () => {
       <FlatList
         data={workoutPlan?.workouts || []}
         keyExtractor={(item, index) => `${item.name}-${index}`}
-        contentContainerStyle={{ paddingBottom: 80 }}
+        contentContainerStyle={{ paddingBottom: 80, paddingHorizontal: 15, borderRadius: 20 }}
         renderItem={({ item, index: exerciseIndex }) => (
         <View style={styles.workoutItem}>
           <Text style={styles.headerText}>
