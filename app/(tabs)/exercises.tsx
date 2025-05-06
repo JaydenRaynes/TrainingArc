@@ -78,62 +78,57 @@ const Index = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Exercises:</Text>
-
-      {/* Search Bar */}
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Search exercises..."
-        placeholderTextColor="gray"
-        value={searchTerm}
-        onChangeText={setSearchTerm}
-        onSubmitEditing={handleSearch} // Trigger search when pressing "Enter"
-      />
-
-      {/* Search Button */}
-      <Button title="Search" onPress={handleSearch} color={theme.colors.primary} />
-
-      {/* Display Exercises */}
-      {exercises && exercises.length > 0 && (
-        <FlatList
-          data={exercises}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item, index }) => (
-            <View style={styles.exerciseContainer}>
-              <Text style={styles.exerciseName}>{item.name}</Text>
-              <Text style={styles.exerciseDetails}>Target Muscle: {item.muscle}</Text>
-              <Text style={styles.exerciseDetails}>Type: {item.type}</Text>
-              <Text style={styles.exerciseDetails}>Equipment: {item.equipment}</Text>
-              <Text style={styles.exerciseDetails}>Difficulty: {item.difficulty}</Text>
-
-              {/* Instructions: Show a truncated version initially, with a "..." button to expand */}
-              <View>
-                <Text
-                  style={styles.instructions}
-                  numberOfLines={expandedInstructions.has(index) ? undefined : 2}
-                >
-                  {item.instructions || 'No instructions available'}
+    <FlatList
+      style={styles.container}
+      data={exercises}
+      keyExtractor={(item, index) => index.toString()}
+      renderItem={({ item, index }) => (
+        <View style={styles.exerciseContainer}>
+          <Text style={styles.exerciseName}>{item.name}</Text>
+          <Text style={styles.exerciseDetails}>Target Muscle: {item.muscle}</Text>
+          <Text style={styles.exerciseDetails}>Type: {item.type}</Text>
+          <Text style={styles.exerciseDetails}>Equipment: {item.equipment}</Text>
+          <Text style={styles.exerciseDetails}>Difficulty: {item.difficulty}</Text>
+  
+          <View>
+            <Text
+              style={styles.instructions}
+              numberOfLines={expandedInstructions.has(index) ? undefined : 2}
+            >
+              {item.instructions || 'No instructions available'}
+            </Text>
+            {item.instructions && (
+              <TouchableOpacity onPress={() => toggleInstructions(index)}>
+                <Text style={styles.expandText}>
+                  {expandedInstructions.has(index) ? 'Show Less' : '...'}
                 </Text>
-                {item.instructions && (
-                  <TouchableOpacity onPress={() => toggleInstructions(index)}>
-                    <Text style={styles.expandText}>
-                      {expandedInstructions.has(index) ? 'Show Less' : '...'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )}
-        />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
       )}
-
-      {/* Show "No exercises found" message only if search term is not empty and no exercises are found */}
-      {exercises.length === 0 && searchTerm.trim() !== '' && (
-        <Text style={styles.noResultsText}>No exercises found for "{searchTerm}"</Text>
-      )}
-    </ScrollView>
+      ListHeaderComponent={
+        <>
+          <Text style={styles.title}>Exercises:</Text>
+          <TextInput
+            style={styles.searchBar}
+            placeholder="Search exercises..."
+            placeholderTextColor="gray"
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            onSubmitEditing={handleSearch}
+          />
+          <Button title="Search" onPress={handleSearch} color={theme.colors.primary} />
+        </>
+      }
+      ListEmptyComponent={
+        searchTerm.trim() !== '' && (
+          <Text style={styles.noResultsText}>No exercises found for "{searchTerm}"</Text>
+        )
+      }
+    />
   );
+  
 };
 
 // Styles for the layout

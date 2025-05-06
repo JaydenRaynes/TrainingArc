@@ -16,15 +16,15 @@ const ProgressPage = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchAllProgress = async () => {
-      const userID = auth.currentUser?.uid;
-      if (!userID) return;
+    let isMounted = true;
+  
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+      if (!user || !isMounted) return;
   
       try {
-        const progressRef = collection(db, "users", userID, "progress");
+        const progressRef = collection(db, "users", user.uid, "progress");
         const querySnapshot = await getDocs(progressRef);
-  
-        const allWorkouts = [];
+        const allWorkouts: any[] = [];
   
         querySnapshot.forEach(docSnap => {
           const exerciseName = docSnap.id;
@@ -45,17 +45,19 @@ const ProgressPage = () => {
           }
         });
   
-        // Optional: sort by date
         allWorkouts.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  
-        setWorkouts(allWorkouts);
+        if (isMounted) setWorkouts(allWorkouts);
       } catch (error) {
         console.error("Error fetching all progress data:", error);
       }
-    };
+    });
   
-    fetchAllProgress();
-  }, []);  
+    return () => {
+      isMounted = false;
+      unsubscribeAuth();
+    };
+  }, []);
+  
 
   const openInfoModal = (exercise) => {
     setSelectedExercise(exercise);

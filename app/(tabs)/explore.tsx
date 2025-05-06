@@ -183,6 +183,13 @@ const GymMapScreen: React.FC = () => {
         equipment: gym.equipment,
       });
 
+      const mainUserRef = doc(db, "users", user.uid);
+      await setDoc(mainUserRef, {
+        preferredGymName: gym.name?.[0] || "None",
+        preferredGymLocation: gym.vicinity,
+        preferredGymId: gym.place_id,
+      }, { merge: true });
+
       setCurrentGym(gym);
       Alert.alert('Success', 'Gym saved as current gym!');
     } catch (error) {

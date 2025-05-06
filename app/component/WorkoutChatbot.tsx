@@ -91,7 +91,7 @@ const WorkoutChatbot = () => {
 const styles = StyleSheet.create({
   chatButton: {
     position: "absolute",
-    bottom: 120,
+    bottom: 60,
     right: 20,
     backgroundColor: "#ffa500",
     padding: 16,
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   },
   popupContainer: {
     position: "absolute",
-    bottom: 180,
+    bottom: 150,
     right: 20,
     width: 300,
     height: 400,
