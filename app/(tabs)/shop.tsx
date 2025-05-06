@@ -53,19 +53,18 @@ const Shop = () => {
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <FlatList
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ paddingBottom: theme.spacing.medium, paddingTop: 0 }}
+        contentContainerStyle={{ paddingBottom: theme.spacing.medium, paddingTop: 0, paddingHorizontal: theme.spacing.small }}
         ListHeaderComponent={
           <>
-            <Text style={styles.header}>Shop</Text>
-
             {/* Promoted Products */}
-            <Text style={styles.sectionTitle}>Promoted Products</Text>
+            <Text style={styles.header}>Promoted Products</Text>
             <FlatList
               data={promotedProducts}
               renderItem={renderProductItem}
               keyExtractor={(item, index) => `promoted-${index}`}
               numColumns={2}
               columnWrapperStyle={styles.rowSpacing}
+
             />
 
             {/* Category Tabs */}
@@ -124,9 +123,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.cardBackground,
     padding: theme.spacing.small,
     borderRadius: theme.borderRadius.medium,
-    margin: theme.spacing.small,
     alignItems: 'center',
-    width: '45%',
+    width: '48%',
   },
   productImage: {
     width: 100,
@@ -161,11 +159,17 @@ const styles = StyleSheet.create({
     marginRight: theme.spacing.small,
   },
   tabText: {
-    color: theme.colors.text,
+    color: theme.colors.primary,
     fontWeight: 'bold',
   },
   productsGrid: {
     paddingBottom: theme.spacing.medium,
+  },
+  rowSpacing: {
+    paddingHorizontal: theme.spacing.small,
+    justifyContent: 'space-between',
+    paddingBottom: theme.spacing.small,
+    paddingTop: theme.spacing.small,
   },
 });
 

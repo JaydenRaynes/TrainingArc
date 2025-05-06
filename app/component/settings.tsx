@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#191a2f", // Dark theme background
-    padding: 10,
+    padding: 5,
   },
 
   scrollViewContent: {

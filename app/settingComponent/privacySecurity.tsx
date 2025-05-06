@@ -79,74 +79,37 @@ export default function PrivacySecurity({ setModalVisible }: any) {
 
   return (
     <View style={styles.section}>
-      {/* Dropdown Header */}
-      <TouchableOpacity style={styles.dropdownHeader} onPress={toggleDropdown}>
+      <View style={styles.dropdownHeader}>
         <Text style={styles.sectionTitle}>Privacy & Security</Text>
-        <Text style={styles.toggleIcon}>{isExpanded ? "▲" : "▼"}</Text>
+      </View>
+      <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
+        <Text style={styles.buttonText}>Change Password</Text>
       </TouchableOpacity>
-
-      {/* Dropdown Content with Animation */}
-      <Animated.View
-        style={[
-          styles.dropdownContent,
-          {
-            maxHeight: animation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 3000], // Adjust height dynamically
-            }),
-            opacity: animation,
-          },
-        ]}
-      >
-        {isExpanded && (
-          <View>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setModalVisible(true)}
-            >
-              <Text style={styles.buttonText}>Change Password</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => Alert.alert("Coming soon!")}
-            >
-              <Text style={styles.buttonText}>Two-Factor Authentication</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.dangerButton]}
-              onPress={handleDeleteAccount}
-            >
-              <Text style={[styles.buttonText, styles.dangerButtonText]}>
-                Delete Account
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={handleSignOut}
-            >
-              <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-                Sign Out
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </Animated.View>
+  
+      <TouchableOpacity style={styles.button} onPress={() => Alert.alert("Coming soon!")}>
+        <Text style={styles.buttonText}>Two-Factor Authentication</Text>
+      </TouchableOpacity>
+  
+      <TouchableOpacity style={[styles.button, styles.secondaryButton]} onPress={handleSignOut}>
+        <Text style={[styles.buttonText, styles.secondaryButtonText]}>Sign Out</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={[styles.button, styles.dangerButton]} onPress={handleDeleteAccount}>
+        <Text style={[styles.buttonText, styles.dangerButtonText]}>Delete Account</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   section: {
-    margin: 20,
-    borderRadius: 10,
-    overflow: "hidden",
-    backgroundColor: "#1E1E2D",
-    paddingVertical: 10,
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#FFA500",
+    borderRadius: 20,
+    padding: 10,
+    marginBottom: 15,
   },
-
   dropdownHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -155,41 +118,46 @@ const styles = StyleSheet.create({
     backgroundColor: "#0D0D0D",
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
+    marginBottom: 10,
   },
-
-  sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#FFA500" },
-
-  toggleIcon: { fontSize: 18, fontWeight: "bold", color: "#FFA500" },
-
-  dropdownContent: {
-    backgroundColor: "#191a2f",
-    paddingHorizontal: 15,
-    paddingBottom: 15,
-    overflow: "hidden",
+  sectionTitle: {
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#FFA500"
+   },
+  toggleIcon: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#FFA500" 
   },
-
   button: {
     backgroundColor: "#FFA500",
     paddingVertical: 12,
-    paddingHorizontal: 40,
     borderRadius: 25,
     marginVertical: 10,
+    marginHorizontal: 10,
     alignItems: "center",
   },
-
-  buttonText: { fontSize: 16, fontWeight: "bold", color: "#0D0D0D" },
-
-  dangerButton: {
-    backgroundColor: "#D9534F",
+  buttonText: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#0D0D0D" 
   },
-
-  dangerButtonText: { color: "#FFF" },
-
+  text: {
+    color: "#FFFFFF",
+  },
   secondaryButton: {
     backgroundColor: "transparent",
     borderColor: "#FFA500",
     borderWidth: 2,
   },
-
-  secondaryButtonText: { color: "#FFA500" },
+  secondaryButtonText: { 
+    color: "#FFA500" 
+  },
+  dangerButton: {
+    backgroundColor: "#D9534F",
+  },
+  dangerButtonText: { 
+    color: "#FFF" 
+  },
 });

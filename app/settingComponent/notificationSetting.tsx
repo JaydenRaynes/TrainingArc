@@ -58,7 +58,9 @@ export default function NotificationsSettings({ isNotificationsEnabled, setIsNot
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Notifications</Text>
+      <View style={styles.dropdownHeader}>
+        <Text style={styles.sectionTitle}>Notifications</Text>
+      </View>
       <View style={styles.toggleContainer}>
         <Text style={styles.text}>Enable Notifications</Text>
         <Switch
@@ -106,48 +108,59 @@ export default function NotificationsSettings({ isNotificationsEnabled, setIsNot
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: 30,
-    padding: 20,
-    borderRadius: 10,
-    backgroundColor: "#191a2f",
-  },
-
-  sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 10,
     color: "#FFA500",
-    backgroundColor: "black",
     borderRadius: 20,
     padding: 10,
+    marginBottom: 15,
   },
-
-  text: {
-    color: "#FFFFFF",
+  dropdownHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 15,
+    backgroundColor: "#0D0D0D",
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
-
+  sectionTitle: {
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#FFA500"
+   },
+  toggleIcon: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#FFA500" 
+  },
+  button: {
+    backgroundColor: "#FFA500",
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginVertical: 10,
+    marginHorizontal: 10,
+    alignItems: "center",
+  },
+  buttonText: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#0D0D0D" 
+  },
   toggleContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 0,
+    paddingHorizontal: 10,
   },
-
-  button: {
-    backgroundColor: "#FFA500",
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderRadius: 25,
-    marginVertical: 10,
-    alignItems: "center",
-  },
-
-  buttonText: { fontSize: 16, fontWeight: "bold", color: "#0D0D0D" },
-
   loadingText: {
     marginTop: 10,
     fontSize: 14,
     color: "gray",
     textAlign: "center",
+  },
+  text: {
+    color: "#FFFFFF",
   },
 });

@@ -566,12 +566,6 @@ const WorkoutsPage = () => {
                 <Text style={styles.actionButtonText}>⏱ Timer</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: theme.colors.cardBackground, borderColor: theme.colors.primary, borderWidth: 1 }]}
-                onPress={() => fetchCaloriesBurned(item.name)}
-              >
-                <Text style={[styles.actionButtonText, { color: theme.colors.primary }]}>🔥 Calories</Text>
-              </TouchableOpacity>
             </View>
             {loadingCalories[item.name] ? (
               <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginTop: 8 }} />
@@ -731,6 +725,12 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 6,
     width: "90%",
+  },
+  modalTitle: {
+    fontSize: theme.fontSize.extraLarge,
+    fontWeight: "bold",
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.medium,
   },
   buttonsContainer: {
     flexDirection: "row",
