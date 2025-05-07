@@ -17,7 +17,7 @@ import { SavedSplit } from '../models/savedWorkoutModel';
 type UserData = Biometric & Gym;
 
 const GenerateWorkoutScreen: React.FC = () => {
-  const localIP = "http://138.47.158.133:5000"; // Replace with your local IP
+  const localIP = "http://10.0.0.16:5000"; // Replace with your local IP
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [isAddModalVisible, setAddModalVisible] = useState(false);  // to toggle modal visibility

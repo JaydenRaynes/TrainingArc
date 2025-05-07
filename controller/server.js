@@ -42,31 +42,61 @@ app.post("/generate-workout/:day", async (req, res) => {
     //   // If it's a string (like "none"), return it directly
     //   return conditions || "None";
     // };
+    let gymSettings = "Ignore — user is not training at a gym.";
+    if (userData.workoutPreference === "Gym" && userData.gym) {
+      gymSettings = `- Gym(s): ${userData.gym.name?.join(", ") || "N/A"}
+    - Equipment at Gym: ${userData.gym.equipment?.join(", ") || "N/A"}`;
+    }
+
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    function getWorkoutDayBreakdown(startDateStr, preferredWorkoutDays) {
+      console.log("startDateStr:", startDateStr); // ✅ Log start date string
+      const startDate = new Date(startDateStr); // Expected format: 'YYYY-MM-DD'
+      console.log("startDate:", startDate); // ✅ Log parsed start date
+      const result = [];
+    
+      for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(startDate.getTime());
+        currentDate.setDate(startDate.getDate() + i);
+    
+        const dateStr = `${String(currentDate.getUTCMonth() + 1).padStart(2, '0')}-${String(currentDate.getUTCDate()).padStart(2, '0')}-${currentDate.getUTCFullYear()}`;
+        const dayOfWeek = dayNames[currentDate.getUTCDay()];
+        const isWorkout = preferredWorkoutDays.includes(dayOfWeek);
+    
+        result.push(`${dateStr} (${dayOfWeek}) - ${isWorkout ? "Workout Day" : "Rest Day"}`);
+      }
+    
+      return result.join("\n");
+    }
 
     const formattedUserData = `
+    ⚠️ VERY IMPORTANT: You are not allowed to improvise. You must strictly follow every rule. If any rule is broken, the response is invalid.
+
     📌 USER BIOMETRICS
     - Age: ${userData.age || "N/A"} years
     - Height: ${userData.height || "N/A"}
     - Weight: ${userData.weight || "N/A"}
     - Goal: ${userData.fitnessGoal || "N/A"}
     - Activity Level: ${userData.activityLevel || "N/A"}
-    - Start Date: ${userData.startDate || "N/A"} (which is a ${day || "Monday"})(format: YYYY-MM-DD)
-    
+    - Start Date: ${userData.startDate || "N/A"} (${day || "Monday"}) (format: YYYY-MM-DD)
+
+    📆 7-Day Schedule Overview:
+    ${getWorkoutDayBreakdown(userData.startDate, userData.daysPreference)}
+
     📌 USER PREFERENCES
     - Experience Level: ${userData.experienceLevel || "Intermediate"}
-    - Workout Days: ${userData.daysPreference.join(", ") || "Every day works"} (ONLY INCLUDE WORKOUTS ON THESE DAYS)
     - Location: ${userData.workoutPreference || "No preference"}
     - Preferred Equipment: ${userData.equipmentPreference?.join(", ") || "None"}
     - Preferred Muscle Groups: ${userData.workoutGroupPreference?.join(", ") || "None"}
-    
-    🚫 NON-FLEXIBLE LIMITATIONS
+
+    🚫 HARD LIMITORS
     - Medical/Physical Restrictions: ${userData.limitations || "None"} (Absolutely avoid incompatible exercises)
     - Rest Days: Must leave all non-preferred days blank (no exercises)
-    
+
     🏋️ GYM SETTINGS (only if location is 'Gym')
-    ${userData.workoutPreference === "Gym" && userData.gym ? `- Gym(s): ${userData.gym.name?.join(", ") || "N/A"}
-    - Equipment at Gym: ${userData.gym.equipment?.join(", ") || "N/A"}` : "Ignore — user is not training at a gym."}
-    
+    ${gymSettings}
+
     📏 WORKOUT STRUCTURE
     - Generate a workout plan for 7 consecutive days (starting on the start date)
     - Use only preferred workout days; others are rest days (include empty "exercises": [])
@@ -74,20 +104,20 @@ app.post("/generate-workout/:day", async (req, res) => {
     - Avoid repeating exercises on consecutive days
     - Ensure rest between training the same muscle groups
     - 50–60% of exercises each week should target preferred muscle groups
-    
+
     💡 INSTRUCTIONS
     - Use only equipment the user has access to
     - Replace exercises that conflict with limitations
     - Begin sessions with compound movements; isolate second if needed
     - Match weights to user experience (set to 0 for bodyweight)
     - For each exercise, the weight value must always be a number. Use 0 for bodyweight exercises. Do not use descriptive terms like "light", "moderate", or "heavy". Stick to numerical values only
-    
+
     🧾 FORMAT REQUIREMENTS — RETURN STRICT JSON ONLY
     - The response MUST be a single JSON object using the structure below.
     - DO NOT include any extra text, comments, markdown, or formatting.
     - DO NOT wrap in triple backticks or quote blocks.
     - Respond ONLY with:
-    
+
     {
       "Split": {
         "days": [
@@ -112,6 +142,9 @@ app.post("/generate-workout/:day", async (req, res) => {
         ]
       }
     }
+
+    ⚠️ Do NOT include markdown, extra text, explanations, or formatting.
+    ⚠️ The plan must include exactly 7 days, no more, no less.
     `;
     
     const response = await axios.post(

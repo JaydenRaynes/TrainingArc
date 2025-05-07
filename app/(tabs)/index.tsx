@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.extraLarge,
     fontWeight: "bold",
     color: theme.colors.primary,
-    marginBottom: theme.spacing.medium,
+    margin: theme.spacing.medium,
     textAlign: "center",
   },
   calendarButton: {
