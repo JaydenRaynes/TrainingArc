@@ -198,6 +198,9 @@ const WorkoutsPage = () => {
   
       // Only update NEXT sets, not past sets
       for (let nextSetIndex = setIndex + 1; nextSetIndex < exercise.sets; nextSetIndex++) {
+        exercise.reps = Number(exercise.reps);   // ensure it's a number
+        exercise.weight = Number(exercise.weight);
+        
         if (rating <= 2) {
           exercise.reps += 2;
           exercise.weight += 5;
