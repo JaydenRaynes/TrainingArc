@@ -208,14 +208,79 @@ const WorkoutsPage = () => {
           exercise.reps = Math.max(1, exercise.reps - 2);
           exercise.weight = Math.max(0, exercise.weight - 5);
         }
+        updatedPlan.workouts[exerciseIndex] = exercise;
+
+    // Save to Firestore (example for AI workout)
+    if (userID && useAIWorkout) {
+      const userRef = doc(db, "users", userID, "workout", "currentWorkout");
+      const formattedDate = selectedDate;
+
+      getDoc(userRef).then((docSnap) => {
+        if (docSnap.exists()) {
+          const workoutData = docSnap.data();
+          const workoutDays = workoutData?.workout?.days || [];
+          const dayIndex = workoutDays.findIndex((d: any) => d.day === formattedDate);
+          
+          if (dayIndex !== -1) {
+            workoutDays[dayIndex].exercises[exerciseIndex].reps = exercise.reps;
+            workoutDays[dayIndex].exercises[exerciseIndex].weight = exercise.weight;
+
+            updateDoc(userRef, {
+              "workout.days": workoutDays,
+            });
+          }
+        }
+      });
+    }
+  }  
+   // Save to Firestore for User-Created Workout
+   if (userID && !useAIWorkout) {  // Ensure it's a user-created workout (not AI)
+    const userRef = doc(db, "users", userID);  // Path directly to the user document
+    const formattedDate = selectedDate;
+
+    getDoc(userRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        const workoutData = docSnap.data();
+        const workoutDays = workoutData?.workoutPlans || {};  // Access workoutPlans field
+        const dayData = workoutDays[formattedDate];  // Get the day data (e.g., "Thursday", "Tuesday")
+        
+        if (dayData) {
+          // Find the exercise by index (from the user's plan)
+          const exercises = dayData.workouts;
+          const exerciseToUpdate = exercises[exerciseIndex];
+
+          // Update the exercise reps and weight based on the rating
+          exerciseToUpdate.reps = exercise.reps;
+          exerciseToUpdate.weight = exercise.weight;
+
+          // Save the updated day data back to Firestore
+          updateDoc(userRef, {
+            [`workoutPlans.${formattedDate}.workouts`]: exercises,
+          })
+          .then(() => {
+            console.log('User-created workout saved successfully!');
+          })
+          .catch((error) => {
+            console.error('Error updating user-created workout:', error);
+          });
+        } else {
+          console.error('Day data not found in workoutPlans');
+        }
+      } else {
+        console.error('User document not found in Firestore');
       }
-  
-      return updatedPlan;
+    })
+    .catch((error) => {
+      console.error('Error fetching user document:', error);
     });
-  
-    // After rating is chosen, close the rating UI
-    setActiveRatingSet(null);
-  };  
+  }
+
+  return updatedPlan; // Return the updated plan with new ratings
+});
+
+// After rating is chosen, close the rating UI
+setActiveRatingSet(null);
+};
   
   function redateSplit(split: SavedSplit, startDate: string): SavedSplit {
     const baseDate = parse(startDate, "MM-dd-yyyy", new Date());
