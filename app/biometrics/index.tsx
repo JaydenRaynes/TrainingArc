@@ -34,7 +34,7 @@ const Biometrics = () => {
 
 
   const handleSubmit = async () => {
-    if (!age || !height || !weight || !timesPerWeek || !fitnessGoal || !experienceLevel || !workoutPreference) {
+    if (!age || !height || !weight || !daysPreference || !fitnessGoal || !experienceLevel || !workoutPreference) {
       Alert.alert("Please complete all fields.");
       return;
     }
