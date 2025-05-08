@@ -184,6 +184,8 @@ const WorkoutsPage = () => {
     setWorkoutPlan(formattedWorkout);
   };
   
+  const pagePrefix = useAIWorkout ? "ai" : "split";
+
   const handleRatingChange = (exerciseIndex: number, setIndex: number, rating: number) => {
     const key = `${exerciseIndex}-${setIndex}`;
     const newRatings = { ...setRatings, [key]: rating };
@@ -302,7 +304,7 @@ setActiveRatingSet(null);
   }
 
   const handleSetClick = async (exerciseIndex: number, setIndex: number) => {
-    const key = `${exerciseIndex}-${setIndex}`;
+    const key = `${pagePrefix}-${exerciseIndex}-${setIndex}`;
     const isCurrentlyCompleted = completedSets[key];
     const updated = { ...completedSets, [key]: !isCurrentlyCompleted };
     setCompletedSets(updated);
@@ -358,7 +360,7 @@ setActiveRatingSet(null);
         const completedSetIndices: number[] = [];
   
         for (let j = 0; j < workout.sets; j++) {
-          const key = `${i}-${j}`;
+          const key = `${pagePrefix}-${i}-${j}`;
           if (completedSets[key]) {
             completedSetIndices.push(j);
           }
@@ -594,7 +596,7 @@ setActiveRatingSet(null);
 
       <View style={styles.setsContainer}>
         {Array.from({ length: item.sets }).map((_, setIndex) => {
-          const key = `${exerciseIndex}-${setIndex}`;
+          const key = `${pagePrefix}-${exerciseIndex}-${setIndex}`;
           const isActive = activeRatingSet === key;
 
           return (
@@ -606,7 +608,9 @@ setActiveRatingSet(null);
                 textDecorationLine: completedSets[key] ? "line-through" : "none",
                 color: "white", // make sure it's readable too
               }}
-               onPress={() => handleSetClick(exerciseIndex, setIndex)}
+               onPress={() => {
+                handleSetClick(exerciseIndex, setIndex)}
+               }
               />
               {isActive && (
                 <View style={styles.ratingContainer}>

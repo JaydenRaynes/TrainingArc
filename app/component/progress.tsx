@@ -11,9 +11,19 @@ import { useRouter } from "expo-router";
 const ProgressPage = () => {
   const [infoVisible, setInfoVisible] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
-  const [workouts, setWorkouts] = useState([]);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [exerciseHistory, setExerciseHistory] = useState([]);
   const router = useRouter();
+
+  type Workout = {
+    workoutName: string;
+    bestSet: {
+      sets: number;
+      reps: number;
+      weight: number;
+      date?: string;
+    };
+  };  
 
   useEffect(() => {
     let isMounted = true;
@@ -24,26 +34,27 @@ const ProgressPage = () => {
       try {
         const progressRef = collection(db, "users", user.uid, "progress");
         const querySnapshot = await getDocs(progressRef);
-        const allWorkouts: any[] = [];
+        const allWorkouts: Workout[] = [];
   
         querySnapshot.forEach(docSnap => {
           const exerciseName = docSnap.id;
           const data = docSnap.data();
-  
-          if (Array.isArray(data.history)) {
-            data.history.forEach(entry => {
-              const { date, sets, reps, weight } = entry;
-  
-              allWorkouts.push({
-                workoutName: exerciseName,
-                sets: sets || 0,
-                reps: reps || 0,
-                weight: weight || 0,
-                date: date || "Unknown",
-              });
+        
+          if (Array.isArray(data.history) && data.history.length > 0) {
+            // Get best set (e.g., max estimated 1-rep max)
+            const bestEntry = data.history.reduce((best, current) => {
+              const bestMax = best.weight * (1 + best.reps / 30);
+              const currentMax = current.weight * (1 + current.reps / 30);
+              return currentMax > bestMax ? current : best;
+            });
+        
+            allWorkouts.push({
+              workoutName: exerciseName,
+              bestSet: bestEntry,
             });
           }
         });
+        
   
         allWorkouts.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
         if (isMounted) setWorkouts(allWorkouts);
@@ -122,8 +133,8 @@ const ProgressPage = () => {
           <Text style={styles.header}>Workout Progress</Text>
           {workouts.length > 0 ? (
             workouts.map((workout, index) => {
-              const bestSet = `${workout.sets}x${workout.reps} @ ${workout.weight} lbs`;
-              const estimatedMax = `1 rep of ${Math.round(workout.weight * (1 + workout.reps / 30))} lbs`;
+              const bestSet = `${workout.bestSet.sets}x${workout.bestSet.reps} @ ${workout.bestSet.weight} lbs`;
+              const estimatedMax = `1 rep of ${Math.round(workout.bestSet.weight * (1 + workout.bestSet.reps / 30))} lbs`;                           
 
               return (
                 <View key={index} style={styles.exerciseCard}>
