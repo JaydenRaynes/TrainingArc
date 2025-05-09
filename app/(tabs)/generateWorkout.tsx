@@ -17,7 +17,7 @@ import { SavedSplit } from '../models/savedWorkoutModel';
 type UserData = Biometric & Gym;
 
 const GenerateWorkoutScreen: React.FC = () => {
-  const localIP = "http://10.0.0.16:5000"; // Replace with your local IP
+  const localIP = "http://138.47.159.91:5000"; // Replace with your local IP
   const [workout, setWorkout] = useState<Split | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [isAddModalVisible, setAddModalVisible] = useState(false);  // to toggle modal visibility
@@ -251,7 +251,7 @@ const GenerateWorkoutScreen: React.FC = () => {
                 <Text style={styles.editexerciseName}>Add a New Exercise</Text>
 
                 <TouchableOpacity onPress={() => generateExercise(selectedMuscleGroup)}>
-                  <Text style={styles.generateName}>Generate Exercise for Selected Muscle Group</Text>
+                  <Text style={styles.generateName}>Generate Basic Exercise for {"\n"} Selected Muscle Group</Text>
                 </TouchableOpacity>
 
 
@@ -290,11 +290,11 @@ const GenerateWorkoutScreen: React.FC = () => {
                   <Text style={styles.createExercise}>Create New Exercise</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.generateName}>Or Enter Exercise Name</Text>
+                <Text style={styles.generateName}>Or Enter Specific Targeted Muscle</Text>
                 <TextInput
                   value={exerciseName}
                   onChangeText={setExerciseName}
-                  placeholder="Type exercise name"
+                  placeholder="Hamstring, Bicep, etc"
                   placeholderTextColor={theme.colors.textSecondary}
                   style={styles.input}
                 />

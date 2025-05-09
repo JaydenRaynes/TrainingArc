@@ -561,7 +561,7 @@ setActiveRatingSet(null);
                 alignItems: "center",
               }}
             >
-              <Text style={{ color: theme.colors.buttonText, fontWeight: "bold", fontSize: theme.fontSize.medium }}>
+              <Text style={{ color: theme.colors.primary, fontWeight: "bold", fontSize: theme.fontSize.medium }}>
                 Close
               </Text>
             </TouchableOpacity>
@@ -874,7 +874,7 @@ const styles = StyleSheet.create({
 timerDisplay: {
   fontSize: 48,
   fontWeight: "bold",
-  color: "#333",
+  color: "white",
   marginBottom: 20,
 },
 timerButtonsContainer: {
