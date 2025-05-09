@@ -66,9 +66,17 @@ const WorkoutsPage = () => {
       try {
         const storageKey = `completedSets-${selectedDate}`;
         const saved = await AsyncStorage.getItem(storageKey);
-        setCompletedSets(saved ? JSON.parse(saved) : {});
+    
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setCompletedSets(parsed);
+        } else {
+          // No saved sets — likely first time or new account
+          setCompletedSets({});
+        }
       } catch (e) {
         console.error('Failed to load completed sets', e);
+        setCompletedSets({});
       }
     };
 
@@ -199,7 +207,7 @@ const WorkoutsPage = () => {
       const exercise = updatedPlan.workouts[exerciseIndex];
   
       // Only update NEXT sets, not past sets
-      for (let nextSetIndex = setIndex + 1; nextSetIndex < exercise.sets; nextSetIndex++) {
+      {
         exercise.reps = Number(exercise.reps);   // ensure it's a number
         exercise.weight = Number(exercise.weight);
         
@@ -244,7 +252,8 @@ const WorkoutsPage = () => {
       if (docSnap.exists()) {
         const workoutData = docSnap.data();
         const workoutDays = workoutData?.workoutPlans || {};  // Access workoutPlans field
-        const dayData = workoutDays[formattedDate];  // Get the day data (e.g., "Thursday", "Tuesday")
+        const dayName = format(parse(formattedDate, "MM-dd-yyyy", new Date()), "EEEE");
+        const dayData = workoutDays[dayName];  // Get the day data (e.g., "Thursday", "Tuesday")
         
         if (dayData) {
           // Find the exercise by index (from the user's plan)
@@ -257,7 +266,7 @@ const WorkoutsPage = () => {
 
           // Save the updated day data back to Firestore
           updateDoc(userRef, {
-            [`workoutPlans.${formattedDate}.workouts`]: exercises,
+            [`workoutPlans.${dayName}.workouts`]: exercises,
           })
           .then(() => {
             console.log('User-created workout saved successfully!');
